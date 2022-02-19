@@ -49,7 +49,7 @@ watch: ## Watch for the filesystem and rebuild on every change
 
 .PHONY: utop
 utop: ## Run a REPL and link with the project's libraries
-	opam exec -- dune utop --root . lib -- -implicit-bindings
+	opam exec -- dune utop --root . common -- -implicit-bindings
 
 .PHONY: release
 release: all ## Run the release script 

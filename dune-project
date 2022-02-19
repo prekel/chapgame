@@ -1,7 +1,8 @@
 (lang dune 2.7)
 
 (name chapgame)
-(version 2d43c1d)
+
+(version 0.1)
 
 (license MIT)
 
@@ -22,7 +23,8 @@
   (core :build)
   (lwt :build)
   js_of_ocaml
-  (bonsai (> v0.14))
+  (bonsai
+   (> v0.14))
   (ppx_jane :build)
   (bisect_ppx :with-test)
   (ocaml-lsp-server :with-test)

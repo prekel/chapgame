@@ -1,2 +1,5 @@
 (library
- (name chapgame))
+ (name chapgame)
+ (libraries core)
+ (preprocess
+  (pps ppx_jane)))
