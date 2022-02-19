@@ -11,5 +11,7 @@ _opam/
 # Coverage
 _coverage/
 
+_esy/
+
 .vscode/
-.ionide
+.ionide/
