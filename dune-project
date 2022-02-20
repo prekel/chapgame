@@ -24,7 +24,9 @@
   (lwt :build)
   js_of_ocaml
   (bonsai
-   (> v0.14))
+   (and
+    (>= v0.15~)
+    (< v0.16)))
   (ppx_jane :build)
   (bisect_ppx :with-test)
   (ocaml-lsp-server :with-test)
