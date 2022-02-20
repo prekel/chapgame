@@ -43,7 +43,7 @@ struct
   end
 
   module Monomial : sig
-    type t [@@deriving sexp, compare]
+    type t [@@deriving sexp, compare, equal]
 
     val degree : t -> int
     val coefficient : t -> N.t
@@ -57,7 +57,7 @@ struct
       { degree : int
       ; coefficient : N.t
       }
-    [@@deriving sexp, compare, fields]
+    [@@deriving sexp, compare, equal, fields]
 
     let create = Fields.create
 
@@ -83,7 +83,7 @@ struct
   end
 
   module Polynomial : sig
-    type t = Monomial.t list [@@deriving sexp]
+    type t = Monomial.t list [@@deriving sexp, equal]
 
     val normalize : t -> t
     val of_list : Monomial.t list -> t
@@ -91,7 +91,7 @@ struct
     val calc : N.t list -> Monomial.t -> N.t
     val degree : t -> int
   end = struct
-    type t = Monomial.t list [@@deriving sexp]
+    type t = Monomial.t list [@@deriving sexp, equal]
 
     let normalize =
       let open Common.Fn in
