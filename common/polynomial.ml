@@ -42,12 +42,24 @@ struct
     ;;
   end
 
-  module Monomial = struct
+  module Monomial : sig
+    type t [@@deriving sexp, compare]
+
+    val degree : t -> int
+    val coefficient : t -> N.t
+    val create : degree:int -> coefficient:N.t -> t
+    val derivative : t -> t option
+    val calc : t -> N.t -> N.t
+    val compare_by_degree : t -> t -> int
+    val ( + ) : t -> t -> t
+  end = struct
     type t =
       { degree : int
       ; coefficient : N.t
       }
-    [@@deriving sexp, compare]
+    [@@deriving sexp, compare, fields]
+
+    let create = Fields.create
 
     let derivative x =
       let open N in
@@ -62,22 +74,39 @@ struct
       let open N in
       monomial.coefficient * (x ** of_int monomial.degree)
     ;;
+
+    let compare_by_degree a b = [%compare: int] a.degree b.degree
+
+    let ( + ) a b =
+      create ~coefficient:N.(coefficient a + coefficient b) ~degree:(degree a)
+    ;;
   end
 
-  module Polynomial = struct
+  module Polynomial : sig
     type t = Monomial.t list [@@deriving sexp]
 
-    let normalize (t : t) : t =
-      let open N in
-      t
-      |> List.sort_and_group ~compare:(fun a b -> [%compare: int] a.degree b.degree)
-      |> List.map
-           ~f:
-             (List.reduce_exn ~f:(fun a b ->
-                  { Monomial.coefficient = a.Monomial.coefficient + b.coefficient
-                  ; degree = a.Monomial.degree
-                  }))
+    val normalize : t -> t
+    val of_list : Monomial.t list -> t
+    val derivative : t -> t
+    val calc : N.t list -> Monomial.t -> N.t
+    val degree : t -> int
+  end = struct
+    type t = Monomial.t list [@@deriving sexp]
+
+    let normalize =
+      let open Common.Fn in
+      List.sort_and_group ~compare:Monomial.compare_by_degree
+      >> List.map ~f:(List.reduce_exn ~f:Monomial.( + ))
     ;;
+
+    let of_list = normalize
+    let derivative = List.filter_map ~f:Monomial.derivative
+
+    let calc poly x =
+      poly |> List.map ~f:(Monomial.calc x) |> List.sum (module N) ~f:Fn.id
+    ;;
+
+    let degree = Common.Fn.(List.hd_exn >> Monomial.degree)
   end
 
   let test _ =
