@@ -35,9 +35,19 @@ let box () =
       [ Vdom.Node.input
           ~attr:
             (Vdom.Attr.many
-               [ Vdom.Attr.on_input (fun _ -> set_state); Vdom.Attr.value state ])
+               [ Vdom.Attr.on_input (fun _ -> set_state); Vdom.Attr.value_prop state ])
           []
-      ; Vdom.Node.text state
+      ; Vdom.Node.input
+          ~attr:
+            (Vdom.Attr.many
+               [ Vdom.Attr.on_input (fun _ -> set_state); Vdom.Attr.value_prop state ])
+          []
+      ; Vdom.Node.textarea
+          ~attr:
+            (Vdom.Attr.many
+               [ Vdom.Attr.on_input (fun _ -> set_state); Vdom.Attr.value_prop state ])
+          [ Vdom.Node.text state ]
+      ; Vdom.Node.pre [ Vdom.Node.code [ Vdom.Node.text state ] ]
       ; Vdom.Node.button
           ~attr:
             (Vdom.Attr.on_click (fun _ ->
