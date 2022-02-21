@@ -1,7 +1,7 @@
 open Core
 open Bonsai_web
 open Bonsai.Let_syntax
-module SF = Chapgame.Polynomial.MakeSolver (Float)
+module SF = Chapgame.Solver.MakeSolver (Float)
 
 let state () =
   let init =

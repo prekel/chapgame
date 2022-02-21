@@ -1,2 +1,2 @@
 module Common = Common 
-module Polynomial = Polynomial
+module Solver = Solver

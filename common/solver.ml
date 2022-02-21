@@ -18,28 +18,54 @@ module MakeSolver (N : sig
 end) =
 struct
   module Interval : sig
-    type t [@@deriving sexp]
+    type t [@@deriving sexp, equal]
+
+    val case
+      :  interval:(N.t -> N.t -> 'a)
+      -> neg_infinity:(N.t -> 'a)
+      -> pos_infinity:(N.t -> 'a)
+      -> infinity:'a
+      -> empty:'a
+      -> t
+      -> 'a
 
     val create : N.t -> N.t -> t
     val of_tuple : N.t * N.t -> t
     val infinity : t
     val neg_infinity : N.t -> t
     val pos_infinity : N.t -> t
+    val empty : t
     val intervals_of_list : N.t list -> t list
   end = struct
     type t =
       | Interval of N.t * N.t
+      | Neg_Infinity of N.t
+      | Pos_Infinity of N.t
+      | Infinity
       | Empty
-    [@@deriving sexp]
+    [@@deriving sexp, equal, variants]
+
+    let case ~interval ~neg_infinity ~pos_infinity ~infinity ~empty = function
+      | Interval (a, b) -> interval a b
+      | Neg_Infinity a -> neg_infinity a
+      | Pos_Infinity a -> pos_infinity a
+      | Infinity -> infinity
+      | Empty -> empty
+    ;;
 
     let create low high =
-      if Int.(N.compare low high > 0) then Empty else Interval (low, high)
+      if N.(equal low neg_infinity && equal high infinity)
+      then Infinity
+      else if N.(equal low neg_infinity)
+      then Neg_Infinity high
+      else if N.(equal high infinity)
+      then Pos_Infinity low
+      else if Int.(N.compare low high > 0)
+      then Empty
+      else Interval (low, high)
     ;;
 
     let of_tuple (low, high) = create low high
-    let infinity = N.(create neg_infinity infinity)
-    let neg_infinity a = N.(create neg_infinity a)
-    let pos_infinity a = N.(create a infinity)
 
     let intervals_of_list roots =
       match roots with
@@ -56,15 +82,15 @@ struct
 
     val degree : t -> int
     val coefficient : t -> N.t
-    val create : degree:int -> coefficient:N.t -> t
+    val create : coefficient:N.t -> degree:int -> t
     val derivative : t -> t option
-    val calc : t -> N.t -> N.t
+    val calc : t -> x:N.t -> N.t
     val compare_by_degree : t -> t -> int
     val ( + ) : t -> t -> t
   end = struct
     type t =
-      { degree : int
-      ; coefficient : N.t
+      { coefficient : N.t
+      ; degree : int
       }
     [@@deriving sexp, compare, equal, fields]
 
@@ -79,9 +105,9 @@ struct
           { coefficient = x.coefficient * of_int x.degree; degree = Int.(x.degree - 1) }
     ;;
 
-    let calc monomial x =
+    let calc mono ~x =
       let open N in
-      monomial.coefficient * (x ** of_int monomial.degree)
+      mono.coefficient * (x ** of_int mono.degree)
     ;;
 
     let compare_by_degree a b = [%compare: int] a.degree b.degree
@@ -92,9 +118,9 @@ struct
   end
 
   module LinearEquation : sig
-    val solve : a:N.t -> b:N.t -> N.t
+    val root : a:N.t -> b:N.t -> N.t
   end = struct
-    let solve ~a ~b = N.(-b / a)
+    let root ~a ~b = N.(-b / a)
   end
 
   module Polynomial : sig
@@ -103,7 +129,7 @@ struct
     val normalize : t -> t
     val of_list : Monomial.t list -> t
     val derivative : t -> t
-    val calc : N.t list -> Monomial.t -> N.t
+    val calc : t -> x:N.t -> N.t
     val degree : t -> int
     val linear_root : t -> N.t option
   end = struct
@@ -118,8 +144,8 @@ struct
     let of_list = normalize
     let derivative = List.filter_map ~f:Monomial.derivative
 
-    let calc poly x =
-      poly |> List.map ~f:(Monomial.calc x) |> List.sum (module N) ~f:Fn.id
+    let calc poly ~x =
+      poly |> List.map ~f:(Monomial.calc ~x) |> List.sum (module N) ~f:Fn.id
     ;;
 
     let degree = Common.Fn.(List.hd_exn >> Monomial.degree)
@@ -130,8 +156,53 @@ struct
       | [ x0; x1 ] when degree x0 = 0 && degree x1 = 1 ->
         let b = coefficient x0 in
         let a = coefficient x1 in
-        Some (LinearEquation.solve ~a ~b)
+        Some (LinearEquation.root ~a ~b)
+      | [ x1 ] when degree x1 = 1 -> Some N.zero
       | _ -> None
+    ;;
+  end
+
+  module BinarySearch = struct
+    let median =
+      Interval.case
+        ~infinity:N.zero
+        ~neg_infinity:(fun right -> N.(right - one))
+        ~pos_infinity:(fun left -> N.(left + one))
+        ~interval:(fun l r -> N.((l + r) / (one + one)))
+        ~empty:N.zero
+    ;;
+
+    let ends_difference ~f global_median =
+      Interval.case
+        ~infinity:N.(f one - f (-one))
+        ~neg_infinity:(fun right -> N.(f right - f global_median))
+        ~pos_infinity:(fun left -> N.(f global_median - f left))
+        ~interval:(fun l r -> N.(f r - f l))
+        ~empty:N.zero
+    ;;
+  end
+
+  module PolynomialEquation : sig
+    val roots : eps:N.t -> Polynomial.t -> N.t list
+  end = struct
+    let filter_intervals
+        : eps:N.t -> calc:(x:N.t -> N.t) -> Interval.t list -> Interval.t list
+      =
+      assert false
+    ;;
+
+    let rec roots ~eps poly =
+      match Polynomial.degree poly with
+      | 1 -> poly |> Polynomial.linear_root |> Option.to_list
+      | _ ->
+        let calc = Polynomial.calc poly in
+        poly
+        |> Polynomial.derivative
+        |> roots ~eps
+        |> Interval.intervals_of_list
+        |> filter_intervals ~eps ~calc
+        |> List.map ~f:(assert false)
+        |> List.sort ~compare:N.compare
     ;;
   end
 
