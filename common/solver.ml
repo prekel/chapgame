@@ -3,6 +3,8 @@ open Core
 module MakeSolver (N : sig
   type t [@@deriving sexp, compare, equal]
 
+  include Comparable.S with type t := t
+
   val ( ~- ) : t -> t
   val ( + ) : t -> t -> t
   val ( - ) : t -> t -> t
@@ -15,6 +17,7 @@ module MakeSolver (N : sig
   val infinity : t
   val nan : t
   val neg_infinity : t
+  val abs : t -> t
 end) =
 struct
   module Interval : sig
@@ -31,6 +34,7 @@ struct
 
     val create : N.t -> N.t -> t
     val of_tuple : N.t * N.t -> t
+    val to_tuple : t -> (N.t * N.t) option
     val infinity : t
     val neg_infinity : N.t -> t
     val pos_infinity : N.t -> t
@@ -46,9 +50,9 @@ struct
     [@@deriving sexp, equal, variants]
 
     let case ~interval ~neg_infinity ~pos_infinity ~infinity ~empty = function
-      | Interval (a, b) -> interval a b
-      | Neg_Infinity a -> neg_infinity a
-      | Pos_Infinity a -> pos_infinity a
+      | Interval (l, r) -> interval l r
+      | Neg_Infinity r -> neg_infinity r
+      | Pos_Infinity l -> pos_infinity l
       | Infinity -> infinity
       | Empty -> empty
     ;;
@@ -66,6 +70,14 @@ struct
     ;;
 
     let of_tuple (low, high) = create low high
+
+    let to_tuple = function
+      | Interval (l, r) -> Some (l, r)
+      | Neg_Infinity r -> Some N.(neg_infinity, r)
+      | Pos_Infinity l -> Some N.(l, infinity)
+      | Infinity -> Some N.(neg_infinity, infinity)
+      | Empty -> None
+    ;;
 
     let intervals_of_list roots =
       match roots with
@@ -172,14 +184,53 @@ struct
         ~empty:N.zero
     ;;
 
-    let ends_difference ~f global_median =
-      Interval.case
-        ~infinity:N.(f one - f (-one))
-        ~neg_infinity:(fun right -> N.(f right - f global_median))
-        ~pos_infinity:(fun left -> N.(f global_median - f left))
-        ~interval:(fun l r -> N.(f r - f l))
-        ~empty:N.zero
-    ;;
+    let search ~f ~eps interval =
+      let global_median = median interval in
+      (* TODO *)
+      if N.(equal global_median (-one)) then ();
+      let ends_difference =
+        Interval.case
+          ~infinity:N.(f one - f (-one))
+          ~neg_infinity:(fun right -> N.(f right - f global_median))
+          ~pos_infinity:(fun left -> N.(f global_median - f left))
+          ~interval:(fun l r -> N.(f r - f l))
+          ~empty:N.zero
+          interval
+      in
+      let is_positive = N.(ends_difference > zero) in
+      let is_negative = N.(ends_difference < zero) in
+      let comparer = if is_positive then N.( > ) else N.( < ) in
+      let is_interval_value_less_eps =
+        match Interval.to_tuple interval with
+        | Some (left, _) when N.(abs (f left) < eps) -> Some left
+        | Some (_, right) when N.(abs (f right) < eps) -> Some right
+        | _ -> None
+      in
+      let increase_interval ~f interval =
+        let increase k rl cnd =
+          let rec increase_rec k =
+            let rl1 = N.(rl + k) in
+            if cnd (f rl1) then rl1 else increase_rec N.(k * (one + one))
+          in
+          let t = increase_rec k in
+          if N.(equal infinity t) then assert false else t
+        in
+        let lt_zero = N.(( > ) zero) in
+        let gt_zero = N.(( < ) zero) in
+        let res =
+          Interval.case
+            ~infinity:(assert false)
+            ~neg_infinity:(assert false)
+            ~pos_infinity:(assert false)
+            ~interval:(fun l r -> l, r)
+            ~empty:N.(one, zero)
+            interval
+        in
+        Interval.of_tuple res
+      in
+      assert false
+    in
+    assert false
   end
 
   module PolynomialEquation : sig
