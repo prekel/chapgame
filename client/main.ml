@@ -66,7 +66,13 @@ let component =
       Sexp.to_string_hum ~indent:2 [%sexp (SF.Polynomial.derivative a : SF.Polynomial.t)]
     | _ -> ""
   in
-  Vdom.Node.div [ box_a; Vdom.Node.text ab ]
+  Vdom.Node.div
+    [ box_a
+    ; Vdom.Node.pre [ Vdom.Node.text ab ]
+    ; Vdom.Node.text
+        ([%sexp (Option.(a >>= SF.Polynomial.linear_root) : float option)]
+        |> Sexp.to_string_hum)
+    ]
 ;;
 
 let (_ : _ Start.Handle.t) =

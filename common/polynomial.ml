@@ -1,10 +1,9 @@
 open Core
 
 module MakeSolver (N : sig
-  type t [@@deriving sexp, compare]
+  type t [@@deriving sexp, compare, equal]
 
-  include Comparable.S with type t := t
-
+  val ( ~- ) : t -> t
   val ( + ) : t -> t -> t
   val ( - ) : t -> t -> t
   val ( * ) : t -> t -> t
@@ -18,27 +17,37 @@ module MakeSolver (N : sig
   val neg_infinity : t
 end) =
 struct
-  module Interval = struct
+  module Interval : sig
+    type t [@@deriving sexp]
+
+    val create : N.t -> N.t -> t
+    val of_tuple : N.t * N.t -> t
+    val infinity : t
+    val neg_infinity : N.t -> t
+    val pos_infinity : N.t -> t
+    val intervals_of_list : N.t list -> t list
+  end = struct
     type t =
       | Interval of N.t * N.t
       | Empty
+    [@@deriving sexp]
 
     let create low high =
       if Int.(N.compare low high > 0) then Empty else Interval (low, high)
     ;;
 
     let of_tuple (low, high) = create low high
-    let infinityInterval = N.(create neg_infinity infinity)
-    let negativeInfinityInterval a = N.(create neg_infinity a)
-    let positiveInfinityInterval a = N.(create a infinity)
+    let infinity = N.(create neg_infinity infinity)
+    let neg_infinity a = N.(create neg_infinity a)
+    let pos_infinity a = N.(create a infinity)
 
     let intervals_of_list roots =
       match roots with
-      | [] -> [ infinityInterval ]
-      | [ a ] -> [ negativeInfinityInterval a; positiveInfinityInterval a ]
+      | [] -> [ infinity ]
+      | [ a ] -> [ neg_infinity a; pos_infinity a ]
       | a :: b :: _ ->
         let w = roots |> Common.List.windowed2_exn |> List.map ~f:of_tuple in
-        (negativeInfinityInterval a :: w) @ [ positiveInfinityInterval b ]
+        (neg_infinity a :: w) @ [ pos_infinity b ]
     ;;
   end
 
@@ -82,14 +91,21 @@ struct
     ;;
   end
 
+  module LinearEquation : sig
+    val solve : a:N.t -> b:N.t -> N.t
+  end = struct
+    let solve ~a ~b = N.(-b / a)
+  end
+
   module Polynomial : sig
-    type t = Monomial.t list [@@deriving sexp, equal]
+    type t [@@deriving sexp, equal]
 
     val normalize : t -> t
     val of_list : Monomial.t list -> t
     val derivative : t -> t
     val calc : N.t list -> Monomial.t -> N.t
     val degree : t -> int
+    val linear_root : t -> N.t option
   end = struct
     type t = Monomial.t list [@@deriving sexp, equal]
 
@@ -107,6 +123,16 @@ struct
     ;;
 
     let degree = Common.Fn.(List.hd_exn >> Monomial.degree)
+
+    let linear_root =
+      let open Monomial in
+      function
+      | [ x0; x1 ] when degree x0 = 0 && degree x1 = 1 ->
+        let b = coefficient x0 in
+        let a = coefficient x1 in
+        Some (LinearEquation.solve ~a ~b)
+      | _ -> None
+    ;;
   end
 
   let test _ =
