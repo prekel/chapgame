@@ -1,6 +1,7 @@
 open Core
 open Bonsai_web
 open Bonsai.Let_syntax
+open Js_of_ocaml
 module SF = Chapgame.Solver.MakeSolver (Float)
 
 let state () =
@@ -21,6 +22,23 @@ let state () =
   state, set_state
 ;;
 
+let polynomial_and_roots ~poly ~eps =
+  let roots =
+    try Some (SF.PolynomialEquation.roots ~eps poly) with
+    | err ->
+      Firebug.console##warn (Js.string (Exn.to_string err));
+      None
+  in
+  Vdom.(
+    Node.div
+      [ Node.pre
+          [ Node.text (Sexp.to_string_hum ~indent:2 [%sexp (poly : SF.Polynomial.t)]) ]
+      ; Node.pre
+          [ Node.text (Sexp.to_string_hum ~indent:2 [%sexp (roots : float list option)]) ]
+      ; Node.br ()
+      ])
+;;
+
 let box () =
   let%sub state, set_state = state () in
   let%arr state = state
@@ -34,27 +52,15 @@ let box () =
      with
     | _ -> None)
   , Vdom.Node.div
-      [ Vdom.Node.input
-          ~attr:
-            (Vdom.Attr.many
-               [ Vdom.Attr.on_input (fun _ -> set_state); Vdom.Attr.value_prop state ])
-          []
-      ; Vdom.Node.input
-          ~attr:
-            (Vdom.Attr.many
-               [ Vdom.Attr.on_input (fun _ -> set_state); Vdom.Attr.value_prop state ])
-          []
-      ; Vdom.Node.textarea
+      [ Vdom.Node.textarea
           ~attr:
             (Vdom.Attr.many
                [ Vdom.Attr.on_input (fun _ -> set_state); Vdom.Attr.value_prop state ])
           [ Vdom.Node.text state ]
-      ; Vdom.Node.pre [ Vdom.Node.code [ Vdom.Node.text state ] ]
-      ; Vdom.Node.button
-          ~attr:
-            (Vdom.Attr.on_click (fun _ ->
-                 set_state (Sexp.of_string state |> Sexp.to_string_hum ~indent:2)))
-          [ Vdom.Node.text "format" ]
+        (* ; Vdom.Node.pre [ Vdom.Node.code [ Vdom.Node.text state ] ] *)
+        (* ; Vdom.Node.button ~attr: (Vdom.Attr.on_click (fun _ -> set_state
+           (Sexp.of_string state |> Sexp.to_string_hum ~indent:2))) [ Vdom.Node.text
+           "format" ] ] ) *)
       ] )
 ;;
 
@@ -62,23 +68,20 @@ let component =
   let%sub a, box_a = box () in
   let%arr a = a
   and box_a = box_a in
-  let ab =
-    match a with
-    | Some a ->
-      Sexp.to_string_hum ~indent:2 [%sexp (SF.Polynomial.derivative a : SF.Polynomial.t)]
-    | _ -> ""
+  let rec derivatives poly =
+    let d = SF.Polynomial.derivative poly in
+    if SF.Polynomial.degree d = 0 then [ poly; d ] else poly :: derivatives d
   in
-  Vdom.Node.div
-    [ box_a
-    ; Vdom.Node.pre [ Vdom.Node.text ab ]
-    ; Vdom.Node.text
-        ([%sexp (Option.(a >>= SF.Polynomial.linear_root) : float option)]
-        |> Sexp.to_string_hum)
-    ; Vdom.Node.text
-        ([%sexp
-           (Option.(a >>| SF.PolynomialEquation.roots ~eps:1e-6) : float list option)]
-        |> Sexp.to_string_hum)
-    ]
+  Vdom.(
+    Node.div
+      [ box_a
+      ; Node.div
+          (match a with
+          | Some a ->
+            derivatives a
+            |> List.map ~f:(fun poly -> polynomial_and_roots ~poly ~eps:1e-7)
+          | None -> [])
+      ])
 ;;
 
 let (_ : _ Start.Handle.t) =

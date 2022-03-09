@@ -28,8 +28,8 @@ struct
       :  interval:(left:N.t -> right:N.t -> 'a)
       -> neg_infinity:(right:N.t -> 'a)
       -> pos_infinity:(left:N.t -> 'a)
-      -> infinity:'a
-      -> empty:'a
+      -> infinity:(unit -> 'a)
+      -> empty:(unit -> 'a)
       -> t
       -> 'a
 
@@ -60,8 +60,8 @@ struct
       | Interval (left, right) -> interval ~left ~right
       | Neg_Infinity right -> neg_infinity ~right
       | Pos_Infinity left -> pos_infinity ~left
-      | Infinity -> infinity
-      | Empty -> empty
+      | Infinity -> infinity ()
+      | Empty -> empty ()
     ;;
 
     let create ~left:low ~right:high =
@@ -96,7 +96,7 @@ struct
     ;;
 
     let difference = function
-      | Interval (l, r) -> N.(r - l)
+      | Interval (l, r) -> N.(abs (r - l))
       | Neg_Infinity _ | Pos_Infinity _ | Infinity -> N.infinity
       | Empty -> N.zero
     ;;
@@ -176,6 +176,7 @@ struct
     val calc : t -> x:N.t -> N.t
     val degree : t -> int
     val linear_root : t -> N.t option
+    val rep_ok : t -> t
   end = struct
     type t = Monomial.t list [@@deriving sexp, equal]
 
@@ -185,9 +186,16 @@ struct
       >> List.map ~f:(List.reduce_exn ~f:Monomial.( + ))
     ;;
 
+    let rep_ok p =
+      let normalized = normalize p in
+      if equal normalized p
+      then p
+      else Error.raise_s [%message "RI violated" ~p:(p : t) ~normalized:(normalized : t)]
+    ;;
+
     let of_list = normalize
     let t_of_sexp = Common.Fn.(t_of_sexp >> normalize)
-    let derivative = List.filter_map ~f:Monomial.derivative
+    let derivative = Common.Fn.(List.filter_map ~f:Monomial.derivative >> rep_ok)
 
     let calc poly ~x =
       poly |> List.map ~f:(Monomial.calc ~x) |> List.sum (module N) ~f:Fn.id
@@ -201,7 +209,7 @@ struct
     let linear_root =
       let open Monomial in
       function
-      | [ x0; x1 ] when degree x0 = 0 && degree x1 = 1 ->
+      | [ x1; x0 ] when degree x0 = 0 && degree x1 = 1 ->
         let b = coefficient x0 in
         let a = coefficient x1 in
         Some (LinearEquation.root ~a ~b)
@@ -213,11 +221,11 @@ struct
   module BinarySearch = struct
     let median =
       Interval.case
-        ~infinity:N.zero
+        ~infinity:(fun () -> N.zero)
         ~neg_infinity:(fun ~right -> N.(right - one))
         ~pos_infinity:(fun ~left -> N.(left + one))
         ~interval:(fun ~left ~right -> N.((left + right) / (one + one)))
-        ~empty:N.zero
+        ~empty:(fun () -> N.zero)
     ;;
 
     let search ~f ~eps interval =
@@ -226,11 +234,11 @@ struct
       if N.(equal global_median (-one)) then ();
       let ends_difference =
         Interval.case
-          ~infinity:N.(f one - f (-one))
+          ~infinity:(fun () -> N.(f one - f (-one)))
           ~neg_infinity:(fun ~right -> N.(f right - f global_median))
           ~pos_infinity:(fun ~left -> N.(f global_median - f left))
           ~interval:(fun ~left ~right -> N.(f right - f left))
-          ~empty:N.zero
+          ~empty:(fun () -> N.zero)
           interval
       in
       let sign =
@@ -238,7 +246,7 @@ struct
         then `Is_positive
         else if N.(ends_difference < zero)
         then `Is_negative
-        else assert false
+        else (* TODO *) `Is_positive
       in
       let comparer =
         match sign with
@@ -253,20 +261,30 @@ struct
       in
       let increase_interval ~f interval =
         let increase k rl cnd =
-          let rec increase_rec k =
-            let rl1 = N.(rl + k) in
-            if cnd (f rl1) then rl1 else increase_rec N.(k * (one + one))
+          let rec increase_rec cnt k =
+            if cnt > 1000
+            then
+              Error.raise_s
+                [%message
+                  "loop"
+                    ~interval:(interval : Interval.t)
+                    ~rl:(rl : N.t)
+                    ~cnt:(cnt : int)
+                    ~k:(k : N.t)]
+            else (
+              let rl1 = N.(rl + k) in
+              if cnd (f rl1) then rl1 else increase_rec (cnt + 1) N.(k * (one + one)))
           in
-          let t = increase_rec k in
+          let t = increase_rec 0 k in
           if N.(equal infinity t) then (* TODO *)
                                     assert false else t
         in
-        let lt_zero = N.(( > ) zero) in
-        let gt_zero = N.(( < ) zero) in
+        let lt_zero a = N.(zero > a) in
+        let gt_zero a = N.(zero < a) in
         let res =
           Interval.case
-            ~infinity:
-              (match sign, N.zero |> f |> N.sign_exn with
+            ~infinity:(fun () ->
+              match sign, N.zero |> f |> N.sign_exn with
               | `Is_positive, (Pos | Zero) -> increase N.(-one) N.zero lt_zero, N.zero
               | `Is_negative, (Pos | Zero) -> N.zero, increase N.(one) N.zero lt_zero
               | `Is_positive, Neg -> N.zero, increase N.(one) N.zero gt_zero
@@ -280,28 +298,31 @@ struct
               | `Is_positive -> left, increase N.(one) left gt_zero
               | `Is_negative -> left, increase N.(one) left lt_zero)
             ~interval:(fun ~left ~right -> left, right)
-            ~empty:N.(one, zero)
+            ~empty:(fun () -> N.(one, zero))
             interval
         in
         Interval.of_tuple res
       in
       let increased_interval = increase_interval ~f interval in
-      let rec rec_search interval =
-        let local_median = median interval in
-        let median_value = f local_median in
-        if N.(Interval.difference interval < eps)
-        then local_median
-        else if comparer median_value N.zero
-        then
-          rec_search
-          @@ Interval.create ~left:(Interval.left_trunc interval) ~right:local_median
-        else
-          rec_search
-          @@ Interval.create ~left:local_median ~right:(Interval.right_trunc interval)
+      let rec rec_search cnt interval =
+        if cnt > 100
+        then failwith "loop"
+        else (
+          let local_median = median interval in
+          let median_value = f local_median in
+          if N.(Interval.difference interval < eps)
+          then local_median
+          else if comparer median_value N.zero
+          then
+            rec_search (cnt + 1)
+            @@ Interval.create ~left:(Interval.left_trunc interval) ~right:local_median
+          else
+            rec_search (cnt + 1)
+            @@ Interval.create ~left:local_median ~right:(Interval.right_trunc interval))
       in
       match is_interval_value_less_eps with
       | Some x -> x
-      | None -> rec_search increased_interval
+      | None -> rec_search 0 increased_interval
     ;;
   end
 
@@ -312,25 +333,36 @@ struct
         : eps:N.t -> calc:(N.t -> N.t) -> Interval.t list -> Interval.t list
       =
      fun ~eps ~calc intervals ->
-      List.filter intervals ~f:(fun interval ->
-          Interval.case
-            ~neg_infinity:(fun ~right ->
-              let a, b = calc N.(right - one), calc right in
-              not N.((a > b && b > eps) || (a < b && b < -eps)))
-            ~pos_infinity:(fun ~left ->
-              let a, b = calc left, calc N.(left + one) in
-              not N.((a > b && a < -eps) || (a < b && a > eps)))
-            ~interval:(fun ~left ~right ->
-              let a, b = calc left, calc right in
-              not N.(Sign.(sign_exn a * sign_exn b = Pos) && abs (a * b) >= eps))
-            ~infinity:false
-            ~empty:false
-            interval)
+      List.filter
+        intervals
+        ~f:
+          (Interval.case
+             ~neg_infinity:(fun ~right ->
+               let a, b = calc N.(right - one), calc right in
+               not N.((a > b && b > eps) || (a < b && b < -eps)))
+             ~pos_infinity:(fun ~left ->
+               let a, b = calc left, calc N.(left + one) in
+               not N.((a > b && a < -eps) || (a < b && a > eps)))
+             ~interval:(fun ~left ~right ->
+               let a, b = calc left, calc right in
+               not N.(Sign.(sign_exn a * sign_exn b = Pos) && abs (a * b) >= eps))
+             ~infinity:(fun () -> false)
+             ~empty:(fun () -> false))
    ;;
 
     let rec roots ~eps poly =
       match Polynomial.degree poly with
+      | neg when neg <= 0 -> []
       | 1 -> poly |> Polynomial.linear_root |> Option.to_list
+      | 2 ->
+        let calc x = Polynomial.calc poly ~x in
+        let d = poly |> Polynomial.derivative in
+        let d_roots = d |> Polynomial.linear_root |> Option.to_list in
+        d_roots
+        |> Interval.intervals_of_list
+        |> filter_intervals ~eps ~calc
+        |> List.map ~f:(BinarySearch.search ~f:calc ~eps)
+        |> List.sort ~compare:N.ascending
       | _ ->
         let calc x = Polynomial.calc poly ~x in
         poly
@@ -339,7 +371,7 @@ struct
         |> Interval.intervals_of_list
         |> filter_intervals ~eps ~calc
         |> List.map ~f:(BinarySearch.search ~f:calc ~eps)
-        |> List.sort ~compare:N.compare
+        |> List.sort ~compare:N.ascending
     ;;
   end
 
