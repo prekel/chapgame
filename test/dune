@@ -1,2 +1,6 @@
-(test
- (name chapgame))
+(library
+ (name chapgame_test)
+ (libraries core chapgame)
+ (preprocess
+  (pps ppx_jane))
+ (inline_tests))

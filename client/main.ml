@@ -7,8 +7,10 @@ let state () =
   let init =
     [%sexp
       (SF.Polynomial.of_list
-         [ SF.Monomial.create ~degree:2 ~coefficient:3.
-         ; SF.Monomial.create ~degree:1 ~coefficient:(-2.)
+         [ SF.Monomial.create ~degree:3 ~coefficient:1.
+         ; SF.Monomial.create ~degree:2 ~coefficient:(-2.)
+         ; SF.Monomial.create ~degree:1 ~coefficient:(-1.)
+         ; SF.Monomial.create ~degree:0 ~coefficient:2.
          ]
         : SF.Polynomial.t)]
     |> Sexp.to_string_hum
@@ -71,6 +73,10 @@ let component =
     ; Vdom.Node.pre [ Vdom.Node.text ab ]
     ; Vdom.Node.text
         ([%sexp (Option.(a >>= SF.Polynomial.linear_root) : float option)]
+        |> Sexp.to_string_hum)
+    ; Vdom.Node.text
+        ([%sexp
+           (Option.(a >>| SF.PolynomialEquation.roots ~eps:1e-6) : float list option)]
         |> Sexp.to_string_hum)
     ]
 ;;
