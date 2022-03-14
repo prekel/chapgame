@@ -22,7 +22,13 @@ module MakeSolver (N : sig
 end) =
 struct
   module Interval : sig
-    type t [@@deriving sexp, equal]
+    type t =
+      | Interval of N.t * N.t
+      | Neg_Infinity of N.t
+      | Pos_Infinity of N.t
+      | Infinity
+      | Empty
+    [@@deriving sexp, equal]
 
     val case
       :  interval:(left:N.t -> right:N.t -> 'a)
@@ -115,12 +121,16 @@ struct
   end
 
   module Monomial : sig
-    type t [@@deriving sexp, compare, equal]
+    type t =
+      { coefficient : N.t
+      ; degree : int
+      }
+    [@@deriving sexp, compare, equal]
 
     val degree : t -> int
     val coefficient : t -> N.t
     val create : coefficient:N.t -> degree:int -> t
-    val derivative : t -> t option
+    val derivative : t -> t
     val calc : t -> x:N.t -> N.t
     val ( + ) : t -> t -> t
 
@@ -137,10 +147,9 @@ struct
     let derivative x =
       let open N in
       match x.degree with
-      | 0 -> None
+      | 0 -> { coefficient = zero; degree = 0 }
       | _ ->
-        Some
-          { coefficient = x.coefficient * of_int x.degree; degree = Int.(x.degree - 1) }
+        { coefficient = x.coefficient * of_int x.degree; degree = Int.(x.degree - 1) }
     ;;
 
     let calc mono ~x =
@@ -163,8 +172,10 @@ struct
 
   module LinearEquation : sig
     val root : a:N.t -> b:N.t -> N.t
+    val root_opt : a:N.t -> b:N.t -> N.t option
   end = struct
     let root ~a ~b = N.(-b / a)
+    let root_opt ~a ~b = if N.(a = zero) then None else Some N.(-b / a)
   end
 
   module Polynomial : sig
@@ -179,6 +190,7 @@ struct
     val rep_ok : t -> t
   end = struct
     type t = Monomial.t list [@@deriving sexp, equal]
+    type t1 = (int, N.t, Int.comparator_witness) Map.t
 
     let normalize =
       let open Common.Fn in
@@ -195,7 +207,7 @@ struct
 
     let of_list = normalize
     let t_of_sexp = Common.Fn.(t_of_sexp >> normalize)
-    let derivative = Common.Fn.(List.filter_map ~f:Monomial.derivative >> rep_ok)
+    let derivative = List.map ~f:Monomial.derivative
 
     let calc poly ~x =
       poly |> List.map ~f:(Monomial.calc ~x) |> List.sum (module N) ~f:Fn.id
@@ -203,18 +215,45 @@ struct
 
     let degree = function
       | [] -> 0
-      | a -> List.hd_exn a |> Monomial.degree
+      | hd :: _ -> Monomial.degree hd
     ;;
 
     let linear_root =
       let open Monomial in
       function
-      | [ x1; x0 ] when degree x0 = 0 && degree x1 = 1 ->
-        let b = coefficient x0 in
-        let a = coefficient x1 in
+      | [ { coefficient = a; degree = 1 }; { coefficient = b; degree = 0 } ] ->
         Some (LinearEquation.root ~a ~b)
-      | [ x1 ] when degree x1 = 1 -> Some N.zero
+      | [ { coefficient = coefficient1; degree = 1 } ] -> Some N.zero
       | _ -> None
+    ;;
+  end
+
+  module Binary_search1 = struct
+    let two = N.(one + one)
+
+    let search ~f ~eps = function
+      | Interval.Interval (xl, xr) ->
+        let yl, yr = f xl, f xr in
+        begin
+          match N.(yl < zero, yr < zero) with
+          | true, true | false, false -> None
+          | _ ->
+            let f = if N.(yl < yr) then f else fun a -> N.(-f a) in
+            let rec search_rec (xl, xr) =
+              let xm = N.((xl + xr) / two) in
+              let ym = f xm in
+              if N.(abs ym < eps)
+              then Some xm
+              else if N.(ym < zero)
+              then search_rec (xm, xr)
+              else search_rec (xl, xm)
+            in
+            search_rec (xl, xr)
+        end
+      | Neg_Infinity xr -> assert false
+      | Pos_Infinity xl -> assert false
+      | Infinity -> assert false
+      | Empty -> assert false
     ;;
   end
 
