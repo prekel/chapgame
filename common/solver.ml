@@ -27,20 +27,11 @@ struct
           { left : N.t
           ; right : N.t
           }
-      | Neg_Infinity of { right : N.t }
-      | Pos_Infinity of { left : N.t }
+      | NegInfinity of { right : N.t }
+      | PosInfinity of { left : N.t }
       | Infinity
       | Empty
     [@@deriving sexp, equal]
-
-    val case
-      :  interval:(left:N.t -> right:N.t -> 'a)
-      -> neg_infinity:(right:N.t -> 'a)
-      -> pos_infinity:(left:N.t -> 'a)
-      -> infinity:(unit -> 'a)
-      -> empty:(unit -> 'a)
-      -> t
-      -> 'a
 
     val create : left:N.t -> right:N.t -> t
     val of_tuple : N.t * N.t -> t
@@ -59,27 +50,22 @@ struct
           { left : N.t
           ; right : N.t
           }
-      | Neg_Infinity of { right : N.t }
-      | Pos_Infinity of { left : N.t }
+      | NegInfinity of { right : N.t }
+      | PosInfinity of { left : N.t }
       | Infinity
       | Empty
     [@@deriving sexp, equal, variants]
 
-    let case ~interval ~neg_infinity ~pos_infinity ~infinity ~empty = function
-      | Interval { left; right } -> interval ~left ~right
-      | Neg_Infinity { right } -> neg_infinity ~right
-      | Pos_Infinity { left } -> pos_infinity ~left
-      | Infinity -> infinity ()
-      | Empty -> empty ()
-    ;;
+    let neg_infinity = neginfinity
+    let pos_infinity = posinfinity
 
     let create ~left:low ~right:high =
       if N.(equal low neg_infinity && equal high infinity)
       then Infinity
       else if N.(equal low neg_infinity)
-      then Neg_Infinity { right = high }
+      then NegInfinity { right = high }
       else if N.(equal high infinity)
-      then Pos_Infinity { left = low }
+      then PosInfinity { left = low }
       else if Int.(N.compare low high > 0)
       then Empty
       else Interval { left = low; right = high }
@@ -89,8 +75,8 @@ struct
 
     let to_tuple = function
       | Interval { left; right } -> Some (left, right)
-      | Neg_Infinity { right } -> Some N.(neg_infinity, right)
-      | Pos_Infinity { left } -> Some N.(left, infinity)
+      | NegInfinity { right } -> Some N.(neg_infinity, right)
+      | PosInfinity { left } -> Some N.(left, infinity)
       | Infinity -> Some N.(neg_infinity, infinity)
       | Empty -> None
     ;;
@@ -106,19 +92,19 @@ struct
 
     let difference = function
       | Interval { left; right } -> N.(abs (right - left))
-      | Neg_Infinity _ | Pos_Infinity _ | Infinity -> N.infinity
+      | NegInfinity _ | PosInfinity _ | Infinity -> N.infinity
       | Empty -> N.zero
     ;;
 
     let left_trunc = function
-      | Interval { left; right = _ } | Pos_Infinity { left } -> left
-      | Neg_Infinity _ | Infinity -> N.neg_infinity
+      | Interval { left; right = _ } | PosInfinity { left } -> left
+      | NegInfinity _ | Infinity -> N.neg_infinity
       | Empty -> N.nan
     ;;
 
     let right_trunc = function
-      | Interval { left = _; right } | Neg_Infinity { right } -> right
-      | Infinity | Pos_Infinity _ -> N.infinity
+      | Interval { left = _; right } | NegInfinity { right } -> right
+      | Infinity | PosInfinity _ -> N.infinity
       | Empty -> N.nan
     ;;
   end
@@ -137,7 +123,7 @@ struct
     val calc : t -> x:N.t -> N.t
     val ( + ) : t -> t -> t
 
-    module Comparable_by_degree : Comparable.S with type t := t
+    module ComparableByDegree : Comparable.S with type t := t
   end = struct
     type t =
       { coefficient : N.t
@@ -160,13 +146,13 @@ struct
       mono.coefficient * (x ** of_int mono.degree)
     ;;
 
-    module T_by_degree = struct
+    module TDegree = struct
       type nonrec t = t [@@deriving sexp]
 
       let compare a b = [%compare: int] a.degree b.degree
     end
 
-    module Comparable_by_degree = Core.Comparable.Make (T_by_degree)
+    module ComparableByDegree = Core.Comparable.Make (TDegree)
 
     let ( + ) a b =
       create ~coefficient:N.(coefficient a + coefficient b) ~degree:(degree a)
@@ -193,11 +179,11 @@ struct
     val rep_ok : t -> t
   end = struct
     type t = Monomial.t list [@@deriving sexp, equal]
-    type t1 = (int, N.t, Int.comparator_witness) Map.t
+    (* type t1 = (int, N.t, Int.comparator_witness) Map.t *)
 
     let normalize =
       let open Common.Fn in
-      List.sort_and_group ~compare:Monomial.Comparable_by_degree.descending
+      List.sort_and_group ~compare:Monomial.ComparableByDegree.descending
       >> List.map ~f:(List.reduce_exn ~f:Monomial.( + ))
     ;;
 
@@ -231,7 +217,7 @@ struct
     ;;
   end
 
-  module Binary_search = struct
+  module BinarySearch = struct
     let two = N.(one + one)
 
     let rec search_rec ~f ~eps (xl, xr) =
@@ -251,47 +237,39 @@ struct
     ;;
 
     let search ~f ~eps =
-      let rec search_rec ~f (xl, xr) =
+      let f = if N.(f zero < f one) then f else N.(fun x -> -f x) in
+      let rec search_rec (xl, xr) =
         let xm = N.((xl + xr) / two) in
         let ym = f xm in
         if N.(abs ym < eps)
         then Some xm
         else if N.(ym < zero)
-        then search_rec ~f (xm, xr)
-        else search_rec ~f (xl, xm)
+        then search_rec (xm, xr)
+        else search_rec (xl, xm)
       in
-      let rec increase_rec ~f ~t x k =
+      let rec increase_rec ~t x k =
         if N.(f x < zero)
-        then search_rec ~f (t ~x)
-        else increase_rec ~f ~t N.(x + k) N.(k * two)
+        then search_rec (t ~x)
+        else increase_rec ~t N.(x + k) N.(k * two)
       in
-      let make_f_pos ~yl ~yr = if N.(yl < yr) then f else fun a -> N.(-f a) in
       function
       | Interval.Interval { left = xl; right = xr } ->
-        let yl, yr = f xl, f xr in
-        if N.(Bool.equal (yl < zero) (yr < zero))
-        then None
-        else search_rec ~f:(make_f_pos ~yl ~yr) (xl, xr)
-      | Neg_Infinity { right = xr } ->
+        if Bool.(N.(f xl < zero) = N.(f xr < zero)) then None else search_rec (xl, xr)
+      | NegInfinity { right = xr } ->
         let xl1 = N.(xr - one) in
-        let f = make_f_pos ~yl:(f xl1) ~yr:(f xr) in
-        let yl1, yr = f xl1, f xr in
-        if N.(yl1 < zero && yr < zero)
+        if N.(f xl1 < zero && f xr < zero)
         then None
-        else increase_rec ~f ~t:(fun ~x -> x, xr) xl1 N.one
-      | Pos_Infinity { left = xl } ->
+        else increase_rec ~t:(fun ~x -> x, xr) xl1 N.one
+      | PosInfinity { left = xl } ->
         let xr1 = N.(xl + one) in
-        let yl, yr1 = f xl, f xr1 in
-        let f = make_f_pos ~yl ~yr:yr1 in
-        if N.(yl > zero && yr1 > zero)
+        if N.(f xl > zero && f xr1 > zero)
         then None
-        else increase_rec ~f ~t:(fun ~x -> xl, x) xr1 N.one
+        else increase_rec ~t:(fun ~x -> xl, x) xr1 N.one
       | Infinity ->
         let xl1, xr1 = N.(-one, one) in
-        let f = make_f_pos ~yl:(f xl1) ~yr:(f xr1) in
         if N.(f zero > zero)
-        then increase_rec ~f ~t:(fun ~x -> x, N.zero) xl1 N.one
-        else increase_rec ~f ~t:(fun ~x -> N.zero, x) xr1 N.one
+        then increase_rec ~t:(fun ~x -> x, N.zero) xl1 N.one
+        else increase_rec ~t:(fun ~x -> N.zero, x) xr1 N.one
       | Empty -> None
     ;;
   end
@@ -299,48 +277,17 @@ struct
   module PolynomialEquation : sig
     val roots : eps:N.t -> Polynomial.t -> N.t list
   end = struct
-    let filter_intervals
-        : eps:N.t -> calc:(N.t -> N.t) -> Interval.t list -> Interval.t list
-      =
-     fun ~eps ~calc intervals ->
-      List.filter
-        intervals
-        ~f:
-          (Interval.case
-             ~neg_infinity:(fun ~right ->
-               let a, b = calc N.(right - one), calc right in
-               not N.((a > b && b > eps) || (a < b && b < -eps)))
-             ~pos_infinity:(fun ~left ->
-               let a, b = calc left, calc N.(left + one) in
-               not N.((a > b && a < -eps) || (a < b && a > eps)))
-             ~interval:(fun ~left ~right ->
-               let a, b = calc left, calc right in
-               not N.(Sign.(sign_exn a * sign_exn b = Pos) && abs (a * b) >= eps))
-             ~infinity:(fun () -> false)
-             ~empty:(fun () -> false))
-   ;;
-
     let rec roots ~eps poly =
       match Polynomial.degree poly with
       | neg when neg <= 0 -> []
       | 1 -> poly |> Polynomial.linear_root |> Option.to_list
-      | 2 ->
-        let calc x = Polynomial.calc poly ~x in
-        let d = poly |> Polynomial.derivative in
-        let d_roots = d |> Polynomial.linear_root |> Option.to_list in
-        d_roots
-        |> Interval.intervals_of_list
-        |> filter_intervals ~eps ~calc
-        |> List.map ~f:(BinarySearch.search ~f:calc ~eps)
-        |> List.sort ~compare:N.ascending
       | _ ->
         let calc x = Polynomial.calc poly ~x in
         poly
         |> Polynomial.derivative
         |> roots ~eps
         |> Interval.intervals_of_list
-        |> filter_intervals ~eps ~calc
-        |> List.map ~f:(BinarySearch.search ~f:calc ~eps)
+        |> List.filter_map ~f:(BinarySearch.search ~f:calc ~eps)
         |> List.sort ~compare:N.ascending
     ;;
   end
@@ -352,6 +299,7 @@ struct
     let _ = N.(one) in
     let _ = N.(nan) in
     let _ = N.( * ) in
+    let _ = N.(sign_exn) in
     ()
   ;;
 end
