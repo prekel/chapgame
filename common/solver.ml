@@ -23,9 +23,12 @@ end) =
 struct
   module Interval : sig
     type t =
-      | Interval of N.t * N.t
-      | Neg_Infinity of N.t
-      | Pos_Infinity of N.t
+      | Interval of
+          { left : N.t
+          ; right : N.t
+          }
+      | Neg_Infinity of { right : N.t }
+      | Pos_Infinity of { left : N.t }
       | Infinity
       | Empty
     [@@deriving sexp, equal]
@@ -52,20 +55,20 @@ struct
     val right_trunc : t -> N.t
   end = struct
     type t =
-      | Interval of N.t * N.t
-      | Neg_Infinity of N.t
-      | Pos_Infinity of N.t
+      | Interval of
+          { left : N.t
+          ; right : N.t
+          }
+      | Neg_Infinity of { right : N.t }
+      | Pos_Infinity of { left : N.t }
       | Infinity
       | Empty
     [@@deriving sexp, equal, variants]
 
-    let neg_infinity ~right = neg_infinity right
-    let pos_infinity ~left = pos_infinity left
-
     let case ~interval ~neg_infinity ~pos_infinity ~infinity ~empty = function
-      | Interval (left, right) -> interval ~left ~right
-      | Neg_Infinity right -> neg_infinity ~right
-      | Pos_Infinity left -> pos_infinity ~left
+      | Interval { left; right } -> interval ~left ~right
+      | Neg_Infinity { right } -> neg_infinity ~right
+      | Pos_Infinity { left } -> pos_infinity ~left
       | Infinity -> infinity ()
       | Empty -> empty ()
     ;;
@@ -74,20 +77,20 @@ struct
       if N.(equal low neg_infinity && equal high infinity)
       then Infinity
       else if N.(equal low neg_infinity)
-      then Neg_Infinity high
+      then Neg_Infinity { right = high }
       else if N.(equal high infinity)
-      then Pos_Infinity low
+      then Pos_Infinity { left = low }
       else if Int.(N.compare low high > 0)
       then Empty
-      else Interval (low, high)
+      else Interval { left = low; right = high }
     ;;
 
     let of_tuple (left, right) = create ~left ~right
 
     let to_tuple = function
-      | Interval (l, r) -> Some (l, r)
-      | Neg_Infinity r -> Some N.(neg_infinity, r)
-      | Pos_Infinity l -> Some N.(l, infinity)
+      | Interval { left; right } -> Some (left, right)
+      | Neg_Infinity { right } -> Some N.(neg_infinity, right)
+      | Pos_Infinity { left } -> Some N.(left, infinity)
       | Infinity -> Some N.(neg_infinity, infinity)
       | Empty -> None
     ;;
@@ -102,19 +105,19 @@ struct
     ;;
 
     let difference = function
-      | Interval (l, r) -> N.(abs (r - l))
+      | Interval { left; right } -> N.(abs (right - left))
       | Neg_Infinity _ | Pos_Infinity _ | Infinity -> N.infinity
       | Empty -> N.zero
     ;;
 
     let left_trunc = function
-      | Interval (left, _) | Pos_Infinity left -> left
+      | Interval { left; right = _ } | Pos_Infinity { left } -> left
       | Neg_Infinity _ | Infinity -> N.neg_infinity
       | Empty -> N.nan
     ;;
 
     let right_trunc = function
-      | Interval (_, right) | Neg_Infinity right -> right
+      | Interval { left = _; right } | Neg_Infinity { right } -> right
       | Infinity | Pos_Infinity _ -> N.infinity
       | Empty -> N.nan
     ;;
@@ -223,7 +226,7 @@ struct
       function
       | [ { coefficient = a; degree = 1 }; { coefficient = b; degree = 0 } ] ->
         Some (LinearEquation.root ~a ~b)
-      | [ { coefficient = coefficient1; degree = 1 } ] -> Some N.zero
+      | [ { coefficient = _; degree = 1 } ] -> Some N.zero
       | _ -> None
     ;;
   end
@@ -231,29 +234,65 @@ struct
   module Binary_search1 = struct
     let two = N.(one + one)
 
-    let search ~f ~eps = function
-      | Interval.Interval (xl, xr) ->
+    let rec search_rec ~f ~eps (xl, xr) =
+      let xm = N.((xl + xr) / two) in
+      let ym = f xm in
+      if N.(abs ym < eps)
+      then Some xm
+      else if N.(ym < zero)
+      then search_rec ~f ~eps (xm, xr)
+      else search_rec ~f ~eps (xl, xm)
+    ;;
+
+    let rec increase_rec ~f ~eps ~t x k =
+      if N.(f x < zero)
+      then search_rec ~f ~eps (t ~x)
+      else increase_rec ~f ~eps ~t N.(x + k) N.(k * two)
+    ;;
+
+    let search ~f ~eps =
+      let rec search_rec ~f (xl, xr) =
+        let xm = N.((xl + xr) / two) in
+        let ym = f xm in
+        if N.(abs ym < eps)
+        then Some xm
+        else if N.(ym < zero)
+        then search_rec ~f (xm, xr)
+        else search_rec ~f (xl, xm)
+      in
+      let rec increase_rec ~f ~t x k =
+        if N.(f x < zero)
+        then search_rec ~f (t ~x)
+        else increase_rec ~f ~t N.(x + k) N.(k * two)
+      in
+      let make_f_pos ~yl ~yr = if N.(yl < yr) then f else fun a -> N.(-f a) in
+      function
+      | Interval.Interval { left = xl; right = xr } ->
         let yl, yr = f xl, f xr in
-        begin
-          match N.(yl < zero, yr < zero) with
-          | true, true | false, false -> None
-          | _ ->
-            let f = if N.(yl < yr) then f else fun a -> N.(-f a) in
-            let rec search_rec (xl, xr) =
-              let xm = N.((xl + xr) / two) in
-              let ym = f xm in
-              if N.(abs ym < eps)
-              then Some xm
-              else if N.(ym < zero)
-              then search_rec (xm, xr)
-              else search_rec (xl, xm)
-            in
-            search_rec (xl, xr)
-        end
-      | Neg_Infinity xr -> assert false
-      | Pos_Infinity xl -> assert false
-      | Infinity -> assert false
-      | Empty -> assert false
+        if N.(Bool.equal (yl < zero) (yr < zero))
+        then None
+        else search_rec ~f:(make_f_pos ~yl ~yr) (xl, xr)
+      | Neg_Infinity { right = xr } ->
+        let xl1 = N.(xr - one) in
+        let f = make_f_pos ~yl:(f xl1) ~yr:(f xr) in
+        let yl1, yr = f xl1, f xr in
+        if N.(yl1 < zero && yr < zero)
+        then None
+        else increase_rec ~f ~t:(fun ~x -> x, xr) xl1 N.one
+      | Pos_Infinity { left = xl } ->
+        let xr1 = N.(xl + one) in
+        let yl, yr1 = f xl, f xr1 in
+        let f = make_f_pos ~yl ~yr:yr1 in
+        if N.(yl > zero && yr1 > zero)
+        then None
+        else increase_rec ~f ~t:(fun ~x -> xl, x) xr1 N.one
+      | Infinity ->
+        let xl1, xr1 = N.(-one, one) in
+        let f = make_f_pos ~yl:(f xl1) ~yr:(f xr1) in
+        if N.(f zero > zero)
+        then increase_rec ~f ~t:(fun ~x -> x, N.zero) xl1 N.one
+        else increase_rec ~f ~t:(fun ~x -> N.zero, x) xr1 N.one
+      | Empty -> None
     ;;
   end
 
