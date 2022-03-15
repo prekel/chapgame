@@ -231,7 +231,7 @@ struct
     ;;
   end
 
-  module Binary_search1 = struct
+  module Binary_search = struct
     let two = N.(one + one)
 
     let rec search_rec ~f ~eps (xl, xr) =
@@ -293,114 +293,6 @@ struct
         then increase_rec ~f ~t:(fun ~x -> x, N.zero) xl1 N.one
         else increase_rec ~f ~t:(fun ~x -> N.zero, x) xr1 N.one
       | Empty -> None
-    ;;
-  end
-
-  module BinarySearch = struct
-    let median =
-      Interval.case
-        ~infinity:(fun () -> N.zero)
-        ~neg_infinity:(fun ~right -> N.(right - one))
-        ~pos_infinity:(fun ~left -> N.(left + one))
-        ~interval:(fun ~left ~right -> N.((left + right) / (one + one)))
-        ~empty:(fun () -> N.zero)
-    ;;
-
-    let search ~f ~eps interval =
-      let global_median = median interval in
-      (* TODO *)
-      if N.(equal global_median (-one)) then ();
-      let ends_difference =
-        Interval.case
-          ~infinity:(fun () -> N.(f one - f (-one)))
-          ~neg_infinity:(fun ~right -> N.(f right - f global_median))
-          ~pos_infinity:(fun ~left -> N.(f global_median - f left))
-          ~interval:(fun ~left ~right -> N.(f right - f left))
-          ~empty:(fun () -> N.zero)
-          interval
-      in
-      let sign =
-        if N.(ends_difference > zero)
-        then `Is_positive
-        else if N.(ends_difference < zero)
-        then `Is_negative
-        else (* TODO *) `Is_positive
-      in
-      let comparer =
-        match sign with
-        | `Is_positive -> N.( > )
-        | `Is_negative -> N.( < )
-      in
-      let is_interval_value_less_eps =
-        match Interval.to_tuple interval with
-        | Some (left, _) when N.(abs (f left) < eps) -> Some left
-        | Some (_, right) when N.(abs (f right) < eps) -> Some right
-        | _ -> None
-      in
-      let increase_interval ~f interval =
-        let increase k rl cnd =
-          let rec increase_rec cnt k =
-            if cnt > 1000
-            then
-              Error.raise_s
-                [%message
-                  "loop"
-                    ~interval:(interval : Interval.t)
-                    ~rl:(rl : N.t)
-                    ~cnt:(cnt : int)
-                    ~k:(k : N.t)]
-            else (
-              let rl1 = N.(rl + k) in
-              if cnd (f rl1) then rl1 else increase_rec (cnt + 1) N.(k * (one + one)))
-          in
-          let t = increase_rec 0 k in
-          if N.(equal infinity t) then (* TODO *)
-                                    assert false else t
-        in
-        let lt_zero a = N.(zero > a) in
-        let gt_zero a = N.(zero < a) in
-        let res =
-          Interval.case
-            ~infinity:(fun () ->
-              match sign, N.zero |> f |> N.sign_exn with
-              | `Is_positive, (Pos | Zero) -> increase N.(-one) N.zero lt_zero, N.zero
-              | `Is_negative, (Pos | Zero) -> N.zero, increase N.(one) N.zero lt_zero
-              | `Is_positive, Neg -> N.zero, increase N.(one) N.zero gt_zero
-              | `Is_negative, Neg -> increase N.(-one) N.zero gt_zero, N.zero)
-            ~neg_infinity:(fun ~right ->
-              match sign with
-              | `Is_positive -> increase N.(-one) right lt_zero, right
-              | `Is_negative -> increase N.(-one) right gt_zero, right)
-            ~pos_infinity:(fun ~left ->
-              match sign with
-              | `Is_positive -> left, increase N.(one) left gt_zero
-              | `Is_negative -> left, increase N.(one) left lt_zero)
-            ~interval:(fun ~left ~right -> left, right)
-            ~empty:(fun () -> N.(one, zero))
-            interval
-        in
-        Interval.of_tuple res
-      in
-      let increased_interval = increase_interval ~f interval in
-      let rec rec_search cnt interval =
-        if cnt > 100
-        then failwith "loop"
-        else (
-          let local_median = median interval in
-          let median_value = f local_median in
-          if N.(Interval.difference interval < eps)
-          then local_median
-          else if comparer median_value N.zero
-          then
-            rec_search (cnt + 1)
-            @@ Interval.create ~left:(Interval.left_trunc interval) ~right:local_median
-          else
-            rec_search (cnt + 1)
-            @@ Interval.create ~left:local_median ~right:(Interval.right_trunc interval))
-      in
-      match is_interval_value_less_eps with
-      | Some x -> x
-      | None -> rec_search 0 increased_interval
     ;;
   end
 
