@@ -170,22 +170,18 @@ struct
   module Polynomial : sig
     type t [@@deriving sexp, equal]
 
-    val normalize : t -> t
     val of_list : Monomial.t list -> t
-    val derivative : t -> t
-    val calc : t -> x:N.t -> N.t
-    val degree : t -> int
-    val linear_root : t -> N.t option
-    val rep_ok : t -> t
-  end = struct
-    type t = Monomial.t list [@@deriving sexp, equal]
-    (* type t1 = (int, N.t, Int.comparator_witness) Map.t *)
 
-    let normalize =
-      let open Common.Fn in
-      List.sort_and_group ~compare:Monomial.ComparableByDegree.descending
-      >> List.map ~f:(List.reduce_exn ~f:Monomial.( + ))
-    ;;
+    (* val derivative : t -> t *)
+    (* val calc : t -> x:N.t -> N.t *)
+    val degree : t -> int
+    (* val linear_root : t -> N.t option val rep_ok : t -> t *)
+  end = struct
+    type t = (int, N.t, Int.comparator_witness) Map.t
+
+    let equal = assert false
+    let t_of_sexp = assert false
+    let sexp_of_t = assert false
 
     let rep_ok p =
       let normalized = normalize p in
@@ -195,16 +191,23 @@ struct
     ;;
 
     let of_list = normalize
-    let t_of_sexp = Common.Fn.(t_of_sexp >> normalize)
-    let derivative = List.map ~f:Monomial.derivative
+
+    let derivative p =
+      Map.mapi p ~f:(fun ~key:degree ~data:coefficient ->
+          match degree with
+          | 0 -> None
+          | _ -> Some N.(coefficient * of_int degree))
+      |> Map.map_keys_exn (module Int) ~f:(fun a -> a - 1)
+    ;;
 
     let calc poly ~x =
       poly |> List.map ~f:(Monomial.calc ~x) |> List.sum (module N) ~f:Fn.id
     ;;
 
-    let degree = function
-      | [] -> 0
-      | hd :: _ -> Monomial.degree hd
+    let degree p =
+      match Map.max_elt p with
+      | Some (deg, _) -> deg
+      | None -> 0
     ;;
 
     let linear_root =
