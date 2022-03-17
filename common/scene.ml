@@ -13,8 +13,8 @@ module Figure = struct
     type t
   end
 
-  module MetrePerSec = struct
-    type t
+  module Velocity = struct
+    type t = M of float * float
   end
 
   module Newton = struct
@@ -34,9 +34,9 @@ module Figure = struct
 
   type t =
     { id : Id.t
-    ; mass : Kg.t
-    ; velocity : MetrePerSec.t Vec.t option
-    ; force : Force.t
+    ; m : Kg.t
+    ; v0 : Velocity.t option
+    ; f : Force.t
     ; r : Metre.t
     ; x : Metre.t
     ; y : Metre.t
@@ -45,19 +45,41 @@ module Figure = struct
   let collision : t -> t -> float = assert false
 end
 
-module Scene = struct
+module Figure2 = struct
+  module Formula = struct
+    module CoefficientVar = struct
+      type t = A
+    end
+
+    type t = (int, float * CoefficientVar.t, Int.comparator_witness) Map.t
+  end
+
   type t =
-    { time : float
-    ; figures : (Figure.Id.t, Figure.t, unit) Map.t
+    { id : int
+    ; x : Formula.t
     }
+end
+
+module Scene = struct
+  type t = { figures : (Figure.Id.t, Figure.t, unit) Map.t }
 end
 
 module Events = struct
   type t =
     | Init of (Figure.Id.t, Figure.t, unit) Map.t
-    | BodiesMoved 
+    | BodiesMoved
 end
 
-module Actions = struct
-  type t = GiveVelocity of Figure.Id.t * Figure.MetrePerSec.t
+module Action = struct
+  type t = GiveVelocity of Time_ns.Span.t * Figure.Id.t * Figure.Velocity.t Figure.Vec.t
+end
+
+module Model = struct
+  type t = (Time_ns.Span.t, Scene.t, Time_ns.Span.comparator_witness) Map.t
+
+  let e () : t = Map.empty (module Time_ns.Span)
+end
+
+module Engine = struct
+  let recv model action = model, assert false
 end
