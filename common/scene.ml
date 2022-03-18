@@ -199,7 +199,6 @@ module Figure2 = struct
         | Monomial : scalar * scalar t -> monomial t
         | Polynomial : (int, monomial t, Int.comparator_witness) Map.t -> polynomial t
 
-      
       let _ =
         Polynomial (Map.of_alist_exn (module Int) [ 1, Monomial (-2., ScalarVar "x0") ])
       ;;
@@ -220,6 +219,14 @@ module Figure2 = struct
 
         let ( + ) (x1, y1) (x2, y2) = x1 + x2, y1 + y2
         let ( ~- ) (x, y) = -x, -y
+      end
+
+      module FP : ScalarVec = struct
+        type t = polynomial
+
+        let ( + ) = Map.merge_skewed ~combine:(fun ~key:_ a b -> Float.(a + b))
+        let ( ~- ) = Map.map ~f:(fun v -> Float.(-v))
+        (* let ( * ) a b = Map.map a ~f:(fun v1 -> Map.map b ~f:(fun v2 -> v1 * v2))  *)
       end
 
       let rec calc
@@ -249,6 +256,39 @@ module Figure2 = struct
           Float.(c * q)
         | Polynomial map ->
           Map.map map ~f:(fun m -> calc scalar_values vector_values (module Float) m)
+     ;;
+
+      let rec calc
+          : type result.
+            scalar_values
+            -> vector_values
+            -> (module ScalarVec with type t = result)
+            -> result t
+            -> unit
+            -> result
+        =
+       fun scalar_values vector_values (module ScalarVec) ->
+        let open ScalarVec in
+        function
+        | ScalarVar name -> fun () -> Map.find_exn scalar_values name
+        | VectorVar name -> fun () -> Map.find_exn vector_values name
+        | Sum (a, b) ->
+          fun () ->
+            let calc = calc scalar_values vector_values (module ScalarVec) in
+            let ca = calc a () in
+            let cb = calc b () in
+            ca + cb
+        | Inv _ -> assert false
+        | XOfVector _ -> assert false
+        | YOfVector _ -> assert false
+        | LengthOfVector _ -> assert false
+        | Monomial (c, v) ->
+          fun () ->
+            let q = calc scalar_values vector_values (module Float) v () in
+            Float.(c * q)
+        | Polynomial map ->
+          fun () ->
+            Map.map map ~f:(fun m -> calc scalar_values vector_values (module Float) m ())
      ;;
     end
 
