@@ -113,51 +113,22 @@ module Figure2 = struct
           let x, y = calc u e in
           Float.(-x, -y)
         | Fix (i, f1, f2) -> f2 @@ calc (f1 u) i
+        | _ -> assert false
      ;;
 
-      (* let rec calcmap
-          : type underlying result.
-            (string, underlying, String.comparator_witness) Map.t
-            -> (underlying, result) t
-            -> result
-        =
-       fun u -> function
-        | ScalarConst (_, c) -> c
-        | VectorConst (_, c1, c2) -> c1, c2
-        | Scalar name -> Map.find_exn u name
-        | Vector name -> Map.find_exn u name
-        | VecOfScalars (l, r) ->
-          let ul, ur = u, u in
-          calcmap ul l, calc ur r
-        | Sum (l, r) ->
-          let ul, ur = u, u in
-          Float.(calc ul l + calc ur r)
-        | Mult (l, r) ->
-          let ul, ur = u, u in
-          Float.(calc ul l * calc ur r)
-        | VecX e ->
-          let x, _y = calc u e in
-          x
-        | VecY e ->
-          let _, y = calc u e in
-          y
-        | VecLen e ->
-          let x, y = calc u e in
-          Float.(sqrt ((x ** 2.) + (y ** 2.)))
-        | VecNormalized e ->
-          let x, y = calc u e in
-          let len = Float.(sqrt ((x ** 2.) + (y ** 2.))) in
-          Float.(x / len, y / len)
-        | VecMultScalar (a, b) ->
-          let ul, ur = u in
-          let x, y = calc ul a in
-          let z = calc ur b in
-          Float.(x * z, y * z)
-        | VecInverted e ->
-          let x, y = calc u e in
-          Float.(-x, -y)
-        | Fix (i, f1, f2) -> f2 @@ calc (f1 u) i
-     ;; *)
+      (* let rec calcmap : type underlying result. (string, underlying,
+         String.comparator_witness) Map.t -> (underlying, result) t -> result = fun u ->
+         function | ScalarConst (_, c) -> c | VectorConst (_, c1, c2) -> c1, c2 | Scalar
+         name -> Map.find_exn u name | Vector name -> Map.find_exn u name | VecOfScalars
+         (l, r) -> let ul, ur = u, u in calcmap ul l, calc ur r | Sum (l, r) -> let ul, ur
+         = u, u in Float.(calc ul l + calc ur r) | Mult (l, r) -> let ul, ur = u, u in
+         Float.(calc ul l * calc ur r) | VecX e -> let x, _y = calc u e in x | VecY e ->
+         let _, y = calc u e in y | VecLen e -> let x, y = calc u e in Float.(sqrt ((x **
+         2.) + (y ** 2.))) | VecNormalized e -> let x, y = calc u e in let len =
+         Float.(sqrt ((x ** 2.) + (y ** 2.))) in Float.(x / len, y / len) | VecMultScalar
+         (a, b) -> let ul, ur = u in let x, y = calc ul a in let z = calc ur b in Float.(x
+         * z, y * z) | VecInverted e -> let x, y = calc u e in Float.(-x, -y) | Fix (i,
+         f1, f2) -> f2 @@ calc (f1 u) i ;; *)
 
       module Infix = struct
         let ( + ) a b = Sum (a, b)
@@ -205,6 +176,80 @@ module Figure2 = struct
       type t =
         | Scalar
         | Vector
+    end
+
+    module Expr = struct
+      type scalar_key = string
+      type vector_key = string
+      type scalar_values = (scalar_key, float, String.comparator_witness) Map.t
+      type vector_values = (vector_key, float * float, String.comparator_witness) Map.t
+      type scalar = float
+      type vector = float * float
+      type monomial = scalar
+      type polynomial = (int, monomial, Int.comparator_witness) Map.t
+
+      type _ t =
+        | ScalarVar : scalar_key -> scalar t
+        | VectorVar : vector_key -> vector t
+        | Sum : 'a t * 'a t -> 'a t
+        | Inv : 'a t -> 'a t
+        | XOfVector : vector t -> scalar t
+        | YOfVector : vector t -> scalar t
+        | LengthOfVector : vector t -> scalar t
+        | Monomial : scalar * scalar t -> monomial t
+        | Polynomial : (int, monomial t, Int.comparator_witness) Map.t -> polynomial t
+
+      
+      let _ =
+        Polynomial (Map.of_alist_exn (module Int) [ 1, Monomial (-2., ScalarVar "x0") ])
+      ;;
+
+      module type ScalarVec = sig
+        type t
+
+        val ( + ) : t -> t -> t
+        val ( ~- ) : t -> t
+      end
+
+      module FS : ScalarVec = Float
+
+      module FV : ScalarVec = struct
+        open Float
+
+        type t = float * float
+
+        let ( + ) (x1, y1) (x2, y2) = x1 + x2, y1 + y2
+        let ( ~- ) (x, y) = -x, -y
+      end
+
+      let rec calc
+          : type result.
+            scalar_values
+            -> vector_values
+            -> (module ScalarVec with type t = result)
+            -> result t
+            -> result
+        =
+       fun scalar_values vector_values (module ScalarVec) ->
+        let open ScalarVec in
+        function
+        | ScalarVar name -> Map.find_exn scalar_values name
+        | VectorVar name -> Map.find_exn vector_values name
+        | Sum (a, b) ->
+          let calc = calc scalar_values vector_values (module ScalarVec) in
+          let ca = calc a in
+          let cb = calc b in
+          ca + cb
+        | Inv _ -> assert false
+        | XOfVector _ -> assert false
+        | YOfVector _ -> assert false
+        | LengthOfVector _ -> assert false
+        | Monomial (c, v) ->
+          let q = calc scalar_values vector_values (module Float) v in
+          Float.(c * q)
+        | Polynomial map ->
+          Map.map map ~f:(fun m -> calc scalar_values vector_values (module Float) m)
+     ;;
     end
 
     type t = (int, float, Int.comparator_witness) Map.t
