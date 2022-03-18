@@ -1,26 +1,6 @@
 open Core
 
-module MakeSolver (N : sig
-  type t [@@deriving sexp, compare, equal]
-
-  include Comparable.S with type t := t
-
-  val ( ~- ) : t -> t
-  val ( + ) : t -> t -> t
-  val ( - ) : t -> t -> t
-  val ( * ) : t -> t -> t
-  val ( / ) : t -> t -> t
-  val ( ** ) : t -> t -> t
-  val zero : t
-  val one : t
-  val of_int : int -> t
-  val infinity : t
-  val nan : t
-  val neg_infinity : t
-  val abs : t -> t
-  val sign_exn : t -> Sign.t
-end) =
-struct
+module MakeSolver (N : Module_types.Number) = struct
   module Interval : sig
     type t =
       | Interval of
@@ -159,41 +139,25 @@ struct
     ;;
   end
 
-  module LinearEquation : sig
-    val root : a:N.t -> b:N.t -> N.t
-    val root_opt : a:N.t -> b:N.t -> N.t option
-  end = struct
-    let root ~a ~b = N.(-b / a)
-    let root_opt ~a ~b = if N.(a = zero) then None else Some N.(-b / a)
-  end
-
   module Polynomial : sig
     type t [@@deriving sexp, equal]
 
-    val of_list : Monomial.t list -> t
-
-    (* val derivative : t -> t *)
-    (* val calc : t -> x:N.t -> N.t *)
+    val of_list : (int * N.t) list -> t
+    val derivative : t -> t
+    val calc : t -> x:N.t -> N.t
     val degree : t -> int
-    (* val linear_root : t -> N.t option val rep_ok : t -> t *)
+    val to_map : t -> (int, N.t, Int.comparator_witness) Map.t
+    val of_map : (int, N.t, Int.comparator_witness) Map.t -> t
   end = struct
     type t = (int, N.t, Int.comparator_witness) Map.t
 
     let equal = assert false
     let t_of_sexp = assert false
     let sexp_of_t = assert false
-
-    let rep_ok p =
-      let normalized = normalize p in
-      if equal normalized p
-      then p
-      else Error.raise_s [%message "RI violated" ~p:(p : t) ~normalized:(normalized : t)]
-    ;;
-
-    let of_list = normalize
+    let of_list = Map.of_alist_exn (module Int)
 
     let derivative p =
-      Map.mapi p ~f:(fun ~key:degree ~data:coefficient ->
+      Map.filter_mapi p ~f:(fun ~key:degree ~data:coefficient ->
           match degree with
           | 0 -> None
           | _ -> Some N.(coefficient * of_int degree))
@@ -201,7 +165,8 @@ struct
     ;;
 
     let calc poly ~x =
-      poly |> List.map ~f:(Monomial.calc ~x) |> List.sum (module N) ~f:Fn.id
+      Map.fold poly ~init:N.zero ~f:(fun ~key:degree ~data:coef acc ->
+          N.(acc + (coef * (x ** of_int degree))))
     ;;
 
     let degree p =
@@ -210,13 +175,24 @@ struct
       | None -> 0
     ;;
 
-    let linear_root =
-      let open Monomial in
-      function
-      | [ { coefficient = a; degree = 1 }; { coefficient = b; degree = 0 } ] ->
-        Some (LinearEquation.root ~a ~b)
-      | [ { coefficient = _; degree = 1 } ] -> Some N.zero
-      | _ -> None
+    let to_map = Fn.id
+    let of_map = Fn.id
+  end
+
+  module LinearEquation : sig
+    val root : a:N.t -> b:N.t -> N.t
+    val root_opt : a:N.t -> b:N.t -> N.t option
+    val root_poly : Polynomial.t -> N.t option
+  end = struct
+    let root ~a ~b = N.(-b / a)
+    let root_opt ~a ~b = if N.(a = zero) then None else Some N.(-b / a)
+
+    let root_poly poly =
+      let poly = Polynomial.to_map poly in
+      match Map.find poly 1, Map.find poly 0 with
+      | Some a, Some b -> Some (root ~a ~b)
+      | Some a, None -> Some (root ~a ~b:N.zero)
+      | _, _ -> None
     ;;
   end
 
@@ -283,7 +259,7 @@ struct
     let rec roots ~eps poly =
       match Polynomial.degree poly with
       | neg when neg <= 0 -> []
-      | 1 -> poly |> Polynomial.linear_root |> Option.to_list
+      | 1 -> poly |> LinearEquation.root_poly |> Option.to_list
       | _ ->
         let calc x = Polynomial.calc poly ~x in
         poly
