@@ -19,4 +19,5 @@ module type Number = sig
   val neg_infinity : t
   val abs : t -> t
   val sign_exn : t -> Sign.t
+  val sqrt : t -> t 
 end

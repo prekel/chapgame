@@ -176,7 +176,7 @@ module MakeSolver (N : Module_types.Number) = struct
     ;;
 
     let to_map = Fn.id
-    let of_map = Fn.id
+    let of_map = Fn.id Sys.opaque_identity
   end
 
   module LinearEquation : sig
