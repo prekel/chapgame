@@ -192,6 +192,7 @@ module Figure2 = struct
         | ScalarVar : scalar_key -> scalar t
         | VectorVar : vector_key -> vector t
         | Sum : 'a t * 'a t -> 'a t
+        | Mult : 'a t * 'a t -> 'a t
         | Inv : 'a t -> 'a t
         | XOfVector : vector t -> scalar t
         | YOfVector : vector t -> scalar t
@@ -226,7 +227,19 @@ module Figure2 = struct
 
         let ( + ) = Map.merge_skewed ~combine:(fun ~key:_ a b -> Float.(a + b))
         let ( ~- ) = Map.map ~f:(fun v -> Float.(-v))
-        (* let ( * ) a b = Map.map a ~f:(fun v1 -> Map.map b ~f:(fun v2 -> v1 * v2))  *)
+
+        (* let ( * ) a b = Map.map a ~f:(fun v1 -> Map.map b ~f:(fun v2 -> v1 * v2)) *)
+        let ( * ) a b =
+          Map.fold
+            a
+            ~init:(Map.empty (module Int))
+            ~f:(fun ~key:degree1 ~data:coef1 acc ->
+              Map.merge_skewed
+                acc
+                (Map.map b ~f:(fun coef2 -> Float.(coef1 * coef2))
+                |> Map.map_keys_exn (module Int) ~f:(fun degree2 -> degree1 * degree2))
+                ~combine:(fun ~key:_ v1 v2 -> Float.(v1 + v2)))
+        ;;
       end
 
       let rec calc
@@ -247,6 +260,7 @@ module Figure2 = struct
           let ca = calc a in
           let cb = calc b in
           ca + cb
+        | Mult _ -> assert false
         | Inv _ -> assert false
         | XOfVector _ -> assert false
         | YOfVector _ -> assert false
@@ -258,38 +272,33 @@ module Figure2 = struct
           Map.map map ~f:(fun m -> calc scalar_values vector_values (module Float) m)
      ;;
 
-      let rec calc
-          : type result.
-            scalar_values
-            -> vector_values
-            -> (module ScalarVec with type t = result)
-            -> result t
-            -> unit
-            -> result
-        =
-       fun scalar_values vector_values (module ScalarVec) ->
-        let open ScalarVec in
-        function
-        | ScalarVar name -> fun () -> Map.find_exn scalar_values name
-        | VectorVar name -> fun () -> Map.find_exn vector_values name
-        | Sum (a, b) ->
-          fun () ->
-            let calc = calc scalar_values vector_values (module ScalarVec) in
-            let ca = calc a () in
-            let cb = calc b () in
-            ca + cb
-        | Inv _ -> assert false
-        | XOfVector _ -> assert false
-        | YOfVector _ -> assert false
-        | LengthOfVector _ -> assert false
-        | Monomial (c, v) ->
-          fun () ->
-            let q = calc scalar_values vector_values (module Float) v () in
-            Float.(c * q)
-        | Polynomial map ->
-          fun () ->
-            Map.map map ~f:(fun m -> calc scalar_values vector_values (module Float) m ())
-     ;;
+      module Sample = struct
+        let a_vec = VectorVar "a_vec"
+        let a_x = XOfVector a_vec
+        let a_y = YOfVector a_vec
+        let v0_vec = VectorVar "v0_vec"
+        let v0_x = XOfVector v0_vec
+        let v0_y = YOfVector v0_vec
+        let x0 = ScalarVar "x0"
+        let y0 = ScalarVar "y0"
+
+        let x =
+          Polynomial
+            (Map.of_alist_exn
+               (module Int)
+               [ 0, Monomial (1., x0); 1, Monomial (1., v0_x); 2, Monomial (0.5, a_x) ])
+        ;;
+
+        let y =
+          Polynomial
+            (Map.of_alist_exn
+               (module Int)
+               [ 0, Monomial (1., y0); 1, Monomial (1., v0_y); 2, Monomial (0.5, a_y) ])
+        ;;
+
+        let r = ScalarVar "r"
+        let xxyy = Sum (Mult (x, x), Mult (y, y))
+      end
     end
 
     type t = (int, float, Int.comparator_witness) Map.t
