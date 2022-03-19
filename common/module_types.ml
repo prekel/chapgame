@@ -19,5 +19,13 @@ module type Number = sig
   val neg_infinity : t
   val abs : t -> t
   val sign_exn : t -> Sign.t
-  val sqrt : t -> t 
+  val sqrt : t -> t
+
+  val to_string_hum
+    :  ?delimiter:char
+    -> ?decimals:int
+    -> ?strip_zero:bool
+    -> ?explicit_plus:bool
+    -> t
+    -> string
 end

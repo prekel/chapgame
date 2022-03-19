@@ -26,6 +26,7 @@ let polynomial_and_roots ~poly ~eps =
     Node.div
       [ Node.pre
           [ Node.text (Sexp.to_string_hum ~indent:2 [%sexp (poly : SF.Polynomial.t)]) ]
+      ; Node.text (SF.Polynomial.to_string_hum poly)
       ; Node.pre
           [ Node.text (Sexp.to_string_hum ~indent:2 [%sexp (roots : float list option)]) ]
       ; Node.br ()
@@ -44,6 +45,19 @@ let box () =
             (Vdom.Attr.many
                [ Vdom.Attr.on_input (fun _ -> set_state); Vdom.Attr.value_prop state ])
           [ Vdom.Node.text state ]
+      ; Vdom.Node.button
+          ~attr:
+            (Vdom.Attr.on_click (fun _ ->
+                 set_state {|((0 60) (1 43) (2 -21) (3 -3) (4 1))|}))
+          [ Vdom.Node.text "-4 -1 3 5" ]
+      ; Vdom.Node.button
+          ~attr:
+            (Vdom.Attr.on_click (fun _ ->
+                 set_state {|((0 -24) (1 2) (2 17) (3 -8) (4 1))|}))
+          [ Vdom.Node.text "-1 2 3 4" ]
+      ; Vdom.Node.button
+          ~attr:(Vdom.Attr.on_click (fun _ -> set_state {|((0 2) (1 -1) (2 -2) (3 1))|}))
+          [ Vdom.Node.text "-1 1 2" ]
         (* ; Vdom.Node.pre [ Vdom.Node.code [ Vdom.Node.text state ] ] *)
         (* ; Vdom.Node.button ~attr: (Vdom.Attr.on_click (fun _ -> set_state
            (Sexp.of_string state |> Sexp.to_string_hum ~indent:2))) [ Vdom.Node.text

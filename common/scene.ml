@@ -73,6 +73,7 @@ module Make (N : Module_types.Number) = struct
           | VectorVar : vector_key -> ('scope, vector) t
           | Sum : ('scope, 'a) t * ('scope, 'a) t -> ('scope, 'a) t
           | Sub : ('scope, 'a) t * ('scope, 'a) t -> ('scope, 'a) t
+          | Sqr : ('scope, 'a) t -> ('scope, 'a) t
           | Mult : ('scope, 'a) t * ('scope, 'a) t -> ('scope, 'a) t
           | Inv : ('scope, 'a) t -> ('scope, 'a) t
           | XOfVector : ('scope, vector) t -> ('scope, scalar) t
@@ -130,6 +131,10 @@ module Make (N : Module_types.Number) = struct
             let ca = calc a in
             let cb = calc b in
             ca + -cb
+          | Sqr a ->
+            let calc = calc scalar_values vector_values scope_values (module ScalarVec) in
+            let ca = calc a in
+            ca * ca
           | Mult (a, b) ->
             let calc = calc scalar_values vector_values scope_values (module ScalarVec) in
             let ca = calc a in
@@ -249,6 +254,8 @@ module Make (N : Module_types.Number) = struct
                   ~combine:(fun ~key:_ v1 v2 -> Formula.Var.Sum (v1, v2)))
         }
       ;;
+
+      let sqr a = { a with formula = Map.map a.formula ~f:(fun v -> Formula.Var.Sqr v) }
     end
 
     module Sample : sig
@@ -298,10 +305,7 @@ module Make (N : Module_types.Number) = struct
           let r_2 = create r ~scope:`Figure2 in
           let ( + ) = ( + ) (fun (a, b) -> `Scope (a, b)) in
           let ( - ) = ( - ) (fun (a, b) -> `Scope (a, b)) in
-          let ( * ) = ( * ) (fun (a, b) -> `Scope (a, b)) in
-          ((x_2 - x_1) * (x_2 - x_1))
-          + ((y_2 - y_1) * (y_2 - y_1))
-          - ((r_1 + r_2) * (r_1 + r_2))
+          sqr (x_2 - x_1) + sqr (y_2 - y_1) - sqr (r_1 + r_2)
           |> formula
           |> Formula.to_polynomial ~s ~v ~sc:(function
                  | `Figure1 -> s1, v1

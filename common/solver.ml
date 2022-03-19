@@ -148,6 +148,7 @@ module MakeSolver (N : Module_types.Number) = struct
     val degree : t -> int
     val to_map : t -> (int, N.t, Int.comparator_witness) Map.t
     val of_map : (int, N.t, Int.comparator_witness) Map.t -> t
+    val to_string_hum : ?var:string -> t -> string
   end = struct
     type t = (int, N.t, Int.comparator_witness) Map.t
 
@@ -181,6 +182,16 @@ module MakeSolver (N : Module_types.Number) = struct
 
     let to_map = Fn.id
     let of_map = Fn.id Sys.opaque_identity
+
+    let to_string_hum ?var =
+      let var = Option.value ~default:"x" var in
+      Map.fold_right ~init:"" ~f:(fun ~key:degree ~data:coef acc ->
+          acc
+          ^ N.to_string_hum ~strip_zero:true ~explicit_plus:String.(acc <> "") coef
+          ^ var
+          ^ "^"
+          ^ Int.to_string degree)
+    ;;
   end
 
   module LinearEquation : sig
@@ -224,7 +235,8 @@ module MakeSolver (N : Module_types.Number) = struct
         if cnt > 100
         then
           Error.raise_s
-            [%message "increase_rec" ~cnt:(cnt : int) ~x:(x : N.t) ~k:(k : N.t)];
+            [%message
+              "increase_rec" ~cnt:(cnt : int) ~x:(x : N.t) ~k:(k : N.t) ~y:(y : N.t)];
         if N.(f x * y < zero)
         then search_rec ~f (t ~x)
         else increase_rec (cnt + 1) ~f ~t ~y N.(x + k) N.(k * two)
@@ -236,18 +248,16 @@ module MakeSolver (N : Module_types.Number) = struct
         if Bool.(N.(f xl < zero) = N.(f xr < zero)) then None else search_rec ~f (xl, xr)
       | NegInfinity { right = xr } ->
         let xl1 = N.(xr - one) in
+        let f = if N.(f xl1 < f xr) then f else N.(fun x -> -f x) in
         if N.(f xl1 < zero && f xr < zero)
         then None
-        else (
-          let f = if N.(f xl1 < f xr) then f else N.(fun x -> -f x) in
-          increase_rec ~f ~t:(fun ~x -> x, xr) ~y:(f xr) xl1 N.(-one))
+        else increase_rec ~f ~t:(fun ~x -> x, xr) ~y:(f xr) xl1 N.(-one)
       | PosInfinity { left = xl } ->
         let xr1 = N.(xl + one) in
+        let f = if N.(f xl < f xr1) then f else N.(fun x -> -f x) in
         if N.(f xl > zero && f xr1 > zero)
         then None
-        else (
-          let f = if N.(f xl < f xr1) then f else N.(fun x -> -f x) in
-          increase_rec ~f ~t:(fun ~x -> xl, x) ~y:(f xl) xr1 N.one)
+        else increase_rec ~f ~t:(fun ~x -> xl, x) ~y:(f xl) xr1 N.one
       | Infinity ->
         let xl1, xr1 = N.(-one, one) in
         let f = if N.(f xl1 < f xr1) then f else N.(fun x -> -f x) in
