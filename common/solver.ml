@@ -152,8 +152,12 @@ module MakeSolver (N : Module_types.Number) = struct
     type t = (int, N.t, Int.comparator_witness) Map.t
 
     let equal = Map.equal N.equal
-    let t_of_sexp = assert false
-    let sexp_of_t t = assert false
+
+    let t_of_sexp s =
+      List.Assoc.t_of_sexp Int.t_of_sexp N.t_of_sexp s |> Map.of_alist_exn (module Int)
+    ;;
+
+    let sexp_of_t t = [%sexp (Map.to_alist t : (int * N.t) list)]
     let of_list = Map.of_alist_exn (module Int)
 
     let derivative p =
@@ -199,56 +203,57 @@ module MakeSolver (N : Module_types.Number) = struct
   module BinarySearch = struct
     let two = N.(one + one)
 
-    let rec search_rec ~f ~eps (xl, xr) =
-      let xm = N.((xl + xr) / two) in
-      let ym = f xm in
-      if N.(abs ym < eps)
-      then Some xm
-      else if N.(ym < zero)
-      then search_rec ~f ~eps (xm, xr)
-      else search_rec ~f ~eps (xl, xm)
-    ;;
-
-    let rec increase_rec ~f ~eps ~t x k =
-      if N.(f x < zero)
-      then search_rec ~f ~eps (t ~x)
-      else increase_rec ~f ~eps ~t N.(x + k) N.(k * two)
-    ;;
-
     let search ~f ~eps =
-      let f = if N.(f zero < f one) then f else N.(fun x -> -f x) in
-      let rec search_rec (xl, xr) =
+      let rec search_rec cnt ~f (xl, xr) =
+        assert (N.(f xl < f xr));
+        if cnt > 100
+        then
+          Error.raise_s
+            [%message
+              "search_rec" ~cnt:(cnt : int) ~xl:(xl : N.t) ~xr:(xr : N.t) ~f:(f xl : N.t)];
         let xm = N.((xl + xr) / two) in
         let ym = f xm in
         if N.(abs ym < eps)
         then Some xm
         else if N.(ym < zero)
-        then search_rec (xm, xr)
-        else search_rec (xl, xm)
+        then search_rec (cnt + 1) ~f (xm, xr)
+        else search_rec (cnt + 1) ~f (xl, xm)
       in
-      let rec increase_rec ~t x k =
-        if N.(f x < zero)
-        then search_rec (t ~x)
-        else increase_rec ~t N.(x + k) N.(k * two)
+      let search_rec = search_rec 0 in
+      let rec increase_rec cnt ~f ~t ~y x k =
+        if cnt > 100
+        then
+          Error.raise_s
+            [%message "increase_rec" ~cnt:(cnt : int) ~x:(x : N.t) ~k:(k : N.t)];
+        if N.(f x * y < zero)
+        then search_rec ~f (t ~x)
+        else increase_rec (cnt + 1) ~f ~t ~y N.(x + k) N.(k * two)
       in
+      let increase_rec = increase_rec 0 in
       function
       | Interval.Interval { left = xl; right = xr } ->
-        if Bool.(N.(f xl < zero) = N.(f xr < zero)) then None else search_rec (xl, xr)
+        let f = if N.(f xl < f xr) then f else N.(fun x -> -f x) in
+        if Bool.(N.(f xl < zero) = N.(f xr < zero)) then None else search_rec ~f (xl, xr)
       | NegInfinity { right = xr } ->
         let xl1 = N.(xr - one) in
         if N.(f xl1 < zero && f xr < zero)
         then None
-        else increase_rec ~t:(fun ~x -> x, xr) xl1 N.one
+        else (
+          let f = if N.(f xl1 < f xr) then f else N.(fun x -> -f x) in
+          increase_rec ~f ~t:(fun ~x -> x, xr) ~y:(f xr) xl1 N.(-one))
       | PosInfinity { left = xl } ->
         let xr1 = N.(xl + one) in
         if N.(f xl > zero && f xr1 > zero)
         then None
-        else increase_rec ~t:(fun ~x -> xl, x) xr1 N.one
+        else (
+          let f = if N.(f xl < f xr1) then f else N.(fun x -> -f x) in
+          increase_rec ~f ~t:(fun ~x -> xl, x) ~y:(f xl) xr1 N.one)
       | Infinity ->
         let xl1, xr1 = N.(-one, one) in
+        let f = if N.(f xl1 < f xr1) then f else N.(fun x -> -f x) in
         if N.(f zero > zero)
-        then increase_rec ~t:(fun ~x -> x, N.zero) xl1 N.one
-        else increase_rec ~t:(fun ~x -> N.zero, x) xr1 N.one
+        then increase_rec ~f ~t:(fun ~x -> x, N.zero) ~y:(f xr1) xl1 N.(-one)
+        else increase_rec ~f ~t:(fun ~x -> N.zero, x) ~y:(f xl1) xr1 N.one
       | Empty -> None
     ;;
   end

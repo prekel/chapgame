@@ -19,40 +19,28 @@ let%test_module "float solver" =
 
     let%expect_test "to_sexp_test" =
       print_s [%sexp (sample_poly : SF.Polynomial.t)];
-      [%expect
-        {|
-      (((coefficient 1) (degree 3)) ((coefficient -2) (degree 2))
-       ((coefficient -1) (degree 1)) ((coefficient 2) (degree 0))) |}]
+      [%expect {|
+      ((0 2) (1 -1) (2 -2) (3 1)) |}]
     ;;
 
     let%test "of_sexp_test" =
       let sample_poly_from_sexp =
-        {|
-      (((coefficient 1) (degree 3)) ((coefficient -2) (degree 2))
-       ((coefficient -1) (degree 1)) ((coefficient 2) (degree 0))) |}
-        |> Sexp.of_string
-        |> SF.Polynomial.t_of_sexp
+        {| ((0 2) (1 -1) (2 -2) (3 1)) |} |> Sexp.of_string |> SF.Polynomial.t_of_sexp
       in
       SF.Polynomial.(equal sample_poly sample_poly_from_sexp)
     ;;
 
     let%test "of_sexp_test (unordered)" =
       let sample_poly_from_sexp =
-        {|
-      ( ((coefficient -2) (degree 2))
-       ((coefficient -1) (degree 1)) ((coefficient 1) (degree 3)) ((coefficient 2) (degree 0))) |}
-        |> Sexp.of_string
-        |> SF.Polynomial.t_of_sexp
+        {|( (1 -1) (0 2)  (2 -2) (3 1)) |} |> Sexp.of_string |> SF.Polynomial.t_of_sexp
       in
       SF.Polynomial.(equal sample_poly sample_poly_from_sexp)
     ;;
 
     let%expect_test "derivative" =
       print_s [%sexp (SF.Polynomial.derivative sample_poly : SF.Polynomial.t)];
-      [%expect
-        {|
-        (((coefficient 3) (degree 2)) ((coefficient -4) (degree 1))
-         ((coefficient -1) (degree 0))) |}]
+      [%expect {|
+        ((0 -1) (1 -4) (2 3)) |}]
     ;;
 
     let%expect_test "calc" =
@@ -84,10 +72,9 @@ let%test_module "float solver" =
 
     let%expect_test "d0 roots" =
       print_check_roots ~eps sample_poly;
-      [%expect
-        {|
-        x:-1.000326 y:-0.001954 lteps:false
-         x:0.999692 y:0.000615 lteps:true
+      [%expect{|
+        x:-0.999837 y:0.000976 lteps:true
+         x:0.999939 y:0.000123 lteps:true
          x:1.999674 y:-0.000976 lteps:true |}]
     ;;
 
@@ -97,18 +84,15 @@ let%test_module "float solver" =
 
         let%expect_test "d1 print" =
           print_s [%sexp (sample_poly : SF.Polynomial.t)];
-          [%expect
-            {|
-      (((coefficient 3) (degree 2)) ((coefficient -4) (degree 1))
-       ((coefficient -1) (degree 0))) |}]
+          [%expect {|
+      ((0 -1) (1 -4) (2 3)) |}]
         ;;
 
         let%expect_test "d1 roots" =
           print_check_roots ~eps sample_poly;
-          [%expect
-            {|
-            x:-0.215658 y:0.002155 lteps:false
-             x:1.548991 y:0.002155 lteps:false |}]
+          [%expect{|
+            x:-0.215169 y:-0.000429 lteps:true
+             x:1.548503 y:-0.000429 lteps:true |}]
         ;;
       end)
     ;;
@@ -127,9 +111,8 @@ let%test_module "float solver" =
 
         let%expect_test "d2 print" =
           print_s [%sexp (sample_poly_d2 : SF.Polynomial.t)];
-          [%expect
-            {|
-      (((coefficient 6) (degree 1)) ((coefficient -4) (degree 0))) |}]
+          [%expect {|
+      ((0 -4) (1 6)) |}]
         ;;
       end)
     ;;
@@ -149,7 +132,7 @@ let%test_module "float solver" =
         let%expect_test "d3 print" =
           print_s [%sexp (sample_poly_d3 : SF.Polynomial.t)];
           [%expect {|
-      (((coefficient 6) (degree 0))) |}]
+      ((0 6)) |}]
         ;;
       end)
     ;;
@@ -173,16 +156,15 @@ let%test_module "float solver" =
       let l = SF.PolynomialEquation.roots ~eps sample_poly_d1 in
       print_s [%sexp (l : float list)];
       print_s [%sexp (SF.Interval.intervals_of_list l : SF.Interval.t list)];
-      [%expect
-        {|
-        (-0.21565755208333337 1.5489908854166665)
-        ((Neg_Infinity -0.21565755208333337)
-         (Interval -0.21565755208333337 1.5489908854166665)
-         (Pos_Infinity 1.5489908854166665)) |}];
+      [%expect{|
+        (-0.21516927083333337 1.5485026041666665)
+        ((NegInfinity (right -0.21516927083333337))
+         (Interval (left -0.21516927083333337) (right 1.5485026041666665))
+         (PosInfinity (left 1.5485026041666665))) |}];
       print_s [%sexp (SF.Interval.intervals_of_list [] : SF.Interval.t list)];
-      [%expect {| (Infinity) |}];
+      [%expect{| (Infinity) |}];
       print_s [%sexp (SF.Interval.intervals_of_list [ -91. ] : SF.Interval.t list)];
-      [%expect {| ((Neg_Infinity -91) (Pos_Infinity -91)) |}]
+      [%expect{| ((NegInfinity (right -91)) (PosInfinity (left -91))) |}]
     ;;
   end)
 ;;
