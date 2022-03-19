@@ -45,7 +45,6 @@ module Make (N : Module_types.Number) = struct
       ; y : Metre.t
       }
 
-    let collision : t -> t -> float = assert false
   end
 
   module Figure2 = struct
@@ -95,7 +94,7 @@ module Make (N : Module_types.Number) = struct
           | XOfVector : ('scope, vector) t -> ('scope, scalar) t
           | YOfVector : ('scope, vector) t -> ('scope, scalar) t
           | LengthOfVector : ('scope, vector) t -> ('scope, scalar) t
-          | Scope : 'scope * ('old_scope, 'a) t -> ('scope, 'a) t
+          | Scope : 'scope * ('scope, 'a) t -> ('scope, 'a) t
 
         module type ScalarVec = sig
           type t
@@ -174,12 +173,12 @@ module Make (N : Module_types.Number) = struct
        ;;
 
         module Infix = struct
-          let scalar_var s = ScalarVar s
-          let vector_var v = VectorVar v
+          let scalar_var s = ScalarVar s, s
+          let vector_var v = VectorVar v, v
           let scalar_const s = ScalarConst s
           let vector_const v = VectorConst v
-          let scalar_global s = ScalarGlobalVar s
-          let vector_global v = VectorGlobalVar v
+          let scalar_global s = ScalarGlobalVar s, s
+          let vector_global v = VectorGlobalVar v, v
           let ( + ) a b = Sum (a, b)
           let ( - ) a b = Sub (a, b)
           let ( * ) a b = Mult (a, b)
@@ -240,10 +239,18 @@ module Make (N : Module_types.Number) = struct
     end
 
     module Sample : sig
-      type 'a scope =
-        [< `Body1 | `Body2 | `Global | `Phantom > `Body1 `Body2 `Phantom ] as 'a
-
-      module Formulas : sig end
+      module Formulas : sig
+        val b
+          :  [ `Body1 | `Body2 ] t
+          -> [ `Body1 | `Body2 ] t
+          -> Formula.Var.values
+          -> r:
+               ( int
+               , ([ `Body1 | `Body2 ], N.t) Formula.Var.t
+               , Core.Int.comparator_witness )
+               Map_intf.Map.t
+          -> Solver.Polynomial.t
+      end
     end = struct
       type 'a scope =
         [< `Body1 | `Body2 | `Global | `Phantom > `Body1 `Body2 `Phantom ] as 'a
@@ -251,14 +258,14 @@ module Make (N : Module_types.Number) = struct
       module Vars = struct
         open Formula.Var.Infix
 
-        let a_vec = vector_var "a_vec"
+        let a_vec, _ = vector_var "a_vec"
         let a_x = vector_x a_vec
         let a_y = vector_y a_vec
-        let v0_vec = vector_var "v0_vec"
+        let v0_vec, _ = vector_var "v0_vec"
         let v0_x = vector_x v0_vec
         let v0_y = vector_y v0_vec
-        let x0 = scalar_var "x0"
-        let y0 = scalar_var "y0"
+        let x0, _ = scalar_var "x0"
+        let y0, _ = scalar_var "y0"
         let r = scalar_var "r"
         let half = scalar_const N.(one / (one + one))
         let g = scalar_global "g"
@@ -297,15 +304,15 @@ module Make (N : Module_types.Number) = struct
                  | `Body2 -> b.values)
         ;;
 
-        let a () =
-          let a_vec = vector_var "a_vec" in
+        (* let a () =
+          let a_vec, _ = vector_var "a_vec" in
           let a_x = vector_x a_vec in
           let a_y = vector_y a_vec in
-          let v0_vec = vector_var "v0_vec" in
+          let v0_vec, _ = vector_var "v0_vec" in
           let v0_x = vector_x v0_vec in
           let v0_y = vector_y v0_vec in
-          let x0 = scalar_var "x0" in
-          let y0 = scalar_var "y0" in
+          let x0, _ = scalar_var "x0" in
+          let y0, _ = scalar_var "y0" in
           let r = scalar_var "r" in
           let half = scalar_const N.(one / (one + one)) in
           let g = scalar_global "g" in
@@ -316,17 +323,129 @@ module Make (N : Module_types.Number) = struct
           let bd = [ b1; b2 ] in
           let values = assert false in
           let r = Map.of_alist_exn (module Int) [ 0, r ] in
-          let x1 = scope b1.x `B1 in
-          let x2 = scope b2.x `B2 in
-          let sum = FormulaScored.(x1 + x2) in
-          bd
+          b1, b2
         ;;
+
+        let qwqw b1 b2 =
+          let x1 = scope b1.x ~scope:`B1 in
+          let x2 = scope b2.x ~scope:`B2 in
+          let sum = FormulaScored.(x1 + x2) in
+          sum
+        ;;
+
+        let _ =
+          let b1, b2 = a () in
+          let s = qwqw b1 b2 in
+          s
+        ;; *)
       end
     end
   end
 
-  module Scene = struct
-    type t = { figures : (Figure.Id.t, Figure.t, unit) Map.t }
+  module Scene : sig
+    type 'a t
+
+    val scene : unit -> 'a t
+    val t : [ `Body1 | `Body2 ] t -> Solver.Polynomial.t Sequence.t
+  end = struct
+    type 'a t =
+      { figures : (int, 'a Figure2.t, Int.comparator_witness) Map.t
+      ; global_values : Figure2.Formula.Var.values
+      }
+
+    module Vars1 = struct
+      open Figure2.Formula.Var.Infix
+
+      let a_vec, a_vec_name = vector_var "a_vec"
+      let a_x = vector_x a_vec
+      let a_y = vector_y a_vec
+      let v0_vec, v0_vec_name = vector_var "v0_vec"
+      let v0_x = vector_x v0_vec
+      let v0_y = vector_y v0_vec
+      let x0, x0_name = scalar_var "x0"
+      let y0, y0_name = scalar_var "y0"
+      let r, r_name = scalar_var "r"
+      let half = scalar_const N.(one / (one + one))
+      let g, g_name = scalar_global "g"
+    end
+
+    module Formulas1 = struct
+      open Vars1
+      open Figure2.Formula.Var.Infix
+
+      let x = Map.of_alist_exn (module Int) [ 0, x0; 1, v0_x; 2, a_x * half ]
+      let y = Map.of_alist_exn (module Int) [ 0, y0; 1, v0_y; 2, a_y * half ]
+    end
+
+    let scene () =
+      let open Figure2.Formula.Var.Infix in
+      let a_vec, a_vec_name = vector_var "a_vec" in
+      let a_x = vector_x a_vec in
+      let a_y = vector_y a_vec in
+      let v0_vec, v0_vec_name = vector_var "v0_vec" in
+      let v0_x = vector_x v0_vec in
+      let v0_y = vector_y v0_vec in
+      let x0, x0_name = scalar_var "x0" in
+      let y0, y0_name = scalar_var "y0" in
+      let _r, r_name = scalar_var "r" in
+      let half = scalar_const N.(one / (one + one)) in
+      let _g, _g_name = scalar_global "g" in
+      let x = Map.of_alist_exn (module Int) [ 0, x0; 1, v0_x; 2, a_x * half ] in
+      let y = Map.of_alist_exn (module Int) [ 0, y0; 1, v0_y; 2, a_y * half ] in
+      { figures =
+          Map.of_alist_exn
+            (module Int)
+            [ ( 0
+              , { Figure2.id = 0
+                ; values =
+                    Map.of_alist_exn
+                      (module String)
+                      [ a_vec_name, Figure2.Formula.Var.Vector N.(one, -one / (one + one))
+                      ; ( v0_vec_name
+                        , Figure2.Formula.Var.Vector N.(-(one + one), one / (one + one)) )
+                      ; x0_name, Figure2.Formula.Var.Scalar N.(-(one + one + one))
+                      ; y0_name, Figure2.Formula.Var.Scalar N.(one + one + one)
+                      ; r_name, Figure2.Formula.Var.Scalar N.(one + one + one + one)
+                      ]
+                ; x
+                ; y
+                } )
+            ; ( 1
+              , { Figure2.id = 1
+                ; values =
+                    Map.of_alist_exn
+                      (module String)
+                      [ a_vec_name, Figure2.Formula.Var.Vector N.(one, one / (one + one))
+                      ; ( v0_vec_name
+                        , Figure2.Formula.Var.Vector N.(one + one, one / (one + one)) )
+                      ; x0_name, Figure2.Formula.Var.Scalar N.(one + one + one)
+                      ; y0_name, Figure2.Formula.Var.Scalar N.(one + one + one)
+                      ; r_name, Figure2.Formula.Var.Scalar N.(one )
+                      ]
+                ; x
+                ; y
+                } )
+            ]
+      ; global_values = Map.empty (module String)
+      }
+    ;;
+
+    let t scene =
+      let scene = scene in
+      let seq = Map.to_sequence scene.figures in
+      let p = Sequence.cartesian_product seq seq in
+      let r, _ = Figure2.Formula.Var.Infix.scalar_var "r" in
+      let r = Map.of_alist_exn (module Int) [ 0, r ] in
+      let q =
+        Sequence.map p ~f:(fun ((_id1, f1), (_id2, f2)) ->
+            Figure2.Sample.Formulas.b f1 f2 scene.global_values ~r)
+      in
+      q
+    ;;
+
+    let a = t (scene ())
+
+    type t1 = [ `Global ] t
   end
 
   module Events = struct
@@ -341,9 +460,12 @@ module Make (N : Module_types.Number) = struct
   end
 
   module Model = struct
-    type t = (Time_ns.Span.t, Scene.t, Time_ns.Span.comparator_witness) Map.t
+    type 'a t = (Time_ns.Span.t, 'a Scene.t, Time_ns.Span.comparator_witness) Map.t
 
-    let e () : t = Map.empty (module Time_ns.Span)
+    let e () : 'a t =
+      Map.of_alist_exn (module Time_ns.Span) [ Time_ns.Span.zero, Scene.scene () ]
+    ;;
+
   end
 
   module Engine = struct

@@ -3,4 +3,5 @@
  (public_name chapgame)
  (libraries core)
  (preprocess
-  (pps ppx_jane)))
+  (pps ppx_jane))
+ (flags))
