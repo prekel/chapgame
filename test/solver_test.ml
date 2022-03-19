@@ -10,15 +10,7 @@ let%test_module "float solver" =
       List.iter ~f:print_calc
     ;;
 
-    let sample_poly =
-      SF.Polynomial.of_list
-        [ SF.Monomial.create ~degree:3 ~coefficient:1.
-        ; SF.Monomial.create ~degree:1 ~coefficient:(-1.)
-        ; SF.Monomial.create ~degree:2 ~coefficient:(-2.)
-        ; SF.Monomial.create ~degree:0 ~coefficient:2.
-        ]
-    ;;
-
+    let sample_poly = SF.Polynomial.of_list [ 3, 1.; 1, -1.; 2, -2.; 0, 2. ]
     let sample_poly_d1 = SF.Polynomial.derivative sample_poly
     let sample_poly_d2 = SF.Polynomial.derivative sample_poly_d1
     let sample_poly_d3 = SF.Polynomial.derivative sample_poly_d2
@@ -129,7 +121,7 @@ let%test_module "float solver" =
         ;;
 
         let%expect_test "d2 linear" =
-          print_s [%sexp (SF.Polynomial.linear_root sample_poly_d2 : float option)];
+          print_s [%sexp (SF.LinearEquation.root_poly sample_poly_d2 : float option)];
           [%expect {|   (0.66666666666666663) |}]
         ;;
 
@@ -150,7 +142,7 @@ let%test_module "float solver" =
         ;;
 
         let%expect_test "d3 linear" =
-          print_s [%sexp (SF.Polynomial.linear_root sample_poly_d3 : float option)];
+          print_s [%sexp (SF.LinearEquation.root_poly sample_poly_d3 : float option)];
           [%expect {|   () |}]
         ;;
 

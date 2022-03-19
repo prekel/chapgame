@@ -151,9 +151,9 @@ module MakeSolver (N : Module_types.Number) = struct
   end = struct
     type t = (int, N.t, Int.comparator_witness) Map.t
 
-    let equal = assert false
+    let equal = Map.equal N.equal
     let t_of_sexp = assert false
-    let sexp_of_t = assert false
+    let sexp_of_t t = assert false
     let of_list = Map.of_alist_exn (module Int)
 
     let derivative p =

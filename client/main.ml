@@ -6,14 +6,7 @@ module SF = Chapgame.Solver.MakeSolver (Float)
 
 let state () =
   let init =
-    [%sexp
-      (SF.Polynomial.of_list
-         [ SF.Monomial.create ~degree:3 ~coefficient:1.
-         ; SF.Monomial.create ~degree:2 ~coefficient:(-2.)
-         ; SF.Monomial.create ~degree:1 ~coefficient:(-1.)
-         ; SF.Monomial.create ~degree:0 ~coefficient:2.
-         ]
-        : SF.Polynomial.t)]
+    [%sexp (SF.Polynomial.of_list [ 3, 1.; 2, -2.; 1, -1.; 0, 2. ] : SF.Polynomial.t)]
     |> Sexp.to_string_hum
   in
   let%sub state, set_state = Bonsai.state [%here] (module String) ~default_model:init in
@@ -43,13 +36,7 @@ let box () =
   let%sub state, set_state = state () in
   let%arr state = state
   and set_state = set_state in
-  ( (try
-       state
-       |> Sexp.of_string
-       |> SF.Polynomial.t_of_sexp
-       |> SF.Polynomial.normalize
-       |> Option.some
-     with
+  ( (try state |> Sexp.of_string |> SF.Polynomial.t_of_sexp |> Option.some with
     | _ -> None)
   , Vdom.Node.div
       [ Vdom.Node.textarea
