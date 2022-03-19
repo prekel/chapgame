@@ -97,15 +97,6 @@ module Make (N : Module_types.Number) = struct
           | LengthOfVector : ('scope, vector) t -> ('scope, scalar) t
           | Scope : 'scope * ('old_scope, 'a) t -> ('scope, 'a) t
 
-        type scope =
-          [ `Body1
-          | `Body2
-          | `Global
-          | `Phantom
-          ]
-
-        type 'inner n = (scope, 'inner) t
-
         module type ScalarVec = sig
           type t
 
@@ -127,7 +118,7 @@ module Make (N : Module_types.Number) = struct
         end
 
         let rec calc
-            : type scope result.
+            : type old_scope scope result.
               values:values
               -> scoped_values:(scope -> values)
               -> (module ScalarVec with type t = result)
@@ -232,87 +223,27 @@ module Make (N : Module_types.Number) = struct
       }
 
     module FormulaScored = struct
-      type 'a t =
-        { scope : 'a
-        ; formula : 'a Formula.t
-        }
+      let ( + ) = Map.merge_skewed ~combine:(fun ~key:_ a b -> Formula.Var.Sum (a, b))
+      let ( - ) = Map.merge_skewed ~combine:(fun ~key:_ a b -> Formula.Var.Sub (a, b))
 
-      let create ~scope formula = { scope; formula }
-      let formula { scope = _; formula } = formula
+      (* let ( ~- ) { scope; formula } = Map.map formula ~f:(fun v -> Formula.Var.Neg
+         (Formula.Var.Scope (scope, v))) ;;
 
-      let ( + )
-          wanted_scope
-          { scope = scope1; formula = formula1 }
-          { scope = scope2; formula = formula2 }
-        =
-        { scope = wanted_scope
-        ; formula =
-            Map.merge_skewed formula1 formula2 ~combine:(fun ~key:_ a b ->
-                Formula.Var.Sum
-                  (Formula.Var.Scope (scope1, a), Formula.Var.Scope (scope2, b)))
-        }
-      ;;
-
-      let ( - )
-          wanted_scope
-          { scope = scope1; formula = formula1 }
-          { scope = scope2; formula = formula2 }
-        =
-        { scope = wanted_scope
-        ; formula =
-            Map.merge_skewed formula1 formula2 ~combine:(fun ~key:_ a b ->
-                Formula.Var.Sub
-                  (Formula.Var.Scope (scope1, a), Formula.Var.Scope (scope2, b)))
-        }
-      ;;
-
-      let ( ~- ) { scope; formula } =
-        Map.map formula ~f:(fun v -> Formula.Var.Neg (Formula.Var.Scope (scope, v)))
-      ;;
-
-      let ( * )
-          wanted_scope
-          { scope = scope1; formula = formula1 }
-          { scope = scope2; formula = formula2 }
-        =
-        { scope = wanted_scope
-        ; formula =
-            Map.fold
-              formula1
-              ~init:(Map.empty (module Int))
-              ~f:(fun ~key:degree1 ~data:coef1 acc ->
-                Map.merge_skewed
-                  acc
-                  (Map.map formula2 ~f:(fun coef2 ->
-                       Formula.Var.Mult
-                         ( Formula.Var.Scope (scope1, coef1)
-                         , Formula.Var.Scope (scope2, coef2) ))
-                  |> Map.map_keys_exn (module Int) ~f:(fun degree2 -> degree1 * degree2))
-                  ~combine:(fun ~key:_ v1 v2 -> Formula.Var.Sum (v1, v2)))
-        }
-      ;;
-
-      let sqr a = { a with formula = Map.map a.formula ~f:(fun v -> Formula.Var.Sqr v) }
+         let ( * ) wanted_scope { scope = scope1; formula = formula1 } { scope = scope2;
+         formula = formula2 } = { scope = wanted_scope ; formula = Map.fold formula1
+         ~init:(Map.empty (module Int)) ~f:(fun ~key:degree1 ~data:coef1 acc ->
+         Map.merge_skewed acc (Map.map formula2 ~f:(fun coef2 -> Formula.Var.Mult (
+         Formula.Var.Scope (scope1, coef1) , Formula.Var.Scope (scope2, coef2) )) |>
+         Map.map_keys_exn (module Int) ~f:(fun degree2 -> degree1 * degree2))
+         ~combine:(fun ~key:_ v1 v2 -> Formula.Var.Sum (v1, v2))) } ;; *)
+      let sqr = Map.map ~f:(fun v -> Formula.Var.Sqr v)
     end
 
     module Sample : sig
       type 'a scope =
         [< `Body1 | `Body2 | `Global | `Phantom > `Body1 `Body2 `Phantom ] as 'a
 
-      module Formulas : sig
-        val f
-          :  Formula.Var.values
-          -> Formula.Var.values
-          -> Formula.Var.values
-          -> Solver.Polynomial.t
-
-        val b
-          :  'a scope t
-          -> 'a scope t
-          -> Formula.Var.values
-          -> r:'a Formula.t
-          -> Solver.Polynomial.t
-      end
+      module Formulas : sig end
     end = struct
       type 'a scope =
         [< `Body1 | `Body2 | `Global | `Phantom > `Body1 `Body2 `Phantom ] as 'a
@@ -342,45 +273,29 @@ module Make (N : Module_types.Number) = struct
         let _g = Map.of_alist_exn (module Int) [ 0, g ]
         let r = Map.of_alist_exn (module Int) [ 0, r ]
 
-        let f v v1 v2 =
-          let open FormulaScored in
-          let x_1 = create x ~scope:`Figure1 in
-          let x_2 = create x ~scope:`Figure2 in
-          let y_1 = create y ~scope:`Figure1 in
-          let y_2 = create y ~scope:`Figure2 in
-          let r_1 = create r ~scope:`Figure1 in
-          let r_2 = create r ~scope:`Figure2 in
-          let ( + ) = ( + ) `Scope in
-          let ( - ) = ( - ) `Scope in
-          sqr (x_2 - x_1) + sqr (y_2 - y_1) - sqr (r_1 + r_2)
-          |> formula
-          |> Formula.to_polynomial ~values:v ~scoped_values:(function
-                 | `Figure1 -> v1
-                 | `Figure2 -> v2
-                 | `Global -> v
-                 | `Scope -> v)
-        ;;
+        (* let f v v1 v2 = let open FormulaScored in let x_1 = create x ~scope:`Figure1 in
+           let x_2 = create x ~scope:`Figure2 in let y_1 = create y ~scope:`Figure1 in let
+           y_2 = create y ~scope:`Figure2 in let r_1 = create r ~scope:`Figure1 in let r_2
+           = create r ~scope:`Figure2 in let ( + ) = ( + ) `Scope in let ( - ) = ( - )
+           `Scope in sqr (x_2 - x_1) + sqr (y_2 - y_1) - sqr (r_1 + r_2) |> formula |>
+           Formula.to_polynomial ~values:v ~scoped_values:(function | `Figure1 -> v1 |
+           `Figure2 -> v2 | `Global -> v | `Scope -> v | `Local -> v | `Static -> v) ;; *)
+
+        let scope m ~scope = Map.map m ~f:(fun v -> Formula.Var.Scope (scope, v))
 
         let b a b v ~r =
           let open FormulaScored in
-          let x_1 = create a.x ~scope:`Body1 in
-          let x_2 = create b.x ~scope:`Body2 in
-          let y_1 = create a.y ~scope:`Body1 in
-          let y_2 = create b.y ~scope:`Body2 in
-          let r_1 = create r ~scope:`Body1 in
-          let r_2 = create r ~scope:`Body2 in
-          let ( + ) = ( + ) `Phantom in
-          let ( - ) = ( - ) `Phantom in
+          let x_1 = scope a.x ~scope:`Body1 in
+          let x_2 = scope b.x ~scope:`Body2 in
+          let y_1 = scope a.y ~scope:`Body1 in
+          let y_2 = scope b.y ~scope:`Body2 in
+          let r_1 = scope r ~scope:`Body1 in
+          let r_2 = scope r ~scope:`Body2 in
           sqr (x_2 - x_1) + sqr (y_2 - y_1) - sqr (r_1 + r_2)
-          |> formula
           |> Formula.to_polynomial ~values:v ~scoped_values:(function
                  | `Body1 -> a.values
-                 | `Body2 -> b.values
-                 | `Global -> v
-                 | `Phantom -> v)
+                 | `Body2 -> b.values)
         ;;
-
-        let qwf : [ `A ] -> [ `B ] -> [ `A | `B ] list = fun a b -> [ a; b ]
 
         let a () =
           let a_vec = vector_var "a_vec" in
@@ -398,10 +313,13 @@ module Make (N : Module_types.Number) = struct
           let y = Map.of_alist_exn (module Int) [ 0, y0; 1, v0_y; 2, a_y * half ] in
           let b1 = { id = 1; values = assert false; x; y } in
           let b2 = { id = 1; values = assert false; x; y } in
+          let bd = [ b1; b2 ] in
           let values = assert false in
           let r = Map.of_alist_exn (module Int) [ 0, r ] in
-          let p = b b1 b2 values ~r in
-          ()
+          let x1 = scope b1.x `B1 in
+          let x2 = scope b2.x `B2 in
+          let sum = FormulaScored.(x1 + x2) in
+          bd
         ;;
       end
     end
