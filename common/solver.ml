@@ -153,13 +153,10 @@ module MakeSolver (N : Module_types.Number) = struct
     type t = (int, N.t, Int.comparator_witness) Map.t
 
     let equal = Map.equal N.equal
-
-    let t_of_sexp s =
-      List.Assoc.t_of_sexp Int.t_of_sexp N.t_of_sexp s |> Map.of_alist_exn (module Int)
-    ;;
-
+    let normalize = Map.filter ~f:N.(( <> ) zero)
+    let of_list a = Map.of_alist_exn (module Int) a |> normalize
+    let t_of_sexp s = List.Assoc.t_of_sexp Int.t_of_sexp N.t_of_sexp s |> of_list
     let sexp_of_t t = [%sexp (Map.to_alist t : (int * N.t) list)]
-    let of_list = Map.of_alist_exn (module Int)
 
     let derivative p =
       Map.filter_mapi p ~f:(fun ~key:degree ~data:coefficient ->
@@ -181,7 +178,7 @@ module MakeSolver (N : Module_types.Number) = struct
     ;;
 
     let to_map = Fn.id
-    let of_map = Fn.id Sys.opaque_identity
+    let of_map = normalize
 
     let to_string_hum ?var =
       let var = Option.value ~default:"x" var in
