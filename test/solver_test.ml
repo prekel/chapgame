@@ -169,5 +169,26 @@ let%test_module "float solver" =
       print_s [%sexp (SF.Interval.intervals_of_list [ -91. ] : SF.Interval.t list)];
       [%expect {| ((NegInfinity (right -91)) (PosInfinity (left -91))) |}]
     ;;
+
+    let%test_module "-4 1 3 5" =
+      (module struct
+        let pd0 = SF.Polynomial.of_list [ 0, 60.; 1, 43.; 2, -21.; 3, -3.; 4, 1. ]
+        let pd1 = SF.Polynomial.derivative pd0
+
+        let%expect_test "" =
+          let rootsd1 = SF.PolynomialEquation.roots pd1 ~eps in
+          print_s [%sexp (rootsd1 : float list)];
+          [%expect {| (-2.82159423828125 0.91706151515245438 4.154541015625) |}];
+          let intervals = SF.Interval.intervals_of_list rootsd1 in
+          print_s [%sexp (intervals : SF.Interval.t list)];
+          [%expect
+            {|
+            ((NegInfinity (right -2.82159423828125))
+             (Interval (left -2.82159423828125) (right 0.91706151515245438))
+             (Interval (left 0.91706151515245438) (right 4.154541015625))
+             (PosInfinity (left 4.154541015625))) |}]
+        ;;
+      end)
+    ;;
   end)
 ;;

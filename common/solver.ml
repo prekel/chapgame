@@ -61,13 +61,13 @@ module MakeSolver (N : Module_types.Number) = struct
       | Empty -> None
     ;;
 
-    let intervals_of_list roots =
-      match roots with
+    let intervals_of_list = function
       | [] -> [ infinity ]
       | [ a ] -> [ neg_infinity ~right:a; pos_infinity ~left:a ]
-      | a :: b :: _ ->
-        let w = roots |> Common.List.windowed2_exn |> List.map ~f:of_tuple in
-        (neg_infinity ~right:a :: w) @ [ pos_infinity ~left:b ]
+      | a :: _ as roots ->
+        (neg_infinity ~right:a
+        :: (Common.List.windowed2_exn roots |> List.map ~f:of_tuple))
+        @ [ pos_infinity ~left:(List.last_exn roots) ]
     ;;
 
     let difference = function
@@ -237,7 +237,7 @@ module MakeSolver (N : Module_types.Number) = struct
           Error.raise_s
             [%message
               "increase_rec" ~cnt:(cnt : int) ~x:(x : N.t) ~k:(k : N.t) ~y:(y : N.t)];
-        if N.(f x * y < zero)
+        if Sign.(N.(sign_exn (f x)) <> N.(sign_exn y))
         then search_rec ~f (t ~x)
         else increase_rec (cnt + 1) ~f ~t ~y N.(x + k) N.(k * two)
       in
