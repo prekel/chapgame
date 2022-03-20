@@ -282,15 +282,4 @@ module MakeSolver (N : Module_types.Number) = struct
         |> List.sort ~compare:N.ascending
     ;;
   end
-
-  let test _ =
-    let _ = N.( - ) in
-    let _ = N.( / ) in
-    let _ = N.(zero) in
-    let _ = N.(one) in
-    let _ = N.(nan) in
-    let _ = N.( * ) in
-    let _ = N.(sign_exn) in
-    ()
-  ;;
 end
