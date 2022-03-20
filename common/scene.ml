@@ -104,10 +104,75 @@ module Make (N : Module_types.Number) = struct
           | LengthOfVector : vector t -> scalar t
           | Scope : scope_id * 'a t -> 'a t
 
-        let rec sexp_of_t : type result. result t -> Sexp.t =
-          let sexp a = sexp_of_t a in
-          let open Sexp in
-          function
+        let rec equal : type result. result t -> result t -> bool =
+         fun a b ->
+          match a, b with
+          | ScalarConst a, ScalarConst b -> N.(a = b)
+          | VectorConst (ax, ay), VectorConst (bx, by) -> N.(ax = bx) && N.(ay = by)
+          | ScalarNegInf, ScalarNegInf
+          | ScalarPosInf, ScalarPosInf
+          | ScalarZero, ScalarZero -> true
+          | ScalarGlobalVar a, ScalarGlobalVar b
+          | VectorGlobalVar a, VectorGlobalVar b
+          | ScalarVar a, ScalarVar b
+          | VectorVar a, VectorVar b -> String.(a = b)
+          | Sum (al, ar), Sum (bl, br)
+          | Sub (al, ar), Sub (bl, br)
+          | Mult (al, ar), Mult (bl, br)
+          | Div (al, ar), Div (bl, br) -> equal al bl && equal ar br
+          | SumList a, SumList b -> List.equal equal a b
+          | Sqr a, Sqr b | Neg a, Neg b -> equal a b
+          | XOfVector a, XOfVector b
+          | YOfVector a, YOfVector b
+          | LengthOfVector a, LengthOfVector b -> equal a b
+          | Scope (sa, a), Scope (sb, b) -> Int.(equal sa sb) && equal a b
+          | _ -> false
+       ;;
+
+        type t_scalar = scalar t
+        type t_vector = vector t
+
+        let rec t_scalar_of_sexp = function
+          | Sexp.List [ Atom "ScalarConst"; s ] -> ScalarConst (scalar_of_sexp s)
+          | Sexp.List [ Atom "ScalarNegInf" ] -> ScalarNegInf
+          | Sexp.List [ Atom "ScalarPosInf" ] -> ScalarPosInf
+          | Sexp.List [ Atom "ScalarZero" ] -> ScalarZero
+          | Sexp.List [ Atom "ScalarGlobalVar"; key ] ->
+            ScalarGlobalVar (String.t_of_sexp key)
+          | Sexp.List [ Atom "ScalarVar"; key ] -> ScalarVar (key_of_sexp key)
+          | Sexp.List [ Atom "Sum"; a; b ] -> Sum (t_scalar_of_sexp a, t_scalar_of_sexp b)
+          | Sexp.List [ Atom "SumList"; l ] -> SumList (List.t_of_sexp t_scalar_of_sexp l)
+          | Sexp.List [ Atom "Sub"; a; b ] -> Sub (t_scalar_of_sexp a, t_scalar_of_sexp b)
+          | Sexp.List [ Atom "Sqr"; a ] -> Sqr (t_scalar_of_sexp a)
+          | Sexp.List [ Atom "Mult"; a; b ] ->
+            Mult (t_scalar_of_sexp a, t_scalar_of_sexp b)
+          | Sexp.List [ Atom "Div"; a; b ] -> Div (t_scalar_of_sexp a, t_scalar_of_sexp b)
+          | Sexp.List [ Atom "Neg"; a ] -> Neg (t_scalar_of_sexp a)
+          | Sexp.List [ Atom "XOfVector"; v ] -> XOfVector (t_vector_of_sexp v)
+          | Sexp.List [ Atom "YOfVector"; v ] -> YOfVector (t_vector_of_sexp v)
+          | Sexp.List [ Atom "LengthOfVector"; v ] -> LengthOfVector (t_vector_of_sexp v)
+          | Sexp.List [ Atom "Scope"; s; v ] ->
+            Scope (scope_id_of_sexp s, t_scalar_of_sexp v)
+          | other -> Error.raise_s [%message "Cannot deserialize" ~sexp:(other : Sexp.t)]
+
+        and t_vector_of_sexp = function
+          | Sexp.List [ Atom "VectorConst"; v ] -> VectorConst (vector_of_sexp v)
+          | Sexp.List [ Atom "VectorGlobalVar"; v ] -> VectorGlobalVar (key_of_sexp v)
+          | Sexp.List [ Atom "VectorVar"; v ] -> VectorVar (key_of_sexp v)
+          | Sexp.List [ Atom "Sum"; a; b ] -> Sum (t_vector_of_sexp a, t_vector_of_sexp b)
+          | Sexp.List [ Atom "SumList"; l ] -> SumList (List.t_of_sexp t_vector_of_sexp l)
+          | Sexp.List [ Atom "Sub"; a; b ] -> Sub (t_vector_of_sexp a, t_vector_of_sexp b)
+          | Sexp.List [ Atom "Sqr"; a ] -> Sqr (t_vector_of_sexp a)
+          | Sexp.List [ Atom "Mult"; a; b ] ->
+            Mult (t_vector_of_sexp a, t_vector_of_sexp b)
+          | Sexp.List [ Atom "Div"; a; b ] -> Div (t_vector_of_sexp a, t_vector_of_sexp b)
+          | Sexp.List [ Atom "Neg"; a ] -> Neg (t_vector_of_sexp a)
+          | Sexp.List [ Atom "Scope"; s; v ] ->
+            Scope (scope_id_of_sexp s, t_vector_of_sexp v)
+          | other -> Error.raise_s [%message "Cannot deserialize" ~sexp:(other : Sexp.t)]
+        ;;
+
+        let rec sexp_of_t : type result. result t -> Sexp.t = function
           | ScalarConst s -> List [ Atom "ScalarConst"; [%sexp (s : scalar)] ]
           | VectorConst v -> List [ Atom "VectorConst"; [%sexp (v : vector)] ]
           | ScalarNegInf -> List [ Atom "ScalarNegInf" ]
@@ -117,17 +182,17 @@ module Make (N : Module_types.Number) = struct
           | VectorGlobalVar v -> List [ Atom "VectorGlobalVar"; [%sexp (v : key)] ]
           | ScalarVar s -> List [ Atom "ScalarVar"; [%sexp (s : key)] ]
           | VectorVar v -> List [ Atom "VectorVar"; [%sexp (v : key)] ]
-          | Sum (a, b) -> List [ Atom "Sum"; sexp a; sexp b ]
-          | SumList l -> List [ Atom "SumList"; List (List.map l ~f:sexp) ]
-          | Sub (a, b) -> List [ Atom "Sub"; sexp a; sexp b ]
-          | Sqr a -> List [ Atom "Sqr"; sexp a ]
-          | Mult (a, b) -> List [ Atom "Mult"; sexp a; sexp b ]
-          | Div (a, b) -> List [ Atom "Div"; sexp a; sexp b ]
-          | Neg a -> List [ Atom "Neg"; sexp a ]
-          | XOfVector v -> List [ Atom "XOfVector"; sexp v ]
-          | YOfVector v -> List [ Atom "YOfVector"; sexp v ]
-          | LengthOfVector v -> List [ Atom "LengthOfVector"; sexp v ]
-          | Scope (s, v) -> List [ Atom "Scope"; [%sexp (s : scope_id)]; sexp v ]
+          | Sum (a, b) -> List [ Atom "Sum"; sexp_of_t a; sexp_of_t b ]
+          | SumList l -> List [ Atom "SumList"; List (List.map l ~f:sexp_of_t) ]
+          | Sub (a, b) -> List [ Atom "Sub"; sexp_of_t a; sexp_of_t b ]
+          | Sqr a -> List [ Atom "Sqr"; sexp_of_t a ]
+          | Mult (a, b) -> List [ Atom "Mult"; sexp_of_t a; sexp_of_t b ]
+          | Div (a, b) -> List [ Atom "Div"; sexp_of_t a; sexp_of_t b ]
+          | Neg a -> List [ Atom "Neg"; sexp_of_t a ]
+          | XOfVector v -> List [ Atom "XOfVector"; sexp_of_t v ]
+          | YOfVector v -> List [ Atom "YOfVector"; sexp_of_t v ]
+          | LengthOfVector v -> List [ Atom "LengthOfVector"; sexp_of_t v ]
+          | Scope (s, v) -> List [ Atom "Scope"; [%sexp (s : scope_id)]; sexp_of_t v ]
         ;;
 
         module type ScalarVec = sig

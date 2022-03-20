@@ -425,3 +425,16 @@ let%expect_test "to_sexp_test" =
           (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
            (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))))) |}]
 ;;
+
+let%expect_test "var" =
+  let module Var = SC.Figure2.Formula.Var in
+  let module Formula = SC.Figure2.Formula in
+  let x, _x_name = Var.Infix.scalar_var "x" in
+  let y, _y_name = Var.Infix.scalar_var "y" in
+  let xy = Var.Infix.(x + y) in
+  let sexp = Var.sexp_of_t xy in
+  print_s sexp;
+  [%expect {| (Sum (ScalarVar x) (ScalarVar y)) |}];
+  let xy_from_sexp = Var.t_scalar_of_sexp sexp in
+  assert (Poly.(xy = xy_from_sexp))
+;;
