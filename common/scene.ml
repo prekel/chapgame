@@ -30,28 +30,48 @@ module Make (N : Module_types.Number) = struct
         | Friction of float
         | No
     end
-
-    module Id = struct
-      type t
-    end
   end
 
+  module Expr = Expr.Make (String) (Int) (N)
+  module Formula = Formula.Make (String) (Int) (N) (Expr) (Solver)
+
+  type values = (string, Expr.value, String.comparator_witness) Map.t
+
   module Figure2 = struct
-    module Expr = Expr.Make (String) (Int) (N)
-    module Formula = Formula.Make (String) (Int) (N) (Expr) (Solver)
+    module Id : sig
+      include Identifiable.S with type t = int
 
-    type formula =
-      { interval : Expr.scalar Expr.t * Expr.scalar Expr.t
-      ; x : Formula.t
-      ; y : Formula.t
-      }
+      val next : unit -> t
+    end = struct
+      module T = struct
+        type t = int [@@deriving bin_io, hash, compare, sexp]
 
-    type values = (string, Expr.value, String.comparator_witness) Map.t
+        include Sexpable.To_stringable (struct
+          type nonrec t = t [@@deriving sexp]
+        end)
+
+        let module_name = "Figure.Id"
+      end
+
+      include T
+      include Identifiable.Make (T)
+
+      let current = ref 0
+
+      let next () =
+        let ret = !current in
+        current := ret + 1;
+        ret
+      ;;
+    end
+
+    (* type formula = { interval : [ `Interval of N.t Expr.t * N.t Expr.t | `PosInfinity
+       of N.t Expr.t ] ; x : Formula.t ; y : Formula.t } *)
 
     let sexp_of_values values = [%sexp (Map.to_alist values : (string * Expr.value) list)]
 
     type t =
-      { id : int
+      { id : Id.t
       ; values : values
       ; x : Formula.t
       ; y : Formula.t (* ; xy : 'a formula list *)
@@ -91,14 +111,14 @@ module Make (N : Module_types.Number) = struct
 
   module Scene = struct
     type t =
-      { figures : (int, Figure2.t, Int.comparator_witness) Map.t
-      ; global_values : Figure2.Expr.values
+      { figures : (Figure2.Id.t, Figure2.t, Int.comparator_witness) Map.t
+      ; global_values : values
       }
 
     let figures { figures; _ } = figures
 
-    module Vars1 = struct
-      open Figure2.Expr.Syntax
+    module Vars = struct
+      open Expr.Syntax
 
       let a_vec, a_vec_name = vector_var "a_vec"
       let a_x = vector_x a_vec
@@ -112,62 +132,50 @@ module Make (N : Module_types.Number) = struct
       let half = scalar_const N.(one / (one + one))
     end
 
-    module Formulas1 = struct
-      open Vars1
-      open Figure2.Expr.Syntax
+    module Formulas = struct
+      open Vars
+      open Expr.Syntax
 
-      let x = Map.of_alist_exn (module Int) [ 0, x0; 1, v0_x; 2, a_x * half ]
-      let y = Map.of_alist_exn (module Int) [ 0, y0; 1, v0_y; 2, a_y * half ]
+      let x = Formula.of_alist_exn [ 0, x0; 1, v0_x; 2, a_x * half ]
+      let y = Formula.of_alist_exn [ 0, y0; 1, v0_y; 2, a_y * half ]
     end
 
     let scene () =
-      let open Figure2.Expr.Syntax in
-      let a_vec, a_vec_name = vector_var "a_vec" in
-      let a_x = vector_x a_vec in
-      let a_y = vector_y a_vec in
-      let v0_vec, v0_vec_name = vector_var "v0_vec" in
-      let v0_x = vector_x v0_vec in
-      let v0_y = vector_y v0_vec in
-      let x0, x0_name = scalar_var "x0" in
-      let y0, y0_name = scalar_var "y0" in
-      let _r, r_name = scalar_var "r" in
-      let half = scalar_const N.(one / (one + one)) in
-      let x = Figure2.Formula.of_alist_exn [ 0, x0; 1, v0_x; 2, a_x * half ] in
-      let y = Figure2.Formula.of_alist_exn [ 0, y0; 1, v0_y; 2, a_y * half ] in
+      let open Vars in
+      let open Formulas in
       { figures =
           Map.of_alist_exn
             (module Int)
             [ ( 0
-              , { Figure2.id = 0
+              , { Figure2.id = Figure2.Id.next ()
                 ; values =
                     Map.of_alist_exn
                       (module String)
-                      [ a_vec_name, Figure2.Expr.Vector N.(one, -one / (one + one))
-                      ; ( v0_vec_name
-                        , Figure2.Expr.Vector N.(-(one + one), one / (one + one)) )
-                      ; x0_name, Figure2.Expr.Scalar N.(-(one + one + one))
-                      ; y0_name, Figure2.Expr.Scalar N.(one + one + one)
-                      ; r_name, Figure2.Expr.Scalar N.(one + one + one + one)
+                      [ a_vec_name, Expr.Vector N.(one, -one / (one + one))
+                      ; v0_vec_name, Expr.Vector N.(-(one + one), one / (one + one))
+                      ; x0_name, Expr.Scalar N.(-(one + one + one))
+                      ; y0_name, Expr.Scalar N.(one + one + one)
+                      ; r_name, Expr.Scalar N.(one + one + one + one)
                       ]
                 ; x
                 ; y (* ; xy = [] *)
                 } )
             ; ( 1
-              , { Figure2.id = 1
+              , { Figure2.id = Figure2.Id.next ()
                 ; values =
                     Map.of_alist_exn
                       (module String)
-                      [ a_vec_name, Figure2.Expr.Vector N.(one, one / (one + one))
-                      ; v0_vec_name, Figure2.Expr.Vector N.(one + one, one / (one + one))
-                      ; x0_name, Figure2.Expr.Scalar N.(one + one + one)
-                      ; y0_name, Figure2.Expr.Scalar N.(one + one + one)
-                      ; r_name, Figure2.Expr.Scalar N.(one)
+                      [ a_vec_name, Expr.Vector N.(one, one / (one + one))
+                      ; v0_vec_name, Expr.Vector N.(one + one, one / (one + one))
+                      ; x0_name, Expr.Scalar N.(one + one + one)
+                      ; y0_name, Expr.Scalar N.(one + one + one)
+                      ; r_name, Expr.Scalar N.(one)
                       ]
                 ; x
                 ; y (* ; xy = [] *)
                 } )
             ]
-      ; global_values = (fun _ -> assert false)
+      ; global_values = Map.empty (module String)
       }
     ;;
 
@@ -175,8 +183,8 @@ module Make (N : Module_types.Number) = struct
       let scene = scene in
       let seq = Map.to_sequence scene.figures in
       let p = Sequence.cartesian_product seq seq in
-      let r, _ = Figure2.Expr.Syntax.scalar_var "r" in
-      let r = Figure2.Formula.of_alist_exn [ 0, r ] in
+      let r, _ = Expr.Syntax.scalar_var "r" in
+      let r = Formula.of_alist_exn [ 0, r ] in
       let q =
         Sequence.map p ~f:(fun ((_id1, f1), (_id2, f2)) ->
             Figure2.Sample.Formulas.b f1 f2 (fun _ -> assert false) ~r)
@@ -188,8 +196,8 @@ module Make (N : Module_types.Number) = struct
       let scene = scene in
       let seq = Map.to_sequence scene.figures in
       let p = Sequence.cartesian_product seq seq in
-      let r, _ = Figure2.Expr.Syntax.scalar_var "r" in
-      let r = Figure2.Formula.of_alist_exn [ 0, r ] in
+      let r, _ = Expr.Syntax.scalar_var "r" in
+      let r = Formula.of_alist_exn [ 0, r ] in
       let q =
         Sequence.map p ~f:(fun ((_id1, f1), (_id2, f2)) ->
             Figure2.Sample.Formulas.b1 f1 f2 ~r)
@@ -208,7 +216,7 @@ module Make (N : Module_types.Number) = struct
 
   module Action = struct
     type t =
-      | GiveVelocity of Time_ns.Span.t * Figure.Id.t * Figure.Velocity.t Figure.Vec.t
+      | GiveVelocity of Time_ns.Span.t * Figure2.Id.t * Figure.Velocity.t Figure.Vec.t
   end
 
   module Model = struct

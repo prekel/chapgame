@@ -38,7 +38,7 @@ module Make
     let scope m ~scope = Map.map m ~f:(fun v -> Expr.Scope (scope, v))
   end
 
-  let to_polynomial p ~values ~scoped_values : Solver.Polynomial.t =
+  let to_polynomial p ~values ~scoped_values =
     Map.map p ~f:(fun a -> Expr.calc ~values ~scoped_values (module N) a)
     |> Solver.Polynomial.of_map
   ;;
