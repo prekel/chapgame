@@ -37,6 +37,14 @@ module type BasicOps = sig
   val ( + ) : t -> t -> t
   val ( * ) : t -> t -> t
   val ( / ) : t -> t -> t
-  val ( - ) : t -> t -> t
+  val ( - ) : t -> t -> t 
   val ( ~- ) : t -> t
+end
+
+module type Key = sig
+  type t [@@deriving sexp, equal]
+end
+
+module type Scope = sig
+  type t [@@deriving sexp, equal]
 end
