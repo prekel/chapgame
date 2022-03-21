@@ -20,13 +20,14 @@
   (ocaml
    (>= 4.08.0))
   dune
-  (core :build)
-  (lwt :build)
+  core
+  lwt
   js_of_ocaml
   (bonsai
    (and
     (>= v0.15~)
     (< v0.16)))
+  uuidm
   (ppx_jane :build)
   (bisect_ppx :with-test)
   (ocaml-lsp-server :with-test)

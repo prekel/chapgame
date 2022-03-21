@@ -9,10 +9,11 @@ license: "MIT"
 depends: [
   "ocaml" {>= "4.08.0"}
   "dune" {>= "2.7"}
-  "core" {build}
-  "lwt" {build}
+  "core"
+  "lwt"
   "js_of_ocaml"
   "bonsai" {>= "v0.15~" & < "v0.16"}
+  "uuidm"
   "ppx_jane" {build}
   "bisect_ppx" {with-test}
   "ocaml-lsp-server" {with-test}

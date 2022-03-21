@@ -16,7 +16,7 @@ let%expect_test "" =
     [%sexp
       (Sequence.map t ~f:(SF.PolynomialEquation.roots ~eps:1e-5) : float list Sequence.t)];
   [%expect
-    {|
+    {| 
     (() (-2.4837841987609863 -0.25002431869506836)
      (-2.4837841987609863 -0.25002431869506836) ()) |}]
 ;;
@@ -50,388 +50,408 @@ let%expect_test "to_sexp_test" =
        (2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))) |}];
   let t1 = SC.Scene.t1 els in
   Sequence.iter t1 ~f:(fun a ->
-      Map.iter a ~f:(fun b -> print_s (SC.Figure2.Formula.Var1.sexp_of_t b));
+      print_s (SC.Figure2.Formula.sexp_of_t a);
       print_endline "\n");
   [%expect
     {|
-      (Sub
-       (Sum
-        (SumList
-         ((Mult (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0)))
-           (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0))))))
-        (SumList
-         ((Mult (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))
-           (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))))))
-       (SumList
-        ((Mult (Sum (Scope 1 (ScalarVar r)) (Scope 2 (ScalarVar r)))
-          (Sum (Scope 1 (ScalarVar r)) (Scope 2 (ScalarVar r)))))))
-      (Sum
-       (SumList
-        ((Mult (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0)))
-          (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
-           (Scope 1 (XOfVector (VectorVar v0_vec)))))
-         (Mult
-          (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
-           (Scope 1 (XOfVector (VectorVar v0_vec))))
-          (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0))))))
-       (SumList
-        ((Mult (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))
-          (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
-           (Scope 1 (YOfVector (VectorVar v0_vec)))))
-         (Mult
-          (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
-           (Scope 1 (YOfVector (VectorVar v0_vec))))
-          (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))))))
-      (Sum
-       (SumList
-        ((Mult (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0)))
-          (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
-         (Mult
-          (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
-           (Scope 1 (XOfVector (VectorVar v0_vec))))
-          (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
-           (Scope 1 (XOfVector (VectorVar v0_vec)))))
-         (Mult
-          (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
-          (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0))))))
-       (SumList
-        ((Mult (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))
-          (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
-         (Mult
-          (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
-           (Scope 1 (YOfVector (VectorVar v0_vec))))
-          (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
-           (Scope 1 (YOfVector (VectorVar v0_vec)))))
-         (Mult
-          (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
-          (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))))))
-      (Sum
-       (SumList
-        ((Mult
-          (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
-           (Scope 1 (XOfVector (VectorVar v0_vec))))
-          (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
-         (Mult
-          (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
-          (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
-           (Scope 1 (XOfVector (VectorVar v0_vec)))))))
-       (SumList
-        ((Mult
-          (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
-           (Scope 1 (YOfVector (VectorVar v0_vec))))
-          (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
-         (Mult
-          (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
-          (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
-           (Scope 1 (YOfVector (VectorVar v0_vec))))))))
-      (Sum
-       (SumList
-        ((Mult
-          (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
-          (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))))
-       (SumList
-        ((Mult
-          (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
-          (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5))))))))
+      ((0
+        (Sub
+         (Sum
+          (SumList
+           ((Mult (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0)))
+             (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0))))))
+          (SumList
+           ((Mult (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))
+             (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))))))
+         (SumList
+          ((Mult (Sum (Scope 1 (ScalarVar r)) (Scope 2 (ScalarVar r)))
+            (Sum (Scope 1 (ScalarVar r)) (Scope 2 (ScalarVar r))))))))
+       (1
+        (Sum
+         (SumList
+          ((Mult (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0)))
+            (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
+             (Scope 1 (XOfVector (VectorVar v0_vec)))))
+           (Mult
+            (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
+             (Scope 1 (XOfVector (VectorVar v0_vec))))
+            (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0))))))
+         (SumList
+          ((Mult (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))
+            (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
+             (Scope 1 (YOfVector (VectorVar v0_vec)))))
+           (Mult
+            (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
+             (Scope 1 (YOfVector (VectorVar v0_vec))))
+            (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0))))))))
+       (2
+        (Sum
+         (SumList
+          ((Mult (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0)))
+            (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
+           (Mult
+            (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
+             (Scope 1 (XOfVector (VectorVar v0_vec))))
+            (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
+             (Scope 1 (XOfVector (VectorVar v0_vec)))))
+           (Mult
+            (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
+            (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0))))))
+         (SumList
+          ((Mult (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))
+            (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
+           (Mult
+            (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
+             (Scope 1 (YOfVector (VectorVar v0_vec))))
+            (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
+             (Scope 1 (YOfVector (VectorVar v0_vec)))))
+           (Mult
+            (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
+            (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0))))))))
+       (3
+        (Sum
+         (SumList
+          ((Mult
+            (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
+             (Scope 1 (XOfVector (VectorVar v0_vec))))
+            (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
+           (Mult
+            (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
+            (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
+             (Scope 1 (XOfVector (VectorVar v0_vec)))))))
+         (SumList
+          ((Mult
+            (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
+             (Scope 1 (YOfVector (VectorVar v0_vec))))
+            (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
+           (Mult
+            (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
+            (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
+             (Scope 1 (YOfVector (VectorVar v0_vec)))))))))
+       (4
+        (Sum
+         (SumList
+          ((Mult
+            (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
+            (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))))
+         (SumList
+          ((Mult
+            (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
+            (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5))))))))))
 
 
-      (Sub
-       (Sum
-        (SumList
-         ((Mult (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0)))
-           (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0))))))
-        (SumList
-         ((Mult (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))
-           (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))))))
-       (SumList
-        ((Mult (Sum (Scope 1 (ScalarVar r)) (Scope 2 (ScalarVar r)))
-          (Sum (Scope 1 (ScalarVar r)) (Scope 2 (ScalarVar r)))))))
-      (Sum
-       (SumList
-        ((Mult (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0)))
-          (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
-           (Scope 1 (XOfVector (VectorVar v0_vec)))))
-         (Mult
-          (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
-           (Scope 1 (XOfVector (VectorVar v0_vec))))
-          (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0))))))
-       (SumList
-        ((Mult (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))
-          (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
-           (Scope 1 (YOfVector (VectorVar v0_vec)))))
-         (Mult
-          (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
-           (Scope 1 (YOfVector (VectorVar v0_vec))))
-          (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))))))
-      (Sum
-       (SumList
-        ((Mult (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0)))
-          (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
-         (Mult
-          (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
-           (Scope 1 (XOfVector (VectorVar v0_vec))))
-          (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
-           (Scope 1 (XOfVector (VectorVar v0_vec)))))
-         (Mult
-          (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
-          (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0))))))
-       (SumList
-        ((Mult (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))
-          (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
-         (Mult
-          (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
-           (Scope 1 (YOfVector (VectorVar v0_vec))))
-          (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
-           (Scope 1 (YOfVector (VectorVar v0_vec)))))
-         (Mult
-          (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
-          (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))))))
-      (Sum
-       (SumList
-        ((Mult
-          (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
-           (Scope 1 (XOfVector (VectorVar v0_vec))))
-          (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
-         (Mult
-          (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
-          (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
-           (Scope 1 (XOfVector (VectorVar v0_vec)))))))
-       (SumList
-        ((Mult
-          (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
-           (Scope 1 (YOfVector (VectorVar v0_vec))))
-          (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
-         (Mult
-          (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
-          (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
-           (Scope 1 (YOfVector (VectorVar v0_vec))))))))
-      (Sum
-       (SumList
-        ((Mult
-          (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
-          (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))))
-       (SumList
-        ((Mult
-          (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
-          (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5))))))))
+      ((0
+        (Sub
+         (Sum
+          (SumList
+           ((Mult (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0)))
+             (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0))))))
+          (SumList
+           ((Mult (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))
+             (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))))))
+         (SumList
+          ((Mult (Sum (Scope 1 (ScalarVar r)) (Scope 2 (ScalarVar r)))
+            (Sum (Scope 1 (ScalarVar r)) (Scope 2 (ScalarVar r))))))))
+       (1
+        (Sum
+         (SumList
+          ((Mult (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0)))
+            (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
+             (Scope 1 (XOfVector (VectorVar v0_vec)))))
+           (Mult
+            (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
+             (Scope 1 (XOfVector (VectorVar v0_vec))))
+            (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0))))))
+         (SumList
+          ((Mult (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))
+            (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
+             (Scope 1 (YOfVector (VectorVar v0_vec)))))
+           (Mult
+            (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
+             (Scope 1 (YOfVector (VectorVar v0_vec))))
+            (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0))))))))
+       (2
+        (Sum
+         (SumList
+          ((Mult (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0)))
+            (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
+           (Mult
+            (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
+             (Scope 1 (XOfVector (VectorVar v0_vec))))
+            (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
+             (Scope 1 (XOfVector (VectorVar v0_vec)))))
+           (Mult
+            (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
+            (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0))))))
+         (SumList
+          ((Mult (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))
+            (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
+           (Mult
+            (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
+             (Scope 1 (YOfVector (VectorVar v0_vec))))
+            (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
+             (Scope 1 (YOfVector (VectorVar v0_vec)))))
+           (Mult
+            (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
+            (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0))))))))
+       (3
+        (Sum
+         (SumList
+          ((Mult
+            (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
+             (Scope 1 (XOfVector (VectorVar v0_vec))))
+            (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
+           (Mult
+            (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
+            (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
+             (Scope 1 (XOfVector (VectorVar v0_vec)))))))
+         (SumList
+          ((Mult
+            (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
+             (Scope 1 (YOfVector (VectorVar v0_vec))))
+            (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
+           (Mult
+            (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
+            (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
+             (Scope 1 (YOfVector (VectorVar v0_vec)))))))))
+       (4
+        (Sum
+         (SumList
+          ((Mult
+            (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
+            (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))))
+         (SumList
+          ((Mult
+            (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
+            (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5))))))))))
 
 
-      (Sub
-       (Sum
-        (SumList
-         ((Mult (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0)))
-           (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0))))))
-        (SumList
-         ((Mult (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))
-           (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))))))
-       (SumList
-        ((Mult (Sum (Scope 1 (ScalarVar r)) (Scope 2 (ScalarVar r)))
-          (Sum (Scope 1 (ScalarVar r)) (Scope 2 (ScalarVar r)))))))
-      (Sum
-       (SumList
-        ((Mult (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0)))
-          (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
-           (Scope 1 (XOfVector (VectorVar v0_vec)))))
-         (Mult
-          (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
-           (Scope 1 (XOfVector (VectorVar v0_vec))))
-          (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0))))))
-       (SumList
-        ((Mult (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))
-          (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
-           (Scope 1 (YOfVector (VectorVar v0_vec)))))
-         (Mult
-          (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
-           (Scope 1 (YOfVector (VectorVar v0_vec))))
-          (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))))))
-      (Sum
-       (SumList
-        ((Mult (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0)))
-          (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
-         (Mult
-          (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
-           (Scope 1 (XOfVector (VectorVar v0_vec))))
-          (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
-           (Scope 1 (XOfVector (VectorVar v0_vec)))))
-         (Mult
-          (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
-          (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0))))))
-       (SumList
-        ((Mult (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))
-          (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
-         (Mult
-          (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
-           (Scope 1 (YOfVector (VectorVar v0_vec))))
-          (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
-           (Scope 1 (YOfVector (VectorVar v0_vec)))))
-         (Mult
-          (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
-          (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))))))
-      (Sum
-       (SumList
-        ((Mult
-          (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
-           (Scope 1 (XOfVector (VectorVar v0_vec))))
-          (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
-         (Mult
-          (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
-          (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
-           (Scope 1 (XOfVector (VectorVar v0_vec)))))))
-       (SumList
-        ((Mult
-          (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
-           (Scope 1 (YOfVector (VectorVar v0_vec))))
-          (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
-         (Mult
-          (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
-          (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
-           (Scope 1 (YOfVector (VectorVar v0_vec))))))))
-      (Sum
-       (SumList
-        ((Mult
-          (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
-          (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))))
-       (SumList
-        ((Mult
-          (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
-          (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5))))))))
+      ((0
+        (Sub
+         (Sum
+          (SumList
+           ((Mult (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0)))
+             (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0))))))
+          (SumList
+           ((Mult (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))
+             (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))))))
+         (SumList
+          ((Mult (Sum (Scope 1 (ScalarVar r)) (Scope 2 (ScalarVar r)))
+            (Sum (Scope 1 (ScalarVar r)) (Scope 2 (ScalarVar r))))))))
+       (1
+        (Sum
+         (SumList
+          ((Mult (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0)))
+            (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
+             (Scope 1 (XOfVector (VectorVar v0_vec)))))
+           (Mult
+            (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
+             (Scope 1 (XOfVector (VectorVar v0_vec))))
+            (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0))))))
+         (SumList
+          ((Mult (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))
+            (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
+             (Scope 1 (YOfVector (VectorVar v0_vec)))))
+           (Mult
+            (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
+             (Scope 1 (YOfVector (VectorVar v0_vec))))
+            (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0))))))))
+       (2
+        (Sum
+         (SumList
+          ((Mult (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0)))
+            (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
+           (Mult
+            (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
+             (Scope 1 (XOfVector (VectorVar v0_vec))))
+            (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
+             (Scope 1 (XOfVector (VectorVar v0_vec)))))
+           (Mult
+            (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
+            (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0))))))
+         (SumList
+          ((Mult (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))
+            (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
+           (Mult
+            (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
+             (Scope 1 (YOfVector (VectorVar v0_vec))))
+            (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
+             (Scope 1 (YOfVector (VectorVar v0_vec)))))
+           (Mult
+            (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
+            (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0))))))))
+       (3
+        (Sum
+         (SumList
+          ((Mult
+            (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
+             (Scope 1 (XOfVector (VectorVar v0_vec))))
+            (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
+           (Mult
+            (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
+            (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
+             (Scope 1 (XOfVector (VectorVar v0_vec)))))))
+         (SumList
+          ((Mult
+            (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
+             (Scope 1 (YOfVector (VectorVar v0_vec))))
+            (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
+           (Mult
+            (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
+            (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
+             (Scope 1 (YOfVector (VectorVar v0_vec)))))))))
+       (4
+        (Sum
+         (SumList
+          ((Mult
+            (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
+            (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))))
+         (SumList
+          ((Mult
+            (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
+            (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5))))))))))
 
 
-      (Sub
-       (Sum
-        (SumList
-         ((Mult (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0)))
-           (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0))))))
-        (SumList
-         ((Mult (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))
-           (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))))))
-       (SumList
-        ((Mult (Sum (Scope 1 (ScalarVar r)) (Scope 2 (ScalarVar r)))
-          (Sum (Scope 1 (ScalarVar r)) (Scope 2 (ScalarVar r)))))))
-      (Sum
-       (SumList
-        ((Mult (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0)))
-          (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
-           (Scope 1 (XOfVector (VectorVar v0_vec)))))
-         (Mult
-          (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
-           (Scope 1 (XOfVector (VectorVar v0_vec))))
-          (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0))))))
-       (SumList
-        ((Mult (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))
-          (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
-           (Scope 1 (YOfVector (VectorVar v0_vec)))))
-         (Mult
-          (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
-           (Scope 1 (YOfVector (VectorVar v0_vec))))
-          (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))))))
-      (Sum
-       (SumList
-        ((Mult (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0)))
-          (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
-         (Mult
-          (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
-           (Scope 1 (XOfVector (VectorVar v0_vec))))
-          (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
-           (Scope 1 (XOfVector (VectorVar v0_vec)))))
-         (Mult
-          (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
-          (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0))))))
-       (SumList
-        ((Mult (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))
-          (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
-         (Mult
-          (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
-           (Scope 1 (YOfVector (VectorVar v0_vec))))
-          (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
-           (Scope 1 (YOfVector (VectorVar v0_vec)))))
-         (Mult
-          (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
-          (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))))))
-      (Sum
-       (SumList
-        ((Mult
-          (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
-           (Scope 1 (XOfVector (VectorVar v0_vec))))
-          (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
-         (Mult
-          (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
-          (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
-           (Scope 1 (XOfVector (VectorVar v0_vec)))))))
-       (SumList
-        ((Mult
-          (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
-           (Scope 1 (YOfVector (VectorVar v0_vec))))
-          (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
-         (Mult
-          (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
-          (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
-           (Scope 1 (YOfVector (VectorVar v0_vec))))))))
-      (Sum
-       (SumList
-        ((Mult
-          (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
-          (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))))
-       (SumList
-        ((Mult
-          (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
-          (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
-           (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))))) |}]
+      ((0
+        (Sub
+         (Sum
+          (SumList
+           ((Mult (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0)))
+             (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0))))))
+          (SumList
+           ((Mult (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))
+             (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))))))
+         (SumList
+          ((Mult (Sum (Scope 1 (ScalarVar r)) (Scope 2 (ScalarVar r)))
+            (Sum (Scope 1 (ScalarVar r)) (Scope 2 (ScalarVar r))))))))
+       (1
+        (Sum
+         (SumList
+          ((Mult (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0)))
+            (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
+             (Scope 1 (XOfVector (VectorVar v0_vec)))))
+           (Mult
+            (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
+             (Scope 1 (XOfVector (VectorVar v0_vec))))
+            (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0))))))
+         (SumList
+          ((Mult (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))
+            (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
+             (Scope 1 (YOfVector (VectorVar v0_vec)))))
+           (Mult
+            (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
+             (Scope 1 (YOfVector (VectorVar v0_vec))))
+            (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0))))))))
+       (2
+        (Sum
+         (SumList
+          ((Mult (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0)))
+            (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
+           (Mult
+            (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
+             (Scope 1 (XOfVector (VectorVar v0_vec))))
+            (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
+             (Scope 1 (XOfVector (VectorVar v0_vec)))))
+           (Mult
+            (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
+            (Sub (Scope 2 (ScalarVar x0)) (Scope 1 (ScalarVar x0))))))
+         (SumList
+          ((Mult (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0)))
+            (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
+           (Mult
+            (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
+             (Scope 1 (YOfVector (VectorVar v0_vec))))
+            (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
+             (Scope 1 (YOfVector (VectorVar v0_vec)))))
+           (Mult
+            (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
+            (Sub (Scope 2 (ScalarVar y0)) (Scope 1 (ScalarVar y0))))))))
+       (3
+        (Sum
+         (SumList
+          ((Mult
+            (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
+             (Scope 1 (XOfVector (VectorVar v0_vec))))
+            (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
+           (Mult
+            (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
+            (Sub (Scope 2 (XOfVector (VectorVar v0_vec)))
+             (Scope 1 (XOfVector (VectorVar v0_vec)))))))
+         (SumList
+          ((Mult
+            (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
+             (Scope 1 (YOfVector (VectorVar v0_vec))))
+            (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))
+           (Mult
+            (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
+            (Sub (Scope 2 (YOfVector (VectorVar v0_vec)))
+             (Scope 1 (YOfVector (VectorVar v0_vec)))))))))
+       (4
+        (Sum
+         (SumList
+          ((Mult
+            (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
+            (Sub (Scope 2 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (XOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))))
+         (SumList
+          ((Mult
+            (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5))))
+            (Sub (Scope 2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))
+             (Scope 1 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))))))) |}]
 ;;
 
 let%expect_test "var" =
-  let module Var = SC.Figure2.Formula.Var1 in
+  let module Var = SC.Figure2.Expr in
   let module Formula = SC.Figure2.Formula in
-  let x, _x_name = Var.Infix.scalar_var "x" in
-  let y, _y_name = Var.Infix.scalar_var "y" in
-  let xy = Var.Infix.(x + y) in
+  let x, _x_name = Var.Syntax.scalar_var "x" in
+  let y, _y_name = Var.Syntax.scalar_var "y" in
+  let xy = Var.Syntax.(x + y) in
   let sexp = Var.sexp_of_t xy in
   print_s sexp;
   [%expect {| (Sum (ScalarVar x) (ScalarVar y)) |}];
