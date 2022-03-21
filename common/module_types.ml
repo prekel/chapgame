@@ -29,3 +29,14 @@ module type Number = sig
     -> t
     -> string
 end
+
+module type BasicOps = sig
+  type t
+
+  val zero : t
+  val ( + ) : t -> t -> t
+  val ( * ) : t -> t -> t
+  val ( / ) : t -> t -> t
+  val ( - ) : t -> t -> t
+  val ( ~- ) : t -> t
+end
