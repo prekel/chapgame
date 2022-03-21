@@ -112,7 +112,7 @@ module Make (N : Module_types.Number) = struct
 
     module Sample = struct
       module Formulas = struct
-        let b a b v ~r =
+        let b a b ~global ~r =
           let open Formula.Syntax in
           let x_1 = scope a.x ~scope:1 in
           let x_2 = scope b.x ~scope:2 in
@@ -121,10 +121,11 @@ module Make (N : Module_types.Number) = struct
           let r_1 = scope r ~scope:1 in
           let r_2 = scope r ~scope:2 in
           sqr (x_2 - x_1) + sqr (y_2 - y_1) - sqr (r_1 + r_2)
-          |> Formula.to_polynomial ~values:v ~scoped_values:(function
+          |> Formula.to_polynomial ~values:global ~scoped_values:(function
+                 | -1 -> global
                  | 1 -> Map.find_exn a.values
                  | 2 -> Map.find_exn b.values
-                 | _ -> v)
+                 | _ -> assert false)
         ;;
 
         let b1 a b ~r =
@@ -142,17 +143,22 @@ module Make (N : Module_types.Number) = struct
   end
 
   module Scene = struct
+    type figures = (Figure2.Id.t, Figure2.t, Figure2.Id.comparator_witness) Map.t
+
+    let sexp_of_figures a = [%sexp (Map.to_alist a : (Figure2.Id.t * Figure2.t) list)]
+
     type t =
-      { figures : (Figure2.Id.t, Figure2.t, Figure2.Id.comparator_witness) Map.t
+      { figures : figures
       ; global_values : values
       }
+    [@@deriving sexp_of]
 
     let figures { figures; _ } = figures
 
     module Exprs = struct
       open Expr.Syntax
 
-      let g, _ = scalar_var `g
+      let g = scope ~scope:(-1) (fst @@ scalar_var `g)
       let mu, _ = scalar_var `mu
       let v0_vec, v0_vec_name = vector_var `v0
 
@@ -177,6 +183,7 @@ module Make (N : Module_types.Number) = struct
 
       let x = Formula.of_alist_exn [ 0, x0; 1, v0_x; 2, a_x * half ]
       let y = Formula.of_alist_exn [ 0, y0; 1, v0_y; 2, a_y * half ]
+      let r = Formula.of_alist_exn [ 0, r ]
     end
 
     let add_figure figures ~id ~x0 ~y0 ~r ~mu =
@@ -191,7 +198,7 @@ module Make (N : Module_types.Number) = struct
                   (module Vars)
                   [ `x0, Expr.Scalar x0
                   ; `y0, Expr.Scalar y0
-                  ; `v0, Expr.Scalar N.zero
+                  ; `v0, Expr.Vector (N.zero, N.zero)
                   ; `r, Expr.Scalar r
                   ; `mu, Expr.Scalar mu
                   ]
@@ -206,16 +213,31 @@ module Make (N : Module_types.Number) = struct
       }
     ;;
 
-    (* let t scene = let scene = scene in let seq = Map.to_sequence scene.figures in let p
-       = Sequence.cartesian_product seq seq in let r, _ = Expr.Syntax.scalar_var "r" in
-       let r = Formula.of_alist_exn [ 0, r ] in let q = Sequence.map p ~f:(fun ((_id1,
-       f1), (_id2, f2)) -> Figure2.Sample.Formulas.b f1 f2 (fun _ -> assert false) ~r) in
-       q ;;
+    let t scene =
+      let scene = scene in
+      let seq = Map.to_sequence scene.figures in
+      let p = Sequence.cartesian_product seq seq in
+      let q =
+        Sequence.map p ~f:(fun ((_id1, f1), (_id2, f2)) ->
+            Figure2.Sample.Formulas.b
+              f1
+              f2
+              ~global:(Map.find_exn scene.global_values)
+              ~r:Formulas.r)
+      in
+      q
+    ;;
 
-       let t1 scene = let scene = scene in let seq = Map.to_sequence scene.figures in let
-       p = Sequence.cartesian_product seq seq in let r, _ = Vars.r in let r =
-       Formula.of_alist_exn [ 0, r ] in let q = Sequence.map p ~f:(fun ((_id1, f1), (_id2,
-       f2)) -> Figure2.Sample.Formulas.b1 f1 f2 ~r) in q ;; *)
+    let t1 scene =
+      let scene = scene in
+      let seq = Map.to_sequence scene.figures in
+      let p = Sequence.cartesian_product seq seq in
+      let q =
+        Sequence.map p ~f:(fun ((_id1, f1), (_id2, f2)) ->
+            Figure2.Sample.Formulas.b1 f1 f2 ~r:Formulas.r)
+      in
+      q
+    ;;
 
     (* let a = t (scene ()) *)
   end
@@ -272,8 +294,8 @@ module Make (N : Module_types.Number) = struct
                       figures =
                         add_figure s.figures ~id:(Figure2.Id.next ()) ~x0 ~y0 ~r ~mu
                     }
-            , [] )
-          | None -> model, [ Events.SuccessfulAction a ]
+            , [ Events.SuccessfulAction a ] )
+          | None -> assert false, []
         end
     ;;
   end
