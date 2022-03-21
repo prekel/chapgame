@@ -29,6 +29,8 @@ module type S = sig
     | XOfVector : vector t -> scalar t
     | YOfVector : vector t -> scalar t
     | LengthOfVector : vector t -> scalar t
+    | UnitVector : vector t -> vector t
+    | VectorOfXY : scalar t * scalar t -> vector t
     | Scope : scope * 'a t -> 'a t
 
   val equal : 'result t -> 'result t -> bool
@@ -60,6 +62,8 @@ module type S = sig
     val vector_length : vector t -> scalar t
     val vector_x : vector t -> scalar t
     val vector_y : vector t -> scalar t
+    val vector_unit : vector t -> vector t
+    val vector_of_scalar : scalar t -> scalar t -> vector t
     val scope : scope:scope -> 'a t -> 'a t
   end
 end

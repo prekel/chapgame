@@ -32,10 +32,44 @@ module Make (N : Module_types.Number) = struct
     end
   end
 
-  module Expr = Expr.Make (String) (Int) (N)
-  module Formula = Formula.Make (String) (Int) (N) (Expr) (Solver)
+  module Vars :
+    Identifiable.S
+      with type t =
+        [ `x0
+        | `y0
+        | `v0
+        | `r
+        | `g
+        | `mu
+        ] = struct
+    module T = struct
+      type t =
+        [ `x0
+        | `y0
+        | `v0
+        | `r
+        | `g
+        | `mu
+        ]
+      [@@deriving bin_io, hash, compare, sexp]
 
-  type values = (string, Expr.value, String.comparator_witness) Map.t
+      include Sexpable.To_stringable (struct
+        type nonrec t = t [@@deriving sexp]
+      end)
+
+      let module_name = "Vars"
+    end
+
+    include T
+    include Identifiable.Make (T)
+  end
+
+  module Expr = Expr.Make (Vars) (Int) (N)
+  module Formula = Formula.Make (Vars) (Int) (N) (Expr) (Solver)
+
+  type values = (Vars.t, Expr.value, String.comparator_witness) Map.t
+
+  let sexp_of_values values = [%sexp (Map.to_alist values : (Vars.t * Expr.value) list)]
 
   module Figure2 = struct
     module Id : sig
@@ -67,8 +101,6 @@ module Make (N : Module_types.Number) = struct
 
     (* type formula = { interval : [ `Interval of N.t Expr.t * N.t Expr.t | `PosInfinity
        of N.t Expr.t ] ; x : Formula.t ; y : Formula.t } *)
-
-    let sexp_of_values values = [%sexp (Map.to_alist values : (string * Expr.value) list)]
 
     type t =
       { id : Id.t
@@ -117,23 +149,30 @@ module Make (N : Module_types.Number) = struct
 
     let figures { figures; _ } = figures
 
-    module Vars = struct
+    module Exprs = struct
       open Expr.Syntax
 
-      let a_vec, a_vec_name = vector_var "a_vec"
+      let g, _ = scalar_var `g
+      let mu, _ = scalar_var `mu
+      let v0_vec, v0_vec_name = vector_var `v0
+
+      let a_vec =
+        let f = mu * g in
+        -vector_unit v0_vec * vector_of_scalar f f
+      ;;
+
       let a_x = vector_x a_vec
       let a_y = vector_y a_vec
-      let v0_vec, v0_vec_name = vector_var "v0_vec"
       let v0_x = vector_x v0_vec
       let v0_y = vector_y v0_vec
-      let x0, x0_name = scalar_var "x0"
-      let y0, y0_name = scalar_var "y0"
-      let r, r_name = scalar_var "r"
+      let x0, x0_name = scalar_var `x0
+      let y0, y0_name = scalar_var `y0
+      let r, r_name = scalar_var `r
       let half = scalar_const N.(one / (one + one))
     end
 
     module Formulas = struct
-      open Vars
+      open Exprs
       open Expr.Syntax
 
       let x = Formula.of_alist_exn [ 0, x0; 1, v0_x; 2, a_x * half ]
@@ -141,69 +180,23 @@ module Make (N : Module_types.Number) = struct
     end
 
     let scene () =
-      let open Vars in
+      let open Exprs in
       let open Formulas in
-      { figures =
-          Map.of_alist_exn
-            (module Int)
-            [ ( 0
-              , { Figure2.id = Figure2.Id.next ()
-                ; values =
-                    Map.of_alist_exn
-                      (module String)
-                      [ a_vec_name, Expr.Vector N.(one, -one / (one + one))
-                      ; v0_vec_name, Expr.Vector N.(-(one + one), one / (one + one))
-                      ; x0_name, Expr.Scalar N.(-(one + one + one))
-                      ; y0_name, Expr.Scalar N.(one + one + one)
-                      ; r_name, Expr.Scalar N.(one + one + one + one)
-                      ]
-                ; x
-                ; y (* ; xy = [] *)
-                } )
-            ; ( 1
-              , { Figure2.id = Figure2.Id.next ()
-                ; values =
-                    Map.of_alist_exn
-                      (module String)
-                      [ a_vec_name, Expr.Vector N.(one, one / (one + one))
-                      ; v0_vec_name, Expr.Vector N.(one + one, one / (one + one))
-                      ; x0_name, Expr.Scalar N.(one + one + one)
-                      ; y0_name, Expr.Scalar N.(one + one + one)
-                      ; r_name, Expr.Scalar N.(one)
-                      ]
-                ; x
-                ; y (* ; xy = [] *)
-                } )
-            ]
-      ; global_values = Map.empty (module String)
+      { figures = Map.of_alist_exn (module Figure2.Id) []
+      ; global_values = Map.empty (module Vars)
       }
     ;;
 
-    let t scene =
-      let scene = scene in
-      let seq = Map.to_sequence scene.figures in
-      let p = Sequence.cartesian_product seq seq in
-      let r, _ = Expr.Syntax.scalar_var "r" in
-      let r = Formula.of_alist_exn [ 0, r ] in
-      let q =
-        Sequence.map p ~f:(fun ((_id1, f1), (_id2, f2)) ->
-            Figure2.Sample.Formulas.b f1 f2 (fun _ -> assert false) ~r)
-      in
-      q
-    ;;
+    (* let t scene = let scene = scene in let seq = Map.to_sequence scene.figures in let p
+       = Sequence.cartesian_product seq seq in let r, _ = Expr.Syntax.scalar_var "r" in
+       let r = Formula.of_alist_exn [ 0, r ] in let q = Sequence.map p ~f:(fun ((_id1,
+       f1), (_id2, f2)) -> Figure2.Sample.Formulas.b f1 f2 (fun _ -> assert false) ~r) in
+       q ;;
 
-    let t1 scene =
-      let scene = scene in
-      let seq = Map.to_sequence scene.figures in
-      let p = Sequence.cartesian_product seq seq in
-      let r, _ = Expr.Syntax.scalar_var "r" in
-      let r = Formula.of_alist_exn [ 0, r ] in
-      let q =
-        Sequence.map p ~f:(fun ((_id1, f1), (_id2, f2)) ->
-            Figure2.Sample.Formulas.b1 f1 f2 ~r)
-      in
-      q
-    ;;
+       let t1 scene = let scene = scene in let seq = Map.to_sequence scene.figures in let
+       p = Sequence.cartesian_product seq seq in let r, _ = Vars.r in let r =
+       Formula.of_alist_exn [ 0, r ] in let q = Sequence.map p ~f:(fun ((_id1, f1), (_id2,
+       f2)) -> Figure2.Sample.Formulas.b1 f1 f2 ~r) in q ;; *)
 
     let a = t (scene ())
   end

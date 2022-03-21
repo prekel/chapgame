@@ -31,6 +31,8 @@ module type S = sig
     | XOfVector : vector t -> scalar t
     | YOfVector : vector t -> scalar t
     | LengthOfVector : vector t -> scalar t
+    | UnitVector : vector t -> vector t
+    | VectorOfXY : scalar t * scalar t -> vector t
     | Scope : scope * 'a t -> 'a t
 
   val equal : 'result t -> 'result t -> bool
@@ -62,6 +64,8 @@ module type S = sig
     val vector_length : vector t -> scalar t
     val vector_x : vector t -> scalar t
     val vector_y : vector t -> scalar t
+    val vector_unit : vector t -> vector t
+    val vector_of_scalar : scalar t -> scalar t -> vector t
     val scope : scope:scope -> 'a t -> 'a t
   end
 end
@@ -69,7 +73,7 @@ end
 module Make
     (Key : Module_types.Key)
     (Scope : Module_types.Scope)
-    (N : Module_types.Number) = 
+    (N : Module_types.Number) =
 struct
   type key = Key.t [@@deriving sexp]
   type scalar = N.t [@@deriving sexp]
@@ -111,6 +115,8 @@ struct
     | XOfVector : vector t -> scalar t
     | YOfVector : vector t -> scalar t
     | LengthOfVector : vector t -> scalar t
+    | UnitVector : vector t -> vector t
+    | VectorOfXY : scalar t * scalar t -> vector t
     | Scope : scope * 'a t -> 'a t
 
   let rec equal : type result. result t -> result t -> bool =
@@ -130,6 +136,8 @@ struct
     | XOfVector a, XOfVector b
     | YOfVector a, YOfVector b
     | LengthOfVector a, LengthOfVector b -> equal a b
+    | UnitVector a, UnitVector b -> equal a b
+    | VectorOfXY (al, ar), VectorOfXY (bl, br) -> equal al bl && equal ar br
     | Scope (sa, a), Scope (sb, b) -> Scope.(equal sa sb) && equal a b
     | _ -> false
  ;;
@@ -166,6 +174,9 @@ struct
     | Sexp.List [ Atom "Mult"; a; b ] -> Mult (t_vector_of_sexp a, t_vector_of_sexp b)
     | Sexp.List [ Atom "Div"; a; b ] -> Div (t_vector_of_sexp a, t_vector_of_sexp b)
     | Sexp.List [ Atom "Neg"; a ] -> Neg (t_vector_of_sexp a)
+    | Sexp.List [ Atom "UnitVector"; a ] -> UnitVector (t_vector_of_sexp a)
+    | Sexp.List [ Atom "VectorOfXY"; a; b ] ->
+      VectorOfXY (t_scalar_of_sexp a, t_scalar_of_sexp b)
     | Sexp.List [ Atom "Scope"; s; v ] -> Scope (Scope.t_of_sexp s, t_vector_of_sexp v)
     | other -> Error.raise_s [%message "Cannot deserialize" ~sexp:(other : Sexp.t)]
   ;;
@@ -188,6 +199,8 @@ struct
     | XOfVector v -> List [ Atom "XOfVector"; sexp_of_t v ]
     | YOfVector v -> List [ Atom "YOfVector"; sexp_of_t v ]
     | LengthOfVector v -> List [ Atom "LengthOfVector"; sexp_of_t v ]
+    | UnitVector v -> List [ Atom "UnitVector"; sexp_of_t v ]
+    | VectorOfXY (a, b) -> List [ Atom "VectorOfXY"; sexp_of_t a; sexp_of_t b ]
     | Scope (s, v) -> List [ Atom "Scope"; [%sexp (s : Scope.t)]; sexp_of_t v ]
   ;;
 
@@ -260,6 +273,15 @@ struct
     | LengthOfVector v ->
       let x, y = calc ~values ~scoped_values (module VectorOps) v in
       N.(sqrt ((x * x) + (y * y)))
+    | UnitVector v ->
+      let x, y = calc ~values ~scoped_values (module VectorOps) v in
+      let length = N.(sqrt ((x * x) + (y * y))) in
+      N.(x / length, y / length)
+    | VectorOfXY (a, b) ->
+      let calc = calc ~values ~scoped_values (module N) in
+      let x = calc a in
+      let y = calc b in
+      x, y
     | Scope (scope, x) -> calc ~values:(scoped_values scope) ~scoped_values (module Ops) x
  ;;
 
@@ -277,6 +299,8 @@ struct
     let vector_length v = LengthOfVector v
     let vector_x v = XOfVector v
     let vector_y v = YOfVector v
+    let vector_unit v = UnitVector v
+    let vector_of_scalar a b = VectorOfXY (a, b)
     let scope ~scope a = Scope (scope, a)
   end
 end
