@@ -67,7 +67,7 @@ module Make (N : Module_types.Number) = struct
   module Expr = Expr.Make (Vars) (Int) (N)
   module Formula = Formula.Make (Vars) (Int) (N) (Expr) (Solver)
 
-  type values = (Vars.t, Expr.value, String.comparator_witness) Map.t
+  type values = (Vars.t, Expr.value, Vars.comparator_witness) Map.t
 
   let sexp_of_values values = [%sexp (Map.to_alist values : (Vars.t * Expr.value) list)]
 
@@ -143,7 +143,7 @@ module Make (N : Module_types.Number) = struct
 
   module Scene = struct
     type t =
-      { figures : (Figure2.Id.t, Figure2.t, Int.comparator_witness) Map.t
+      { figures : (Figure2.Id.t, Figure2.t, Figure2.Id.comparator_witness) Map.t
       ; global_values : values
       }
 
@@ -179,11 +179,30 @@ module Make (N : Module_types.Number) = struct
       let y = Formula.of_alist_exn [ 0, y0; 1, v0_y; 2, a_y * half ]
     end
 
-    let scene () =
-      let open Exprs in
-      let open Formulas in
-      { figures = Map.of_alist_exn (module Figure2.Id) []
-      ; global_values = Map.empty (module Vars)
+    let add_figure figures ~id ~x0 ~y0 ~r ~mu =
+      Map.add_exn
+        figures
+        ~key:id
+        ~data:
+          Figure2.
+            { id
+            ; values =
+                Map.of_alist_exn
+                  (module Vars)
+                  [ `x0, Expr.Scalar x0
+                  ; `y0, Expr.Scalar y0
+                  ; `v0, Expr.Scalar N.zero
+                  ; `r, Expr.Scalar r
+                  ; `mu, Expr.Scalar mu
+                  ]
+            ; x = Formulas.x
+            ; y = Formulas.y
+            }
+    ;;
+
+    let scene ~g =
+      { figures = Map.empty (module Figure2.Id)
+      ; global_values = Map.of_alist_exn (module Vars) [ `g, Expr.Scalar g ]
       }
     ;;
 
@@ -198,29 +217,64 @@ module Make (N : Module_types.Number) = struct
        Formula.of_alist_exn [ 0, r ] in let q = Sequence.map p ~f:(fun ((_id1, f1), (_id2,
        f2)) -> Figure2.Sample.Formulas.b1 f1 f2 ~r) in q ;; *)
 
-    let a = t (scene ())
-  end
-
-  module Events = struct
-    type t =
-      | Init of (int, Figure2.t, Int.comparator_witness) Map.t
-      | BodiesMoved
+    (* let a = t (scene ()) *)
   end
 
   module Action = struct
+    type a =
+      | AddBody of
+          { x0 : N.t
+          ; y0 : N.t
+          ; r : N.t
+          ; mu : N.t
+          }
+    (* | GiveVelocity of Time_ns.Span.t * Figure2.Id.t * Figure.Velocity.t Figure.Vec.t *)
+    [@@deriving sexp]
+
     type t =
-      | GiveVelocity of Time_ns.Span.t * Figure2.Id.t * Figure.Velocity.t Figure.Vec.t
+      { time : Time_ns.Span.t
+      ; action : a
+      }
+    [@@deriving sexp]
+  end
+
+  module Events = struct
+    type t = SuccessfulAction of Action.t [@@deriving sexp]
   end
 
   module Model = struct
     type t = (Time_ns.Span.t, Scene.t, Time_ns.Span.comparator_witness) Map.t
 
-    let e () : t =
-      Map.of_alist_exn (module Time_ns.Span) [ Time_ns.Span.zero, Scene.scene () ]
+    let empty ~g : t =
+      Map.of_alist_exn (module Time_ns.Span) [ Time_ns.Span.zero, Scene.scene ~g ]
     ;;
   end
 
   module Engine = struct
-    let recv model _action = model, assert false
+    let recv model (Action.{ time; action } as a) =
+      match action with
+      | Action.AddBody { x0; y0; r; mu } ->
+        begin
+          match Map.max_elt model with
+          | Some (max_time, _) when Time_ns.Span.(max_time > time) ->
+            Error.raise_s
+              [%message
+                "Unimplemented"
+                  ~time:(time : Time_ns.Span.t)
+                  ~max_time:(max_time : Time_ns.Span.t)]
+          | Some (_, s) ->
+            ( Map.add_exn
+                model
+                ~key:time
+                ~data:
+                  Scene.
+                    { s with
+                      figures =
+                        add_figure s.figures ~id:(Figure2.Id.next ()) ~x0 ~y0 ~r ~mu
+                    }
+            , [] )
+          | None -> model, [ Events.SuccessfulAction a ]
+        end
+    ;;
   end
 end
