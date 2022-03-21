@@ -50,7 +50,7 @@ let%expect_test "to_sexp_test" =
        (2 (Mult (YOfVector (VectorVar a_vec)) (ScalarConst 0.5)))))) |}];
   let t1 = SC.Scene.t1 els in
   Sequence.iter t1 ~f:(fun a ->
-      Map.iter a ~f:(fun b -> print_s (SC.Figure2.Formula.Var.sexp_of_t b));
+      Map.iter a ~f:(fun b -> print_s (SC.Figure2.Formula.Var1.sexp_of_t b));
       print_endline "\n");
   [%expect
     {|
@@ -427,7 +427,7 @@ let%expect_test "to_sexp_test" =
 ;;
 
 let%expect_test "var" =
-  let module Var = SC.Figure2.Formula.Var in
+  let module Var = SC.Figure2.Formula.Var1 in
   let module Formula = SC.Figure2.Formula in
   let x, _x_name = Var.Infix.scalar_var "x" in
   let y, _y_name = Var.Infix.scalar_var "y" in

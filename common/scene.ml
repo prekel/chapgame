@@ -54,8 +54,13 @@ module Make (N : Module_types.Number) = struct
           | Body of string
       end
 
-      module Var = struct
-        type key = string [@@deriving sexp]
+      module Var (Key : sig
+        type t [@@deriving sexp, equal]
+      end) (Scope : sig
+        type t [@@deriving sexp, equal]
+      end) =
+      struct
+        type key = Key.t [@@deriving sexp]
         type scalar = N.t [@@deriving sexp]
         type vector = N.t * N.t [@@deriving sexp]
 
@@ -64,7 +69,7 @@ module Make (N : Module_types.Number) = struct
           | Vector of vector
         [@@deriving sexp]
 
-        type scope_id = int [@@deriving sexp]
+        type scope_id = Scope.t [@@deriving sexp]
 
         let scalar_exn = function
           | Scalar s -> s
@@ -78,7 +83,7 @@ module Make (N : Module_types.Number) = struct
           | Vector v -> v
         ;;
 
-        type values = (key, value, String.comparator_witness) Map.t
+        type values = key -> value
 
         let sexp_of_values v = [%sexp (Map.to_alist v : (key * value) list)]
 
@@ -115,7 +120,7 @@ module Make (N : Module_types.Number) = struct
           | ScalarGlobalVar a, ScalarGlobalVar b
           | VectorGlobalVar a, VectorGlobalVar b
           | ScalarVar a, ScalarVar b
-          | VectorVar a, VectorVar b -> String.(a = b)
+          | VectorVar a, VectorVar b -> Key.(equal a b)
           | Sum (al, ar), Sum (bl, br)
           | Sub (al, ar), Sub (bl, br)
           | Mult (al, ar), Mult (bl, br)
@@ -125,7 +130,7 @@ module Make (N : Module_types.Number) = struct
           | XOfVector a, XOfVector b
           | YOfVector a, YOfVector b
           | LengthOfVector a, LengthOfVector b -> equal a b
-          | Scope (sa, a), Scope (sb, b) -> Int.(equal sa sb) && equal a b
+          | Scope (sa, a), Scope (sb, b) -> Scope.(equal sa sb) && equal a b
           | _ -> false
        ;;
 
@@ -138,7 +143,7 @@ module Make (N : Module_types.Number) = struct
           | Sexp.List [ Atom "ScalarPosInf" ] -> ScalarPosInf
           | Sexp.List [ Atom "ScalarZero" ] -> ScalarZero
           | Sexp.List [ Atom "ScalarGlobalVar"; key ] ->
-            ScalarGlobalVar (String.t_of_sexp key)
+            ScalarGlobalVar (Key.t_of_sexp key)
           | Sexp.List [ Atom "ScalarVar"; key ] -> ScalarVar (key_of_sexp key)
           | Sexp.List [ Atom "Sum"; a; b ] -> Sum (t_scalar_of_sexp a, t_scalar_of_sexp b)
           | Sexp.List [ Atom "SumList"; l ] -> SumList (List.t_of_sexp t_scalar_of_sexp l)
@@ -232,10 +237,10 @@ module Make (N : Module_types.Number) = struct
           | ScalarNegInf -> N.neg_infinity
           | ScalarPosInf -> N.infinity
           | ScalarZero -> N.zero
-          | ScalarVar name -> Map.find_exn values name |> scalar_exn
-          | VectorVar name -> Map.find_exn values name |> vector_exn
-          | ScalarGlobalVar name -> Map.find_exn global_values name |> scalar_exn
-          | VectorGlobalVar name -> Map.find_exn global_values name |> vector_exn
+          | ScalarVar name -> values name |> scalar_exn
+          | VectorVar name -> values name |> vector_exn
+          | ScalarGlobalVar name -> global_values name |> scalar_exn
+          | VectorGlobalVar name -> global_values name |> vector_exn
           | Sum (a, b) ->
             let calc = calc ~values ~global_values ~scoped_values (module ScalarVec) in
             let ca = calc a in
@@ -303,16 +308,18 @@ module Make (N : Module_types.Number) = struct
         end
       end
 
-      type t = (int, Var.scalar Var.t, Int.comparator_witness) Map.t
+      module Var1 = Var (String) (Int)
+
+      type t = (int, Var1.scalar Var1.t, Int.comparator_witness) Map.t
 
       let sexp_of_t (t : t) =
         [%sexp
-          (Map.to_alist t |> List.map ~f:(fun (d, v) -> d, Var.sexp_of_t v)
+          (Map.to_alist t |> List.map ~f:(fun (d, v) -> d, Var1.sexp_of_t v)
             : (int * Sexp.t) list)]
       ;;
 
-      let ( + ) = Map.merge_skewed ~combine:(fun ~key:_ a b -> Var.Sum (a, b))
-      let ( ~- ) = Map.map ~f:(fun v -> Var.Neg v)
+      let ( + ) = Map.merge_skewed ~combine:(fun ~key:_ a b -> Var1.Sum (a, b))
+      let ( ~- ) = Map.map ~f:(fun v -> Var1.Neg v)
 
       let ( * ) a b =
         Map.fold
@@ -321,53 +328,49 @@ module Make (N : Module_types.Number) = struct
           ~f:(fun ~key:degree1 ~data:coef1 acc ->
             Map.merge_skewed
               acc
-              (Map.map b ~f:(fun coef2 -> Var.Mult (coef1, coef2))
+              (Map.map b ~f:(fun coef2 -> Var1.Mult (coef1, coef2))
               |> Map.map_keys_exn (module Int) ~f:(fun degree2 -> degree1 * degree2))
-              ~combine:(fun ~key:_ v1 v2 -> Var.Sum (v1, v2)))
+              ~combine:(fun ~key:_ v1 v2 -> Var1.Sum (v1, v2)))
       ;;
 
       let to_polynomial p ~values ~global_values ~scoped_values : Solver.Polynomial.t =
         Map.map p ~f:(fun a ->
-            Var.calc ~values ~global_values ~scoped_values (module N) a)
+            Var1.calc ~values ~global_values ~scoped_values (module N) a)
         |> Solver.Polynomial.of_map
       ;;
     end
 
     type formula =
-      { interval : Formula.Var.scalar Formula.Var.t * Formula.Var.scalar Formula.Var.t
+      { interval : Formula.Var1.scalar Formula.Var1.t * Formula.Var1.scalar Formula.Var1.t
       ; x : Formula.t
       ; y : Formula.t
       }
 
+    type values = (string, Formula.Var1.value, String.comparator_witness) Map.t
+
+    let sexp_of_values values =
+      [%sexp (Map.to_alist values : (string * Formula.Var1.value) list)]
+    ;;
+
     type t =
       { id : int
-      ; values : Formula.Var.values
+      ; values : values
       ; x : Formula.t
       ; y : Formula.t (* ; xy : 'a formula list *)
       }
     [@@deriving sexp_of]
 
     module FormulaScored = struct
-      let ( + ) = Map.merge_skewed ~combine:(fun ~key:_ a b -> Formula.Var.Sum (a, b))
-      let ( - ) = Map.merge_skewed ~combine:(fun ~key:_ a b -> Formula.Var.Sub (a, b))
+      let ( + ) = Map.merge_skewed ~combine:(fun ~key:_ a b -> Formula.Var1.Sum (a, b))
+      let ( - ) = Map.merge_skewed ~combine:(fun ~key:_ a b -> Formula.Var1.Sub (a, b))
 
-      (* let ( ~- ) { scope; formula } = Map.map formula ~f:(fun v -> Formula.Var.Neg
-         (Formula.Var.Scope (scope, v))) ;;
-
-         let ( * ) wanted_scope { scope = scope1; formula = formula1 } { scope = scope2;
-         formula = formula2 } = { scope = wanted_scope ; formula = Map.fold formula1
-         ~init:(Map.empty (module Int)) ~f:(fun ~key:degree1 ~data:coef1 acc ->
-         Map.merge_skewed acc (Map.map formula2 ~f:(fun coef2 -> Formula.Var.Mult (
-         Formula.Var.Scope (scope1, coef1) , Formula.Var.Scope (scope2, coef2) )) |>
-         Map.map_keys_exn (module Int) ~f:(fun degree2 -> degree1 * degree2))
-         ~combine:(fun ~key:_ v1 v2 -> Formula.Var.Sum (v1, v2))) } ;; *)
       let sqr a =
         Map.to_sequence a
         |> Sequence.cartesian_product (Map.to_sequence a)
         |> Sequence.map ~f:(fun ((d1, c1), (d2, c2)) ->
-               Int.(d1 + d2), Formula.Var.Mult (c1, c2))
+               Int.(d1 + d2), Formula.Var1.Mult (c1, c2))
         |> Map.of_sequence_multi (module Int)
-        |> Map.map ~f:(fun a -> Formula.Var.SumList a)
+        |> Map.map ~f:(fun a -> Formula.Var1.SumList a)
       ;;
     end
 
@@ -376,7 +379,7 @@ module Make (N : Module_types.Number) = struct
         [< `Body1 | `Body2 | `Global | `Phantom > `Body1 `Body2 `Phantom ] as 'a
 
       module Vars = struct
-        open Formula.Var.Infix
+        open Formula.Var1.Infix
 
         let a_vec, _ = vector_var "a_vec"
         let a_x = vector_x a_vec
@@ -393,7 +396,7 @@ module Make (N : Module_types.Number) = struct
 
       module Formulas = struct
         open Vars
-        open Formula.Var.Infix
+        open Formula.Var1.Infix
 
         let x = Map.of_alist_exn (module Int) [ 0, x0; 1, v0_x; 2, a_x * half ]
         let y = Map.of_alist_exn (module Int) [ 0, y0; 1, v0_y; 2, a_y * half ]
@@ -408,7 +411,7 @@ module Make (N : Module_types.Number) = struct
            Formula.to_polynomial ~values:v ~scoped_values:(function | `Figure1 -> v1 |
            `Figure2 -> v2 | `Global -> v | `Scope -> v | `Local -> v | `Static -> v) ;; *)
 
-        let scope m ~scope = Map.map m ~f:(fun v -> Formula.Var.Scope (scope, v))
+        let scope m ~scope = Map.map m ~f:(fun v -> Formula.Var1.Scope (scope, v))
 
         let b a b v ~r =
           let open FormulaScored in
@@ -420,8 +423,8 @@ module Make (N : Module_types.Number) = struct
           let r_2 = scope r ~scope:2 in
           sqr (x_2 - x_1) + sqr (y_2 - y_1) - sqr (r_1 + r_2)
           |> Formula.to_polynomial ~values:v ~global_values:v ~scoped_values:(function
-                 | 1 -> a.values
-                 | 2 -> b.values
+                 | 1 -> Map.find_exn a.values
+                 | 2 -> Map.find_exn b.values
                  | _ -> v)
         ;;
 
@@ -458,13 +461,13 @@ module Make (N : Module_types.Number) = struct
   module Scene = struct
     type t =
       { figures : (int, Figure2.t, Int.comparator_witness) Map.t
-      ; global_values : Figure2.Formula.Var.values
+      ; global_values : Figure2.Formula.Var1.values
       }
 
     let figures { figures; _ } = figures
 
     module Vars1 = struct
-      open Figure2.Formula.Var.Infix
+      open Figure2.Formula.Var1.Infix
 
       let a_vec, a_vec_name = vector_var "a_vec"
       let a_x = vector_x a_vec
@@ -481,14 +484,14 @@ module Make (N : Module_types.Number) = struct
 
     module Formulas1 = struct
       open Vars1
-      open Figure2.Formula.Var.Infix
+      open Figure2.Formula.Var1.Infix
 
       let x = Map.of_alist_exn (module Int) [ 0, x0; 1, v0_x; 2, a_x * half ]
       let y = Map.of_alist_exn (module Int) [ 0, y0; 1, v0_y; 2, a_y * half ]
     end
 
     let scene () =
-      let open Figure2.Formula.Var.Infix in
+      let open Figure2.Formula.Var1.Infix in
       let a_vec, a_vec_name = vector_var "a_vec" in
       let a_x = vector_x a_vec in
       let a_y = vector_y a_vec in
@@ -510,12 +513,14 @@ module Make (N : Module_types.Number) = struct
                 ; values =
                     Map.of_alist_exn
                       (module String)
-                      [ a_vec_name, Figure2.Formula.Var.Vector N.(one, -one / (one + one))
+                      [ ( a_vec_name
+                        , Figure2.Formula.Var1.Vector N.(one, -one / (one + one)) )
                       ; ( v0_vec_name
-                        , Figure2.Formula.Var.Vector N.(-(one + one), one / (one + one)) )
-                      ; x0_name, Figure2.Formula.Var.Scalar N.(-(one + one + one))
-                      ; y0_name, Figure2.Formula.Var.Scalar N.(one + one + one)
-                      ; r_name, Figure2.Formula.Var.Scalar N.(one + one + one + one)
+                        , Figure2.Formula.Var1.Vector N.(-(one + one), one / (one + one))
+                        )
+                      ; x0_name, Figure2.Formula.Var1.Scalar N.(-(one + one + one))
+                      ; y0_name, Figure2.Formula.Var1.Scalar N.(one + one + one)
+                      ; r_name, Figure2.Formula.Var1.Scalar N.(one + one + one + one)
                       ]
                 ; x
                 ; y (* ; xy = [] *)
@@ -525,18 +530,18 @@ module Make (N : Module_types.Number) = struct
                 ; values =
                     Map.of_alist_exn
                       (module String)
-                      [ a_vec_name, Figure2.Formula.Var.Vector N.(one, one / (one + one))
+                      [ a_vec_name, Figure2.Formula.Var1.Vector N.(one, one / (one + one))
                       ; ( v0_vec_name
-                        , Figure2.Formula.Var.Vector N.(one + one, one / (one + one)) )
-                      ; x0_name, Figure2.Formula.Var.Scalar N.(one + one + one)
-                      ; y0_name, Figure2.Formula.Var.Scalar N.(one + one + one)
-                      ; r_name, Figure2.Formula.Var.Scalar N.(one)
+                        , Figure2.Formula.Var1.Vector N.(one + one, one / (one + one)) )
+                      ; x0_name, Figure2.Formula.Var1.Scalar N.(one + one + one)
+                      ; y0_name, Figure2.Formula.Var1.Scalar N.(one + one + one)
+                      ; r_name, Figure2.Formula.Var1.Scalar N.(one)
                       ]
                 ; x
                 ; y (* ; xy = [] *)
                 } )
             ]
-      ; global_values = Map.empty (module String)
+      ; global_values = (fun _ -> assert false)
       }
     ;;
 
@@ -544,7 +549,7 @@ module Make (N : Module_types.Number) = struct
       let scene = scene in
       let seq = Map.to_sequence scene.figures in
       let p = Sequence.cartesian_product seq seq in
-      let r, _ = Figure2.Formula.Var.Infix.scalar_var "r" in
+      let r, _ = Figure2.Formula.Var1.Infix.scalar_var "r" in
       let r = Map.of_alist_exn (module Int) [ 0, r ] in
       let q =
         Sequence.map p ~f:(fun ((_id1, f1), (_id2, f2)) ->
@@ -557,7 +562,7 @@ module Make (N : Module_types.Number) = struct
       let scene = scene in
       let seq = Map.to_sequence scene.figures in
       let p = Sequence.cartesian_product seq seq in
-      let r, _ = Figure2.Formula.Var.Infix.scalar_var "r" in
+      let r, _ = Figure2.Formula.Var1.Infix.scalar_var "r" in
       let r = Map.of_alist_exn (module Int) [ 0, r ] in
       let q =
         Sequence.map p ~f:(fun ((_id1, f1), (_id2, f2)) ->
