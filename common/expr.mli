@@ -21,8 +21,6 @@ end)
     | ScalarNegInf : scalar t
     | ScalarPosInf : scalar t
     | ScalarZero : scalar t
-    | ScalarGlobalVar : key -> scalar t
-    | VectorGlobalVar : key -> vector t
     | ScalarVar : key -> scalar t
     | VectorVar : key -> vector t
     | Sum : 'a t * 'a t -> 'a t
@@ -45,24 +43,24 @@ end)
 
   val calc
     :  values:values
-    -> global_values:values
     -> scoped_values:(Scope.t -> values)
     -> (module Module_types.BasicOps with type t = 'result)
     -> 'result t
     -> 'result
+
+  module VectorOps : Module_types.BasicOps with type t = vector
 
   module Syntax : sig
     val scalar_var : key -> scalar t * key
     val vector_var : key -> vector t * key
     val scalar_const : scalar -> scalar t
     val vector_const : vector -> vector t
-    val scalar_global : key -> scalar t * key
-    val vector_global : key -> vector t * key
     val ( + ) : 'a t -> 'a t -> 'a t
     val ( - ) : 'a t -> 'a t -> 'a t
     val ( * ) : 'a t -> 'a t -> 'a t
     val ( / ) : 'a t -> 'a t -> 'a t
     val ( ~- ) : 'a t -> 'a t
+    val sqr : 'a t -> 'a t
     val vector_length : vector t -> scalar t
     val vector_x : vector t -> scalar t
     val vector_y : vector t -> scalar t
