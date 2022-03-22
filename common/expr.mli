@@ -1,13 +1,13 @@
 module type S = sig
-  type key [@@deriving sexp]
-  type scalar [@@deriving sexp]
-  type vector = scalar * scalar [@@deriving sexp]
+  type key [@@deriving sexp, equal]
+  type scalar [@@deriving sexp, equal]
+  type vector = scalar * scalar [@@deriving sexp, equal]
   type scope [@@deriving sexp, equal]
 
   type value =
     | Scalar of scalar
     | Vector of vector
-  [@@deriving sexp]
+  [@@deriving sexp, equal]
 
   type values = key -> value
 

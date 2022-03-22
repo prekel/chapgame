@@ -1,15 +1,15 @@
 open Core
 
 module type S = sig
-  type key [@@deriving sexp]
-  type scalar [@@deriving sexp]
-  type vector = scalar * scalar [@@deriving sexp]
+  type key [@@deriving sexp, equal]
+  type scalar [@@deriving sexp, equal]
+  type vector = scalar * scalar [@@deriving sexp, equal]
   type scope [@@deriving sexp, equal]
 
   type value =
     | Scalar of scalar
     | Vector of vector
-  [@@deriving sexp]
+  [@@deriving sexp, equal]
 
   type values = key -> value
 
@@ -75,15 +75,15 @@ module Make
     (Scope : Module_types.Scope)
     (N : Module_types.Number) =
 struct
-  type key = Key.t [@@deriving sexp]
-  type scalar = N.t [@@deriving sexp]
-  type vector = N.t * N.t [@@deriving sexp]
+  type key = Key.t [@@deriving sexp, equal]
+  type scalar = N.t [@@deriving sexp, equal]
+  type vector = N.t * N.t [@@deriving sexp, equal]
   type scope = Scope.t [@@deriving sexp, equal]
 
   type value =
     | Scalar of scalar
     | Vector of vector
-  [@@deriving sexp]
+  [@@deriving sexp, equal]
 
   let scalar_exn = function
     | Scalar s -> s

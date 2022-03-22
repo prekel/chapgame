@@ -65,17 +65,102 @@ let box () =
       ] )
 ;;
 
+module ExprDemo = struct
+  module Expr = Chapgame.Expr.Make (String) (Nothing) (Float)
+  module Formula = Chapgame.Formula.Make (String) (Nothing) (Float) (Expr) (SF)
+
+  let component =
+    let%sub values, set_values =
+      Bonsai.state
+        [%here]
+        (module struct
+          type t = (string * Expr.value) list [@@deriving sexp, equal]
+        end)
+        ~default_model:[ "x", Scalar 1.; "v", Vector (1., 4.) ]
+    in
+    let%sub exprs, set_exprs =
+      Bonsai.state
+        [%here]
+        (module struct
+          type t = Expr.t_scalar list [@@deriving sexp]
+
+          let equal = List.equal Expr.equal
+        end)
+        ~default_model:
+          Expr.Syntax.
+            [ (let v, _ = scalar_var "x" in
+               v)
+            ; vector_y
+                (let v, _ = vector_var "v" in
+                 v)
+            ]
+    in
+    let%arr values = values
+    and set_values = set_values
+    and exprs = exprs
+    and set_exprs = set_exprs in
+    Vdom.(
+      Node.div
+        [ Node.textarea
+            ~attr:
+              (Attr.many
+                 [ Attr.on_change (fun _ s ->
+                       set_values
+                         (List.Assoc.t_of_sexp
+                            String.t_of_sexp
+                            Expr.value_of_sexp
+                            (Sexp.of_string s)))
+                 ; Attr.value_prop
+                     (Sexp.to_string_hum [%sexp (values : (string * Expr.value) list)])
+                 ])
+            []
+        ; Node.textarea
+            ~attr:
+              (Attr.many
+                 [ Attr.on_change (fun _ s ->
+                       set_exprs (List.t_of_sexp Expr.t_scalar_of_sexp (Sexp.of_string s)))
+                 ; Attr.value_prop
+                     (Sexp.to_string_hum [%sexp (exprs : Expr.t_scalar list)])
+                 ])
+            []
+        ; Node.pre
+            [ Node.text
+                (try
+                   Sexp.to_string
+                     [%sexp
+                       (List.map exprs ~f:(fun e ->
+                            Expr.calc
+                              ~values:(fun k ->
+                                List.Assoc.find_exn ~equal:String.equal values k)
+                              ~scoped_values:never_returns
+                              (module Float)
+                              e)
+                         : float list)]
+                 with
+                | _ -> "")
+            ]
+        ])
+  ;;
+end
+
 let component =
   let%sub a, box_a = box () in
+  let%sub demo2 = ExprDemo.component in
   let%arr a = a
-  and box_a = box_a in
+  and box_a = box_a
+  and demo2 = demo2 in
   let rec derivatives poly =
     let d = SF.Polynomial.derivative poly in
     if SF.Polynomial.degree d = 0 then [ poly; d ] else poly :: derivatives d
   in
   Vdom.(
     Node.div
-      [ box_a
+      [ demo2
+      ; Node.br ()
+      ; Node.br ()
+      ; Node.br ()
+      ; Node.br ()
+      ; box_a
       ; Node.div
           (match a with
           | Some a ->
