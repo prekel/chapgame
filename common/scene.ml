@@ -250,7 +250,10 @@ module Make (N : Module_types.Number) = struct
           ; r : N.t
           ; mu : N.t
           }
-    (* | GiveVelocity of Time_ns.Span.t * Figure2.Id.t * Figure.Velocity.t Figure.Vec.t *)
+      | GiveVelocity of
+          { id : Figure2.Id.t
+          ; v0 : N.t * N.t
+          }
     [@@deriving sexp]
 
     type t =
@@ -274,17 +277,17 @@ module Make (N : Module_types.Number) = struct
 
   module Engine = struct
     let recv model (Action.{ time; action } as a) =
-      match action with
-      | Action.AddBody { x0; y0; r; mu } ->
+      match Map.max_elt model with
+      | Some (old_time, _) when Time_ns.Span.(old_time > time) ->
+        Error.raise_s
+          [%message
+            "Unimplemented"
+              ~time:(time : Time_ns.Span.t)
+              ~old_time:(old_time : Time_ns.Span.t)]
+      | Some (old_time, s) ->
         begin
-          match Map.max_elt model with
-          | Some (max_time, _) when Time_ns.Span.(max_time > time) ->
-            Error.raise_s
-              [%message
-                "Unimplemented"
-                  ~time:(time : Time_ns.Span.t)
-                  ~max_time:(max_time : Time_ns.Span.t)]
-          | Some (_, s) ->
+          match action with
+          | Action.AddBody { x0; y0; r; mu } ->
             ( Map.add_exn
                 model
                 ~key:time
@@ -295,8 +298,29 @@ module Make (N : Module_types.Number) = struct
                         add_figure s.figures ~id:(Figure2.Id.next ()) ~x0 ~y0 ~r ~mu
                     }
             , [ Events.SuccessfulAction a ] )
-          | None -> assert false, []
+          | GiveVelocity { id; v0 } ->
+            let body = Map.find_exn s.figures id in
+            let body =
+              { body with
+                values =
+                  Map.update body.values `v0 ~f:(function
+                      | Some _ -> Vector v0
+                      | None -> assert false)
+              }
+            in
+            ( Map.update model time ~f:(function
+                  | Some s ->
+                    Scene.
+                      { s with
+                        figures =
+                          Map.update s.figures id ~f:(function
+                              | Some _ -> body
+                              | None -> assert false)
+                      }
+                  | None -> assert false)
+            , [ Events.SuccessfulAction a ] )
         end
+      | None -> assert false, []
     ;;
   end
 end
