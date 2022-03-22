@@ -9,14 +9,14 @@ let%expect_test "" =
     SC.Engine.recv
       a
       { time = Time_ns.Span.of_sec 5.
-      ; action = SC.Action.AddBody { x0 = 1.; y0 = 1.; r = 1.; mu = 0. }
+      ; action = SC.Action.AddBody { x0 = 1.; y0 = 1.; r = 1.; mu = 0.01 }
       }
   in
   let a, _ =
     SC.Engine.recv
       a
       { time = Time_ns.Span.of_sec 10.
-      ; action = SC.Action.AddBody { x0 = 7.; y0 = 5.; r = 2.; mu = 0. }
+      ; action = SC.Action.AddBody { x0 = 7.; y0 = 5.; r = 2.; mu = 1. }
       }
   in
   let a, _ =
@@ -35,72 +35,131 @@ let%expect_test "" =
   in
   let _elt, els = Map.max_elt_exn a in
   print_s [%sexp (els : SC.Scene.t)];
-  [%expect{|
+  [%expect
+    {|
     ((figures
       ((0
         ((id 0)
          (values
-          ((r (Scalar 1)) (mu (Scalar 0)) (v0 (Vector (2 2))) (x0 (Scalar 1))
+          ((r (Scalar 1)) (mu (Scalar 0.01)) (v0 (Vector (2 2))) (x0 (Scalar 1))
            (y0 (Scalar 1))))
-         (x
-          ((0 (ScalarVar x0)) (1 (XOfVector (VectorVar v0)))
-           (2
-            (Mult
-             (XOfVector
-              (Mult (Neg (UnitVector (VectorVar v0)))
-               (VectorOfXY (Mult (ScalarVar mu) (Scope -1 (ScalarVar g)))
-                (Mult (ScalarVar mu) (Scope -1 (ScalarVar g))))))
-             (ScalarConst 0.5)))))
-         (y
-          ((0 (ScalarVar y0)) (1 (YOfVector (VectorVar v0)))
-           (2
-            (Mult
-             (YOfVector
-              (Mult (Neg (UnitVector (VectorVar v0)))
-               (VectorOfXY (Mult (ScalarVar mu) (Scope -1 (ScalarVar g)))
-                (Mult (ScalarVar mu) (Scope -1 (ScalarVar g))))))
-             (ScalarConst 0.5)))))))
+         (xy
+          (((interval
+             (Interval
+              ((ScalarZero)
+               (Div (LengthOfVector (VectorVar v0))
+                (LengthOfVector
+                 (Mult (Neg (UnitVector (VectorVar v0)))
+                  (VectorOfXY (Mult (ScalarVar mu) (Scope -1 (ScalarVar g)))
+                   (Mult (ScalarVar mu) (Scope -1 (ScalarVar g))))))))))
+            (x
+             ((0 (ScalarVar x0)) (1 (XOfVector (VectorVar v0)))
+              (2
+               (Mult
+                (XOfVector
+                 (Mult (Neg (UnitVector (VectorVar v0)))
+                  (VectorOfXY (Mult (ScalarVar mu) (Scope -1 (ScalarVar g)))
+                   (Mult (ScalarVar mu) (Scope -1 (ScalarVar g))))))
+                (ScalarConst 0.5)))))
+            (y
+             ((0 (ScalarVar y0)) (1 (YOfVector (VectorVar v0)))
+              (2
+               (Mult
+                (YOfVector
+                 (Mult (Neg (UnitVector (VectorVar v0)))
+                  (VectorOfXY (Mult (ScalarVar mu) (Scope -1 (ScalarVar g)))
+                   (Mult (ScalarVar mu) (Scope -1 (ScalarVar g))))))
+                (ScalarConst 0.5))))))
+           ((interval
+             (PosInfinity
+              (Div (LengthOfVector (VectorVar v0))
+               (LengthOfVector
+                (Mult (Neg (UnitVector (VectorVar v0)))
+                 (VectorOfXY (Mult (ScalarVar mu) (Scope -1 (ScalarVar g)))
+                  (Mult (ScalarVar mu) (Scope -1 (ScalarVar g)))))))))
+            (x
+             ((0
+               (Sum (ScalarVar x0)
+                (Div (Mult (ScalarConst 3) (Sqr (XOfVector (VectorVar v0))))
+                 (Mult (ScalarConst 2)
+                  (XOfVector
+                   (Mult (Neg (UnitVector (VectorVar v0)))
+                    (VectorOfXY (Mult (ScalarVar mu) (Scope -1 (ScalarVar g)))
+                     (Mult (ScalarVar mu) (Scope -1 (ScalarVar g))))))))))))
+            (y
+             ((0
+               (Sum (ScalarVar y0)
+                (Div (Mult (ScalarConst 3) (Sqr (YOfVector (VectorVar v0))))
+                 (Mult (ScalarConst 2)
+                  (YOfVector
+                   (Mult (Neg (UnitVector (VectorVar v0)))
+                    (VectorOfXY (Mult (ScalarVar mu) (Scope -1 (ScalarVar g)))
+                     (Mult (ScalarVar mu) (Scope -1 (ScalarVar g)))))))))))))))))
        (1
         ((id 1)
          (values
-          ((r (Scalar 2)) (mu (Scalar 0)) (v0 (Vector (-1 -1))) (x0 (Scalar 7))
+          ((r (Scalar 2)) (mu (Scalar 1)) (v0 (Vector (-1 -1))) (x0 (Scalar 7))
            (y0 (Scalar 5))))
-         (x
-          ((0 (ScalarVar x0)) (1 (XOfVector (VectorVar v0)))
-           (2
-            (Mult
-             (XOfVector
-              (Mult (Neg (UnitVector (VectorVar v0)))
-               (VectorOfXY (Mult (ScalarVar mu) (Scope -1 (ScalarVar g)))
-                (Mult (ScalarVar mu) (Scope -1 (ScalarVar g))))))
-             (ScalarConst 0.5)))))
-         (y
-          ((0 (ScalarVar y0)) (1 (YOfVector (VectorVar v0)))
-           (2
-            (Mult
-             (YOfVector
-              (Mult (Neg (UnitVector (VectorVar v0)))
-               (VectorOfXY (Mult (ScalarVar mu) (Scope -1 (ScalarVar g)))
-                (Mult (ScalarVar mu) (Scope -1 (ScalarVar g))))))
-             (ScalarConst 0.5)))))))))
+         (xy
+          (((interval
+             (Interval
+              ((ScalarZero)
+               (Div (LengthOfVector (VectorVar v0))
+                (LengthOfVector
+                 (Mult (Neg (UnitVector (VectorVar v0)))
+                  (VectorOfXY (Mult (ScalarVar mu) (Scope -1 (ScalarVar g)))
+                   (Mult (ScalarVar mu) (Scope -1 (ScalarVar g))))))))))
+            (x
+             ((0 (ScalarVar x0)) (1 (XOfVector (VectorVar v0)))
+              (2
+               (Mult
+                (XOfVector
+                 (Mult (Neg (UnitVector (VectorVar v0)))
+                  (VectorOfXY (Mult (ScalarVar mu) (Scope -1 (ScalarVar g)))
+                   (Mult (ScalarVar mu) (Scope -1 (ScalarVar g))))))
+                (ScalarConst 0.5)))))
+            (y
+             ((0 (ScalarVar y0)) (1 (YOfVector (VectorVar v0)))
+              (2
+               (Mult
+                (YOfVector
+                 (Mult (Neg (UnitVector (VectorVar v0)))
+                  (VectorOfXY (Mult (ScalarVar mu) (Scope -1 (ScalarVar g)))
+                   (Mult (ScalarVar mu) (Scope -1 (ScalarVar g))))))
+                (ScalarConst 0.5))))))
+           ((interval
+             (PosInfinity
+              (Div (LengthOfVector (VectorVar v0))
+               (LengthOfVector
+                (Mult (Neg (UnitVector (VectorVar v0)))
+                 (VectorOfXY (Mult (ScalarVar mu) (Scope -1 (ScalarVar g)))
+                  (Mult (ScalarVar mu) (Scope -1 (ScalarVar g)))))))))
+            (x
+             ((0
+               (Sum (ScalarVar x0)
+                (Div (Mult (ScalarConst 3) (Sqr (XOfVector (VectorVar v0))))
+                 (Mult (ScalarConst 2)
+                  (XOfVector
+                   (Mult (Neg (UnitVector (VectorVar v0)))
+                    (VectorOfXY (Mult (ScalarVar mu) (Scope -1 (ScalarVar g)))
+                     (Mult (ScalarVar mu) (Scope -1 (ScalarVar g))))))))))))
+            (y
+             ((0
+               (Sum (ScalarVar y0)
+                (Div (Mult (ScalarConst 3) (Sqr (YOfVector (VectorVar v0))))
+                 (Mult (ScalarConst 2)
+                  (YOfVector
+                   (Mult (Neg (UnitVector (VectorVar v0)))
+                    (VectorOfXY (Mult (ScalarVar mu) (Scope -1 (ScalarVar g)))
+                     (Mult (ScalarVar mu) (Scope -1 (ScalarVar g)))))))))))))))))))
      (global_values ((g (Scalar 10))))) |}];
-  let t = SC.Scene.t els in
-  print_s [%sexp (t : SC.Solver.Polynomial.t Sequence.t)];
+  let t = SC.Scene.t ~eps:1e-5 els in
+  print_s [%sexp (t : (int * int * float Sequence.t) Sequence.t)];
   [%expect{|
-    (
-      ((0 -4)) 
-      ((0 43) (1 -60) (2 18)) 
-      ((0 43) (1 -60) (2 18)) 
-      ((0 -16))) |}];
-  print_s
-    [%sexp
-      (Sequence.map t ~f:(SF.PolynomialEquation.roots ~eps:1e-5) : float list Sequence.t)];
-  [%expect{|
-    (() (1.0430571238199871 2.2902762095133467)
-     (1.0430571238199871 2.2902762095133467) ()) |}]
+    ((0 0 ()) (0 1 ()) (1 0 (1.723139770105945 3.7962412558203482)) (1 1 ())) |}]
 ;;
 
-let%expect_test "to_sexp_test" =
+(* let%expect_test "to_sexp_test" =
   let a = SC.Model.empty ~g:10. in
   let _elt, els = Map.min_elt_exn a in
   let f1 = SC.Scene.figures els in
@@ -111,7 +170,7 @@ let%expect_test "to_sexp_test" =
       print_s (SC.Formula.sexp_of_t a);
       print_endline "\n");
   [%expect {| |}]
-;;
+;; *)
 
 let%expect_test "var" =
   let module Var = SC.Expr in

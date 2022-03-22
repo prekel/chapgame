@@ -99,44 +99,102 @@ module Make (N : Module_types.Number) = struct
       ;;
     end
 
-    (* type formula = { interval : [ `Interval of N.t Expr.t * N.t Expr.t | `PosInfinity
-       of N.t Expr.t ] ; x : Formula.t ; y : Formula.t } *)
+    type formula =
+      { interval :
+          [ `Interval of Expr.t_scalar * Expr.t_scalar | `PosInfinity of Expr.t_scalar ]
+      ; x : Formula.t
+      ; y : Formula.t
+      }
+    [@@deriving sexp]
 
     type t =
       { id : Id.t
       ; values : values
-      ; x : Formula.t
-      ; y : Formula.t (* ; xy : 'a formula list *)
+      ; xy : formula list
       }
     [@@deriving sexp_of]
 
     module Sample = struct
       module Formulas = struct
-        let b a b ~global ~r =
-          let open Formula.Syntax in
-          let x_1 = scope a.x ~scope:1 in
-          let x_2 = scope b.x ~scope:2 in
-          let y_1 = scope a.y ~scope:1 in
-          let y_2 = scope b.y ~scope:2 in
-          let r_1 = scope r ~scope:1 in
-          let r_2 = scope r ~scope:2 in
-          sqr (x_2 - x_1) + sqr (y_2 - y_1) - sqr (r_1 + r_2)
-          |> Formula.to_polynomial ~values:global ~scoped_values:(function
-                 | -1 -> global
-                 | 1 -> Map.find_exn a.values
-                 | 2 -> Map.find_exn b.values
-                 | _ -> assert false)
+        (* let b a b ~global ~r = let open Formula.Syntax in let x_1 = scope a.x ~scope:1
+           in let x_2 = scope b.x ~scope:2 in let y_1 = scope a.y ~scope:1 in let y_2 =
+           scope b.y ~scope:2 in let r_1 = scope r ~scope:1 in let r_2 = scope r ~scope:2
+           in sqr (x_2 - x_1) + sqr (y_2 - y_1) - sqr (r_1 + r_2) |> Formula.to_polynomial
+           ~values:global ~scoped_values:(function | -1 -> global | 1 -> Map.find_exn
+           a.values | 2 -> Map.find_exn b.values | _ -> assert false) ;;
+
+           let b1 a b ~r = let open Formula.Syntax in let x_1 = scope a.x ~scope:1 in let
+           x_2 = scope b.x ~scope:2 in let y_1 = scope a.y ~scope:1 in let y_2 = scope b.y
+           ~scope:2 in let r_1 = scope r ~scope:1 in let r_2 = scope r ~scope:2 in sqr
+           (x_2 - x_1) + sqr (y_2 - y_1) - sqr (r_1 + r_2) ;; *)
+
+        let b2 a b ~r =
+          let p =
+            Sequence.cartesian_product (Sequence.of_list a.xy) (Sequence.of_list b.xy)
+          in
+          let p1 =
+            Sequence.map p ~f:(fun (a, b) ->
+                let open Formula.Syntax in
+                let x_1 = scope a.x ~scope:1 in
+                let x_2 = scope b.x ~scope:2 in
+                let y_1 = scope a.y ~scope:1 in
+                let y_2 = scope b.y ~scope:2 in
+                let r_1 = scope r ~scope:1 in
+                let r_2 = scope r ~scope:2 in
+                let f = sqr (x_2 - x_1) + sqr (y_2 - y_1) - sqr (r_1 + r_2) in
+                a.interval, b.interval, f)
+          in
+          p1
         ;;
 
-        let b1 a b ~r =
-          let open Formula.Syntax in
-          let x_1 = scope a.x ~scope:1 in
-          let x_2 = scope b.x ~scope:2 in
-          let y_1 = scope a.y ~scope:1 in
-          let y_2 = scope b.y ~scope:2 in
-          let r_1 = scope r ~scope:1 in
-          let r_2 = scope r ~scope:2 in
-          sqr (x_2 - x_1) + sqr (y_2 - y_1) - sqr (r_1 + r_2)
+        let b3 p a b ~global =
+          let inter body =
+            let calc v =
+              Expr.calc
+                ~values:(Map.find_exn body.values)
+                ~scoped_values:(function
+                  | -1 -> global
+                  | _ -> assert false)
+                (module N)
+                v
+            in
+            function
+            | `Interval (l, r) -> `Interval (calc l, calc r)
+            | `PosInfinity l -> `PosInfinity (calc l)
+          in
+          let p1 =
+            Sequence.map p ~f:(fun (ai, bi, f) ->
+                ( inter a ai
+                , inter b bi
+                , Formula.to_polynomial f ~values:global ~scoped_values:(function
+                      | -1 -> global
+                      | 1 -> Map.find_exn a.values
+                      | 2 -> Map.find_exn b.values
+                      | _ -> assert false) ))
+          in
+          p1
+        ;;
+
+        let b4 p ~eps =
+          let is_in_interval n = function
+            | `Interval (l, r) -> N.(l <= n && n < r)
+            | `PosInfinity l -> N.(l <= n)
+          in
+          let p1 =
+            Sequence.filter_map p ~f:(fun (ai, bi, p) ->
+                let roots =
+                  try Solver.PolynomialEquation.roots p ~eps with
+                  | _ -> []
+                in
+                match
+                  roots
+                  |> List.filter ~f:(fun root ->
+                         is_in_interval root ai && is_in_interval root bi)
+                with
+                | [] -> None
+                | l -> Some (Sequence.of_list l))
+          in
+          p1 |> Sequence.concat
         ;;
       end
     end
@@ -175,6 +233,12 @@ module Make (N : Module_types.Number) = struct
       let y0, y0_name = scalar_var `y0
       let r, r_name = scalar_var `r
       let half = scalar_const N.(one / (one + one))
+      let zero = Expr.ScalarZero
+      let border_l1 = zero
+      let border_r1 = vector_length v0_vec / vector_length a_vec
+      let border_l2 = border_r1
+      let three = scalar_const N.(one + one + one)
+      let two = scalar_const N.(one + one)
     end
 
     module Formulas = struct
@@ -183,6 +247,8 @@ module Make (N : Module_types.Number) = struct
 
       let x = Formula.of_alist_exn [ 0, x0; 1, v0_x; 2, a_x * half ]
       let y = Formula.of_alist_exn [ 0, y0; 1, v0_y; 2, a_y * half ]
+      let x_after = Formula.of_alist_exn [ 0, x0 + (three * sqr v0_x / (two * a_x)) ]
+      let y_after = Formula.of_alist_exn [ 0, y0 + (three * sqr v0_y / (two * a_y)) ]
       let r = Formula.of_alist_exn [ 0, r ]
     end
 
@@ -202,8 +268,17 @@ module Make (N : Module_types.Number) = struct
                   ; `r, Expr.Scalar r
                   ; `mu, Expr.Scalar mu
                   ]
-            ; x = Formulas.x
-            ; y = Formulas.y
+            ; xy =
+                Figure2.
+                  [ { interval = `Interval (Exprs.border_l1, Exprs.border_r1)
+                    ; x = Formulas.x
+                    ; y = Formulas.y
+                    }
+                  ; { interval = `PosInfinity Exprs.border_l2
+                    ; x = Formulas.x_after
+                    ; y = Formulas.y_after
+                    }
+                  ]
             }
     ;;
 
@@ -213,31 +288,29 @@ module Make (N : Module_types.Number) = struct
       }
     ;;
 
-    let t scene =
+    let t ~eps scene =
       let scene = scene in
       let seq = Map.to_sequence scene.figures in
       let p = Sequence.cartesian_product seq seq in
       let q =
-        Sequence.map p ~f:(fun ((_id1, f1), (_id2, f2)) ->
-            Figure2.Sample.Formulas.b
-              f1
-              f2
-              ~global:(Map.find_exn scene.global_values)
-              ~r:Formulas.r)
+        Sequence.map p ~f:(fun ((id1, f1), (id2, f2)) ->
+            let q2 = Figure2.Sample.Formulas.b2 f1 f2 ~r:Formulas.r in
+            let q3 =
+              Figure2.Sample.Formulas.b3
+                q2
+                f1
+                f2
+                ~global:(Map.find_exn scene.global_values)
+            in
+            let q4 = Figure2.Sample.Formulas.b4 q3 ~eps in
+            id1, id2, q4)
       in
       q
     ;;
 
-    let t1 scene =
-      let scene = scene in
-      let seq = Map.to_sequence scene.figures in
-      let p = Sequence.cartesian_product seq seq in
-      let q =
-        Sequence.map p ~f:(fun ((_id1, f1), (_id2, f2)) ->
-            Figure2.Sample.Formulas.b1 f1 f2 ~r:Formulas.r)
-      in
-      q
-    ;;
+    (* let t1 scene = let scene = scene in let seq = Map.to_sequence scene.figures in let
+       p = Sequence.cartesian_product seq seq in let q = Sequence.map p ~f:(fun ((_id1,
+       f1), (_id2, f2)) -> Figure2.Sample.Formulas.b1 f1 f2 ~r:Formulas.r) in q ;; *)
 
     (* let a = t (scene ()) *)
   end

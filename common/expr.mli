@@ -36,8 +36,8 @@ module type S = sig
   val equal : 'result t -> 'result t -> bool
   val sexp_of_t : 'result t -> Sexplib0.Sexp.t
 
-  type t_scalar = scalar t [@@deriving of_sexp]
-  type t_vector = vector t [@@deriving of_sexp]
+  type t_scalar = scalar t [@@deriving sexp]
+  type t_vector = vector t [@@deriving sexp]
 
   val calc
     :  values:values

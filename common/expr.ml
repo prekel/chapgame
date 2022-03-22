@@ -38,8 +38,8 @@ module type S = sig
   val equal : 'result t -> 'result t -> bool
   val sexp_of_t : 'result t -> Sexplib0.Sexp.t
 
-  type t_scalar = scalar t [@@deriving of_sexp]
-  type t_vector = vector t [@@deriving of_sexp]
+  type t_scalar = scalar t [@@deriving sexp]
+  type t_vector = vector t [@@deriving sexp]
 
   val calc
     :  values:values
@@ -203,6 +203,9 @@ struct
     | VectorOfXY (a, b) -> List [ Atom "VectorOfXY"; sexp_of_t a; sexp_of_t b ]
     | Scope (s, v) -> List [ Atom "Scope"; [%sexp (s : Scope.t)]; sexp_of_t v ]
   ;;
+
+  let sexp_of_t_scalar : t_scalar -> Sexp.t = sexp_of_t
+  let sexp_of_t_vector : t_vector -> Sexp.t = sexp_of_t
 
   module VectorOps : Module_types.BasicOps with type t = vector = struct
     type t = vector
