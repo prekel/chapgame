@@ -114,20 +114,45 @@ module Make (N : Module_types.Number) = struct
       }
     [@@deriving sexp_of]
 
+    let calc { id; values; xy } ~scoped_values ~t =
+      let c = Expr.calc ~values:(Map.find_exn values) ~scoped_values (module N) in
+      let calc_xy f =
+        Formula.to_polynomial f ~values:(Map.find_exn values) ~scoped_values
+        |> Solver.Polynomial.calc ~x:t
+      in
+      List.find_map xy ~f:(fun { interval; x; y } ->
+          match interval with
+          | `Interval (l, r) ->
+            if N.(c l <= t && t < c r) then Some (calc_xy x, calc_xy y) else None
+          | `PosInfinity l -> if N.(c l <= t) then Some (calc_xy x, calc_xy y) else None)
+    ;;
+
+    let update body key value =
+      { body with
+        values =
+          Map.update body.values key ~f:(function
+              | Some _ -> value
+              | None -> assert false)
+      }
+    ;;
+
+    let update_x0y0 body (x, y) =
+      let values = body.values in
+      let values =
+        Map.update values `x0 ~f:(function
+            | Some _ -> Scalar x
+            | None -> assert false)
+      in
+      let values =
+        Map.update values `y0 ~f:(function
+            | Some _ -> Scalar y
+            | None -> assert false)
+      in
+      { body with values }
+    ;;
+
     module Sample = struct
       module Formulas = struct
-        (* let b a b ~global ~r = let open Formula.Syntax in let x_1 = scope a.x ~scope:1
-           in let x_2 = scope b.x ~scope:2 in let y_1 = scope a.y ~scope:1 in let y_2 =
-           scope b.y ~scope:2 in let r_1 = scope r ~scope:1 in let r_2 = scope r ~scope:2
-           in sqr (x_2 - x_1) + sqr (y_2 - y_1) - sqr (r_1 + r_2) |> Formula.to_polynomial
-           ~values:global ~scoped_values:(function | -1 -> global | 1 -> Map.find_exn
-           a.values | 2 -> Map.find_exn b.values | _ -> assert false) ;;
-
-           let b1 a b ~r = let open Formula.Syntax in let x_1 = scope a.x ~scope:1 in let
-           x_2 = scope b.x ~scope:2 in let y_1 = scope a.y ~scope:1 in let y_2 = scope b.y
-           ~scope:2 in let r_1 = scope r ~scope:1 in let r_2 = scope r ~scope:2 in sqr
-           (x_2 - x_1) + sqr (y_2 - y_1) - sqr (r_1 + r_2) ;; *)
-
         let b2 a b ~r =
           let p =
             Sequence.cartesian_product (Sequence.of_list a.xy) (Sequence.of_list b.xy)
@@ -288,6 +313,24 @@ module Make (N : Module_types.Number) = struct
       }
     ;;
 
+    let update_coords ({ figures; global_values } as scene) ~t =
+      let q =
+        Map.map figures ~f:(fun f ->
+            let xy =
+              Figure2.calc
+                f
+                ~scoped_values:(function
+                  | -1 -> Map.find_exn global_values
+                  | _ -> assert false)
+                ~t
+            in
+            match xy with
+            | Some xy -> Figure2.update_x0y0 f xy
+            | None -> f)
+      in
+      { scene with figures = q }
+    ;;
+
     let t ~eps scene =
       let scene = scene in
       let seq = Map.to_sequence scene.figures in
@@ -318,7 +361,8 @@ module Make (N : Module_types.Number) = struct
   module Action = struct
     type a =
       | AddBody of
-          { x0 : N.t
+          { id : Figure2.Id.t
+          ; x0 : N.t
           ; y0 : N.t
           ; r : N.t
           ; mu : N.t
@@ -327,10 +371,11 @@ module Make (N : Module_types.Number) = struct
           { id : Figure2.Id.t
           ; v0 : N.t * N.t
           }
+      | Empty
     [@@deriving sexp]
 
     type t =
-      { time : Time_ns.Span.t
+      { time : N.t
       ; action : a
       }
     [@@deriving sexp]
@@ -341,35 +386,26 @@ module Make (N : Module_types.Number) = struct
   end
 
   module Model = struct
-    type t = (Time_ns.Span.t, Scene.t, Time_ns.Span.comparator_witness) Map.t
+    type t = (N.t, Scene.t, N.comparator_witness) Map.t
 
-    let empty ~g : t =
-      Map.of_alist_exn (module Time_ns.Span) [ Time_ns.Span.zero, Scene.scene ~g ]
-    ;;
+    let empty ~g : t = Map.of_alist_exn (module N) [ N.zero, Scene.scene ~g ]
   end
 
   module Engine = struct
     let recv model (Action.{ time; action } as a) =
       match Map.max_elt model with
-      | Some (old_time, _) when Time_ns.Span.(old_time > time) ->
+      | Some (old_time, _) when N.(old_time > time) ->
         Error.raise_s
-          [%message
-            "Unimplemented"
-              ~time:(time : Time_ns.Span.t)
-              ~old_time:(old_time : Time_ns.Span.t)]
+          [%message "Unimplemented" ~time:(time : N.t) ~old_time:(old_time : N.t)]
       | Some (old_time, s) ->
+        let s = Scene.update_coords s ~t:N.(time - old_time) in
         begin
           match action with
-          | Action.AddBody { x0; y0; r; mu } ->
+          | Action.AddBody { id; x0; y0; r; mu } ->
             ( Map.add_exn
                 model
                 ~key:time
-                ~data:
-                  Scene.
-                    { s with
-                      figures =
-                        add_figure s.figures ~id:(Figure2.Id.next ()) ~x0 ~y0 ~r ~mu
-                    }
+                ~data:Scene.{ s with figures = add_figure s.figures ~id ~x0 ~y0 ~r ~mu }
             , [ Events.SuccessfulAction a ] )
           | GiveVelocity { id; v0 } ->
             let body = Map.find_exn s.figures id in
@@ -381,17 +417,16 @@ module Make (N : Module_types.Number) = struct
                       | None -> assert false)
               }
             in
-            ( Map.update model time ~f:(function
-                  | Some s ->
-                    Scene.
-                      { s with
-                        figures =
-                          Map.update s.figures id ~f:(function
-                              | Some _ -> body
-                              | None -> assert false)
-                      }
-                  | None -> assert false)
+            ( Map.update model time ~f:(fun _ ->
+                  Scene.
+                    { s with
+                      figures =
+                        Map.update s.figures id ~f:(function
+                            | Some _ -> body
+                            | None -> assert false)
+                    })
             , [ Events.SuccessfulAction a ] )
+          | Empty -> Map.update model time ~f:(fun _ -> s), [ Events.SuccessfulAction a ]
         end
       | None -> assert false, []
     ;;
