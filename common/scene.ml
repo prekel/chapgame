@@ -288,8 +288,8 @@ module Make (N : Module_types.Number) = struct
       let v_y = Formula.of_alist_exn [ 0, v0_y; 1, a_y ]
       let x_after = Formula.of_alist_exn [ 0, x0 + (three * sqr v0_x / (two * a_x)) ]
       let y_after = Formula.of_alist_exn [ 0, y0 + (three * sqr v0_y / (two * a_y)) ]
-      let v_x_after = Formula.of_alist_exn []
-      let v_y_after = Formula.of_alist_exn []
+      let v_x_after = Formula.of_alist_exn [ 0, zero ]
+      let v_y_after = Formula.of_alist_exn [ 0, zero ]
       let r = Formula.of_alist_exn [ 0, r ]
     end
 
@@ -415,21 +415,16 @@ module Make (N : Module_types.Number) = struct
     ;;
 
     let collision_body ~v1 ~v2 ~m1 ~m2 ~x1 ~y1 ~x2 ~y2 =
-      let theta1 = N.atan2 (snd v1) (fst v1) in
-      let theta2 = N.atan2 (snd v2) (fst v2) in
+      let len (x, y) = N.(sqrt ((x * x) + (y * y))) in
+      let v1len = len v1 in
+      let v2len = len v2 in
+      let theta1 = N.(if v1len = zero then zero else atan2 (snd v1) (fst v1)) in
+      let theta2 = N.(if v2len = zero then zero else atan2 (snd v2) (fst v2)) in
       let move = N.(x2 - x1), N.(y2 - y1) in
       let phi = N.atan2 (snd move) (fst move) in
-      let len (x, y) = N.(sqrt ((x * x) + (y * y))) in
-      let v1new = collision ~v1:(len v1) ~v2:(len v2) ~theta1 ~theta2 ~phi ~m1 ~m2 in
+      let v1new = collision ~v1:v1len ~v2:v2len ~theta1 ~theta2 ~phi ~m1 ~m2 in
       let v2new =
-        collision
-          ~v1:(len v2)
-          ~v2:(len v1)
-          ~theta1:theta2
-          ~theta2:theta1
-          ~phi
-          ~m1:m2
-          ~m2:m1
+        collision ~v1:v2len ~v2:v1len ~theta1:theta2 ~theta2:theta1 ~phi ~m1:m2 ~m2:m1
       in
       v1new, v2new
     ;;
