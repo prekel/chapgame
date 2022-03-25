@@ -12,7 +12,8 @@ let%expect_test "" =
       ~eps
       a
       { time = 5.
-      ; action = SC.Action.AddBody { id = id1; x0 = 1.; y0 = 1.; r = 1.; mu = 0.00001 }
+      ; action =
+          SC.Action.AddBody { id = id1; x0 = 1.; y0 = 1.; r = 1.; mu = 0.00001; m = 1. }
       }
   in
   let a, _ =
@@ -20,7 +21,8 @@ let%expect_test "" =
       ~eps
       a
       { time = 10.
-      ; action = SC.Action.AddBody { id = id2; x0 = 7.; y0 = 5.; r = 2.; mu = 0.00001 }
+      ; action =
+          SC.Action.AddBody { id = id2; x0 = 7.; y0 = 5.; r = 2.; mu = 0.00001; m = 1. }
       }
   in
   let a, _ =
@@ -43,8 +45,8 @@ let%expect_test "" =
       ((0
         ((id 0)
          (values
-          ((r (Scalar 2)) (mu (Scalar 1E-05)) (v0 (Vector (-1 -1)))
-           (x0 (Scalar 7)) (y0 (Scalar 5))))
+          ((m (Scalar 1)) (r (Scalar 2)) (mu (Scalar 1E-05))
+           (v0 (Vector (-1 -1))) (x0 (Scalar 7)) (y0 (Scalar 5))))
          (xy
           (((interval
              (Interval
@@ -115,8 +117,8 @@ let%expect_test "" =
        (1
         ((id 1)
          (values
-          ((r (Scalar 1)) (mu (Scalar 1E-05)) (v0 (Vector (2 2))) (x0 (Scalar 1))
-           (y0 (Scalar 1))))
+          ((m (Scalar 1)) (r (Scalar 1)) (mu (Scalar 1E-05)) (v0 (Vector (2 2)))
+           (x0 (Scalar 1)) (y0 (Scalar 1))))
          (xy
           (((interval
              (Interval
@@ -189,11 +191,10 @@ let%expect_test "" =
   print_s [%sexp (t : (int * int * float Sequence.t) Sequence.t)];
   [%expect
     {|
-      ((0 0 ())
-       (0 1
+      ((0 1
         (1.0430824126779044 2.2903997684001469 14145.265140131578
          14149.008121436898))
-       (1 0 (1.0430824126779044 2.2903997684001469)) (1 1 ())) |}];
+       (1 0 (1.0430824126779044 2.2903997684001469))) |}];
   let a, _ = SC.Engine.recv ~eps a { time = 11.; action = SC.Action.Empty } in
   let _elt, els = Map.max_elt_exn a in
   print_s [%sexp (els : SC.Scene.t)];
@@ -203,7 +204,7 @@ let%expect_test "" =
           ((0
             ((id 0)
              (values
-              ((r (Scalar 2)) (mu (Scalar 1E-05))
+              ((m (Scalar 1)) (r (Scalar 2)) (mu (Scalar 1E-05))
                (v0 (Vector (-0.9999292893218813 -0.9999292893218813)))
                (x0 (Scalar 6.0000353553390591)) (y0 (Scalar 4.0000353553390591))))
              (xy
@@ -276,7 +277,7 @@ let%expect_test "" =
            (1
             ((id 1)
              (values
-              ((r (Scalar 1)) (mu (Scalar 1E-05))
+              ((m (Scalar 1)) (r (Scalar 1)) (mu (Scalar 1E-05))
                (v0 (Vector (1.9999292893218814 1.9999292893218814)))
                (x0 (Scalar 2.9999646446609405)) (y0 (Scalar 2.9999646446609405))))
              (xy
@@ -351,8 +352,8 @@ let%expect_test "" =
   print_s [%sexp (t : (int * int * float Sequence.t) Sequence.t)];
   [%expect
     {|
-      ((0 0 ()) (0 1 (0.043082412677904358 1.2903997684001474 14144.006885188992))
-       (1 0 (0.043082412677904358 1.2903997684001474)) (1 1 ())) |}];
+      ((0 1 (0.043082412677904358 1.2903997684001474 14144.006885188992))
+       (1 0 (0.043082412677904358 1.2903997684001474))) |}];
   let a, _ = SC.Engine.recv ~eps a { time = 12.; action = SC.Action.Empty } in
   let _elt, els = Map.max_elt_exn a in
   print_s [%sexp (els : SC.Scene.t)];
@@ -362,9 +363,9 @@ let%expect_test "" =
             ((0
               ((id 0)
                (values
-                ((r (Scalar 2)) (mu (Scalar 1E-05))
-                 (v0 (Vector (-0.99992624291155829 -0.99992624291155829)))
-                 (x0 (Scalar 5.9569557194192146)) (y0 (Scalar 3.9569557194192151))))
+                ((m (Scalar 1)) (r (Scalar 2)) (mu (Scalar 1E-05))
+                 (v0 (Vector (2.5803599966406709 0.91752058634431122)))
+                 (x0 (Scalar 8.4261898552392918)) (y0 (Scalar 4.8349623367394878))))
                (xy
                 (((interval
                    (Interval
@@ -435,9 +436,9 @@ let%expect_test "" =
              (1
               ((id 1)
                (values
-                ((r (Scalar 1)) (mu (Scalar 1E-05))
-                 (v0 (Vector (1.9999262429115583 1.9999262429115583)))
-                 (x0 (Scalar 3.0861270285348157)) (y0 (Scalar 3.0861270285348157))))
+                ((m (Scalar 1)) (r (Scalar 1)) (mu (Scalar 1E-05))
+                 (v0 (Vector (-1.5803636863252126 -0.74899108364093514)))
+                 (x0 (Scalar 1.5738083793993114)) (y0 (Scalar 2.369384930733093))))
                (xy
                 (((interval
                    (Interval
@@ -510,12 +511,11 @@ let%expect_test "" =
   print_s [%sexp (t : (int * int * float Sequence.t) Sequence.t)];
   [%expect
     {|
-    ((0 0 ()) (0 1 (1.2473170204461161 14143.791449676664))
-     (1 0 (1.2473170204461161)) (1 1 ())) |}]
+    ((0 1 ()) (1 0 ())) |}]
 ;;
 
 let%expect_test "to_sexp_test" =
-  let eps = 1e-6 in
+  let eps = 1e-9 in
   let a = SC.Model.empty ~g:10. in
   let id1, id2 = 0, 1 in
   let recv_and_print a b =
@@ -535,7 +535,8 @@ let%expect_test "to_sexp_test" =
     recv_and_print
       a
       { time = 5.
-      ; action = SC.Action.AddBody { id = id1; x0 = 1.; y0 = 1.; r = 1.; mu = 0.00001 }
+      ; action =
+          SC.Action.AddBody { id = id1; x0 = 1.; y0 = 1.; r = 1.; mu = 0.05; m = 1. }
       }
   in
   [%expect
@@ -543,13 +544,14 @@ let%expect_test "to_sexp_test" =
     ((0 ())
      (5
       ((0
-        ((r (Scalar 1)) (mu (Scalar 1E-05)) (v0 (Vector (0 0))) (x0 (Scalar 1))
-         (y0 (Scalar 1))))))) |}];
+        ((m (Scalar 1)) (r (Scalar 1)) (mu (Scalar 0.05)) (v0 (Vector (0 0)))
+         (x0 (Scalar 1)) (y0 (Scalar 1))))))) |}];
   let a =
     recv_and_print
       a
       { time = 10.
-      ; action = SC.Action.AddBody { id = id2; x0 = 7.; y0 = 5.; r = 2.; mu = 0.00001 }
+      ; action =
+          SC.Action.AddBody { id = id2; x0 = 7.; y0 = 5.; r = 2.; mu = 0.05; m = 2. }
       }
   in
   [%expect
@@ -557,15 +559,15 @@ let%expect_test "to_sexp_test" =
     ((0 ())
      (5
       ((0
-        ((r (Scalar 1)) (mu (Scalar 1E-05)) (v0 (Vector (0 0))) (x0 (Scalar 1))
-         (y0 (Scalar 1))))))
+        ((m (Scalar 1)) (r (Scalar 1)) (mu (Scalar 0.05)) (v0 (Vector (0 0)))
+         (x0 (Scalar 1)) (y0 (Scalar 1))))))
      (10
       ((0
-        ((r (Scalar 1)) (mu (Scalar 1E-05)) (v0 (Vector (0 0))) (x0 (Scalar 1))
-         (y0 (Scalar 1))))
+        ((m (Scalar 1)) (r (Scalar 1)) (mu (Scalar 0.05)) (v0 (Vector (0 0)))
+         (x0 (Scalar 1)) (y0 (Scalar 1))))
        (1
-        ((r (Scalar 2)) (mu (Scalar 1E-05)) (v0 (Vector (0 0))) (x0 (Scalar 7))
-         (y0 (Scalar 5))))))) |}];
+        ((m (Scalar 2)) (r (Scalar 2)) (mu (Scalar 0.05)) (v0 (Vector (0 0)))
+         (x0 (Scalar 7)) (y0 (Scalar 5))))))) |}];
   let a =
     recv_and_print
       a
@@ -576,15 +578,15 @@ let%expect_test "to_sexp_test" =
     ((0 ())
      (5
       ((0
-        ((r (Scalar 1)) (mu (Scalar 1E-05)) (v0 (Vector (0 0))) (x0 (Scalar 1))
-         (y0 (Scalar 1))))))
+        ((m (Scalar 1)) (r (Scalar 1)) (mu (Scalar 0.05)) (v0 (Vector (0 0)))
+         (x0 (Scalar 1)) (y0 (Scalar 1))))))
      (10
       ((0
-        ((r (Scalar 1)) (mu (Scalar 1E-05)) (v0 (Vector (2 2))) (x0 (Scalar 1))
-         (y0 (Scalar 1))))
+        ((m (Scalar 1)) (r (Scalar 1)) (mu (Scalar 0.05)) (v0 (Vector (2 2)))
+         (x0 (Scalar 1)) (y0 (Scalar 1))))
        (1
-        ((r (Scalar 2)) (mu (Scalar 1E-05)) (v0 (Vector (0 0))) (x0 (Scalar 7))
-         (y0 (Scalar 5))))))) |}];
+        ((m (Scalar 2)) (r (Scalar 2)) (mu (Scalar 0.05)) (v0 (Vector (0 0)))
+         (x0 (Scalar 7)) (y0 (Scalar 5))))))) |}];
   let a =
     recv_and_print
       a
@@ -595,112 +597,128 @@ let%expect_test "to_sexp_test" =
     ((0 ())
      (5
       ((0
-        ((r (Scalar 1)) (mu (Scalar 1E-05)) (v0 (Vector (0 0))) (x0 (Scalar 1))
-         (y0 (Scalar 1))))))
+        ((m (Scalar 1)) (r (Scalar 1)) (mu (Scalar 0.05)) (v0 (Vector (0 0)))
+         (x0 (Scalar 1)) (y0 (Scalar 1))))))
      (10
       ((0
-        ((r (Scalar 1)) (mu (Scalar 1E-05)) (v0 (Vector (2 2))) (x0 (Scalar 1))
-         (y0 (Scalar 1))))
+        ((m (Scalar 1)) (r (Scalar 1)) (mu (Scalar 0.05)) (v0 (Vector (2 2)))
+         (x0 (Scalar 1)) (y0 (Scalar 1))))
        (1
-        ((r (Scalar 2)) (mu (Scalar 1E-05)) (v0 (Vector (-1 -1))) (x0 (Scalar 7))
-         (y0 (Scalar 5))))))) |}];
+        ((m (Scalar 2)) (r (Scalar 2)) (mu (Scalar 0.05)) (v0 (Vector (-1 -1)))
+         (x0 (Scalar 7)) (y0 (Scalar 5))))))) |}];
   let a = recv_and_print a { time = 11.; action = SC.Action.Empty } in
   [%expect
     {|
     ((0 ())
      (5
       ((0
-        ((r (Scalar 1)) (mu (Scalar 1E-05)) (v0 (Vector (0 0))) (x0 (Scalar 1))
-         (y0 (Scalar 1))))))
+        ((m (Scalar 1)) (r (Scalar 1)) (mu (Scalar 0.05)) (v0 (Vector (0 0)))
+         (x0 (Scalar 1)) (y0 (Scalar 1))))))
      (10
       ((0
-        ((r (Scalar 1)) (mu (Scalar 1E-05)) (v0 (Vector (2 2))) (x0 (Scalar 1))
-         (y0 (Scalar 1))))
+        ((m (Scalar 1)) (r (Scalar 1)) (mu (Scalar 0.05)) (v0 (Vector (2 2)))
+         (x0 (Scalar 1)) (y0 (Scalar 1))))
        (1
-        ((r (Scalar 2)) (mu (Scalar 1E-05)) (v0 (Vector (-1 -1))) (x0 (Scalar 7))
-         (y0 (Scalar 5))))))
+        ((m (Scalar 2)) (r (Scalar 2)) (mu (Scalar 0.05)) (v0 (Vector (-1 -1)))
+         (x0 (Scalar 7)) (y0 (Scalar 5))))))
      (11
       ((0
-        ((r (Scalar 1)) (mu (Scalar 1E-05))
-         (v0 (Vector (1.9999292893218814 1.9999292893218814)))
-         (x0 (Scalar 2.9999646446609405)) (y0 (Scalar 2.9999646446609405))))
+        ((m (Scalar 1)) (r (Scalar 1)) (mu (Scalar 0.05))
+         (v0 (Vector (1.6464466094067263 1.6464466094067263)))
+         (x0 (Scalar 2.823223304703363)) (y0 (Scalar 2.823223304703363))))
        (1
-        ((r (Scalar 2)) (mu (Scalar 1E-05))
-         (v0 (Vector (-0.9999292893218813 -0.9999292893218813)))
-         (x0 (Scalar 6.0000353553390591)) (y0 (Scalar 4.0000353553390591))))))) |}];
+        ((m (Scalar 2)) (r (Scalar 2)) (mu (Scalar 0.05))
+         (v0 (Vector (-0.64644660940672627 -0.64644660940672627)))
+         (x0 (Scalar 6.1767766952966365)) (y0 (Scalar 4.1767766952966365))))))) |}];
   let a = recv_and_print a { time = 13.; action = SC.Action.Empty } in
   [%expect
     {|
       ((0 ())
        (5
         ((0
-          ((r (Scalar 1)) (mu (Scalar 1E-05)) (v0 (Vector (0 0))) (x0 (Scalar 1))
-           (y0 (Scalar 1))))))
+          ((m (Scalar 1)) (r (Scalar 1)) (mu (Scalar 0.05)) (v0 (Vector (0 0)))
+           (x0 (Scalar 1)) (y0 (Scalar 1))))))
        (10
         ((0
-          ((r (Scalar 1)) (mu (Scalar 1E-05)) (v0 (Vector (2 2))) (x0 (Scalar 1))
-           (y0 (Scalar 1))))
+          ((m (Scalar 1)) (r (Scalar 1)) (mu (Scalar 0.05)) (v0 (Vector (2 2)))
+           (x0 (Scalar 1)) (y0 (Scalar 1))))
          (1
-          ((r (Scalar 2)) (mu (Scalar 1E-05)) (v0 (Vector (-1 -1))) (x0 (Scalar 7))
-           (y0 (Scalar 5))))))
+          ((m (Scalar 2)) (r (Scalar 2)) (mu (Scalar 0.05)) (v0 (Vector (-1 -1)))
+           (x0 (Scalar 7)) (y0 (Scalar 5))))))
        (11
         ((0
-          ((r (Scalar 1)) (mu (Scalar 1E-05))
-           (v0 (Vector (1.9999292893218814 1.9999292893218814)))
-           (x0 (Scalar 2.9999646446609405)) (y0 (Scalar 2.9999646446609405))))
+          ((m (Scalar 1)) (r (Scalar 1)) (mu (Scalar 0.05))
+           (v0 (Vector (1.6464466094067263 1.6464466094067263)))
+           (x0 (Scalar 2.823223304703363)) (y0 (Scalar 2.823223304703363))))
          (1
-          ((r (Scalar 2)) (mu (Scalar 1E-05))
-           (v0 (Vector (-0.9999292893218813 -0.9999292893218813)))
-           (x0 (Scalar 6.0000353553390591)) (y0 (Scalar 4.0000353553390591))))))
+          ((m (Scalar 2)) (r (Scalar 2)) (mu (Scalar 0.05))
+           (v0 (Vector (-0.64644660940672627 -0.64644660940672627)))
+           (x0 (Scalar 6.1767766952966365)) (y0 (Scalar 4.1767766952966365))))))
+       (11.217848628376681
+        ((0
+          ((m (Scalar 1)) (r (Scalar 1)) (mu (Scalar 0.05))
+           (v0 (Vector (-1.8342492362551264 -0.767980139419917)))
+           (x0 (Scalar 3.173509967453473)) (y0 (Scalar 3.173509967453473))))
+         (1
+          ((m (Scalar 2)) (r (Scalar 2)) (mu (Scalar 0.05))
+           (v0 (Vector (1.1324118740235354 0.42027040309889563)))
+           (x0 (Scalar 6.0443386609232075)) (y0 (Scalar 4.0443386609232075))))))
        (13
         ((0
-          ((r (Scalar 1)) (mu (Scalar 1E-05))
-           (v0 (Vector (1.9999262429099778 1.9999262429099778)))
-           (x0 (Scalar 3.0861270732366508)) (y0 (Scalar 3.0861270732366508))))
+          ((m (Scalar 1)) (r (Scalar 1)) (mu (Scalar 0.05))
+           (v0 (Vector (-1.0123092223056882 -0.42384282480042246)))
+           (x0 (Scalar 0.63701093678841425)) (y0 (Scalar 2.1115055022447491))))
          (1
-          ((r (Scalar 2)) (mu (Scalar 1E-05))
-           (v0 (Vector (-0.99992624290997778 -0.99992624290997778)))
-           (x0 (Scalar 5.9569556970691213)) (y0 (Scalar 3.9569556970691218))))))) |}];
-  let _a = recv_and_print a { time = 14.; action = SC.Action.Empty } in
+          ((m (Scalar 2)) (r (Scalar 2)) (mu (Scalar 0.05))
+           (v0 (Vector (0.29701323444331629 0.11023009792513444)))
+           (x0 (Scalar 7.3180646197667141)) (y0 (Scalar 4.5170547586966237))))))) |}];
+  let _a = recv_and_print a { time = 1400.; action = SC.Action.Empty } in
   [%expect
     {|
       ((0 ())
        (5
         ((0
-          ((r (Scalar 1)) (mu (Scalar 1E-05)) (v0 (Vector (0 0))) (x0 (Scalar 1))
-           (y0 (Scalar 1))))))
+          ((m (Scalar 1)) (r (Scalar 1)) (mu (Scalar 0.05)) (v0 (Vector (0 0)))
+           (x0 (Scalar 1)) (y0 (Scalar 1))))))
        (10
         ((0
-          ((r (Scalar 1)) (mu (Scalar 1E-05)) (v0 (Vector (2 2))) (x0 (Scalar 1))
-           (y0 (Scalar 1))))
+          ((m (Scalar 1)) (r (Scalar 1)) (mu (Scalar 0.05)) (v0 (Vector (2 2)))
+           (x0 (Scalar 1)) (y0 (Scalar 1))))
          (1
-          ((r (Scalar 2)) (mu (Scalar 1E-05)) (v0 (Vector (-1 -1))) (x0 (Scalar 7))
-           (y0 (Scalar 5))))))
+          ((m (Scalar 2)) (r (Scalar 2)) (mu (Scalar 0.05)) (v0 (Vector (-1 -1)))
+           (x0 (Scalar 7)) (y0 (Scalar 5))))))
        (11
         ((0
-          ((r (Scalar 1)) (mu (Scalar 1E-05))
-           (v0 (Vector (1.9999292893218814 1.9999292893218814)))
-           (x0 (Scalar 2.9999646446609405)) (y0 (Scalar 2.9999646446609405))))
+          ((m (Scalar 1)) (r (Scalar 1)) (mu (Scalar 0.05))
+           (v0 (Vector (1.6464466094067263 1.6464466094067263)))
+           (x0 (Scalar 2.823223304703363)) (y0 (Scalar 2.823223304703363))))
          (1
-          ((r (Scalar 2)) (mu (Scalar 1E-05))
-           (v0 (Vector (-0.9999292893218813 -0.9999292893218813)))
-           (x0 (Scalar 6.0000353553390591)) (y0 (Scalar 4.0000353553390591))))))
+          ((m (Scalar 2)) (r (Scalar 2)) (mu (Scalar 0.05))
+           (v0 (Vector (-0.64644660940672627 -0.64644660940672627)))
+           (x0 (Scalar 6.1767766952966365)) (y0 (Scalar 4.1767766952966365))))))
+       (11.217848628376681
+        ((0
+          ((m (Scalar 1)) (r (Scalar 1)) (mu (Scalar 0.05))
+           (v0 (Vector (-1.8342492362551264 -0.767980139419917)))
+           (x0 (Scalar 3.173509967453473)) (y0 (Scalar 3.173509967453473))))
+         (1
+          ((m (Scalar 2)) (r (Scalar 2)) (mu (Scalar 0.05))
+           (v0 (Vector (1.1324118740235354 0.42027040309889563)))
+           (x0 (Scalar 6.0443386609232075)) (y0 (Scalar 4.0443386609232075))))))
        (13
         ((0
-          ((r (Scalar 1)) (mu (Scalar 1E-05))
-           (v0 (Vector (1.9999262429099778 1.9999262429099778)))
-           (x0 (Scalar 3.0861270732366508)) (y0 (Scalar 3.0861270732366508))))
+          ((m (Scalar 1)) (r (Scalar 1)) (mu (Scalar 0.05))
+           (v0 (Vector (-1.0123092223056882 -0.42384282480042246)))
+           (x0 (Scalar 0.63701093678841425)) (y0 (Scalar 2.1115055022447491))))
          (1
-          ((r (Scalar 2)) (mu (Scalar 1E-05))
-           (v0 (Vector (-0.99992624290997778 -0.99992624290997778)))
-           (x0 (Scalar 5.9569556970691213)) (y0 (Scalar 3.9569556970691218))))))
-       (14
+          ((m (Scalar 2)) (r (Scalar 2)) (mu (Scalar 0.05))
+           (v0 (Vector (0.29701323444331629 0.11023009792513444)))
+           (x0 (Scalar 7.3180646197667141)) (y0 (Scalar 4.5170547586966237))))))
+       (1400
         ((0
-          ((r (Scalar 1)) (mu (Scalar 1E-05))
-           (v0 (Vector (1.9999262429099778 1.9999262429099778)))
-           (x0 (Scalar 3.0861270732366508)) (y0 (Scalar 3.0861270732366508))))
+          ((m (Scalar 1)) (r (Scalar 1)) (mu (Scalar 0.05)) (v0 (Vector (0 0)))
+           (x0 (Scalar 3.9699096184567733)) (y0 (Scalar 3.5069538108104386))))
          (1
-          ((r (Scalar 2)) (mu (Scalar 1E-05))
-           (v0 (Vector (-0.99992624290997778 -0.99992624290997778)))
-           (x0 (Scalar 5.9569556970691213)) (y0 (Scalar 3.9569556970691218))))))) |}]
+          ((m (Scalar 2)) (r (Scalar 2)) (mu (Scalar 0.05)) (v0 (Vector (0 0)))
+           (x0 (Scalar 7.0357757941263648)) (y0 (Scalar 4.4122893096019791))))))) |}]
 ;;

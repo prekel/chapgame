@@ -352,22 +352,43 @@ module Make (N : Module_types.Number) = struct
       { scene with figures = q }
     ;;
 
+    let distance ~x1 ~y1 ~x2 ~y2 =
+      let sqr a = N.(a * a) in
+      N.(sqrt (sqr (x2 - x1) + sqr (y2 - y1)))
+    ;;
+
+    let distance_bentween_bodies
+        Figure2.{ values = values1; _ }
+        Figure2.{ values = values2; _ }
+      =
+      let x1 = Map.find_exn values1 `x0 |> Expr.scalar_exn in
+      let y1 = Map.find_exn values1 `y0 |> Expr.scalar_exn in
+      let x2 = Map.find_exn values2 `x0 |> Expr.scalar_exn in
+      let y2 = Map.find_exn values2 `y0 |> Expr.scalar_exn in
+      distance ~x1 ~y1 ~x2 ~y2
+    ;;
+
     let t ~eps scene =
       let scene = scene in
       let seq = Map.to_sequence scene.figures in
       let p = Sequence.cartesian_product seq seq in
       let q =
-        Sequence.map p ~f:(fun ((id1, f1), (id2, f2)) ->
-            let q2 = Figure2.Sample.Formulas.b2 f1 f2 ~r:Formulas.r in
-            let q3 =
-              Figure2.Sample.Formulas.b3
-                q2
-                f1
-                f2
-                ~global:(Map.find_exn scene.global_values)
-            in
-            let q4 = Figure2.Sample.Formulas.b4 q3 ~eps in
-            id1, id2, q4)
+        Sequence.filter_map p ~f:(fun ((id1, f1), (id2, f2)) ->
+            let r1 = Map.find_exn f1.values `r |> Expr.scalar_exn in
+            let r2 = Map.find_exn f2.values `r |> Expr.scalar_exn in
+            if N.(distance_bentween_bodies f1 f2 < r1 + r2)
+            then None
+            else (
+              let q2 = Figure2.Sample.Formulas.b2 f1 f2 ~r:Formulas.r in
+              let q3 =
+                Figure2.Sample.Formulas.b3
+                  q2
+                  f1
+                  f2
+                  ~global:(Map.find_exn scene.global_values)
+              in
+              let q4 = Figure2.Sample.Formulas.b4 q3 ~eps in
+              Some (id1, id2, q4)))
       in
       q
     ;;
@@ -495,6 +516,7 @@ module Make (N : Module_types.Number) = struct
           ; y0 : N.t
           ; r : N.t
           ; mu : N.t
+          ; m : N.t
           }
       | GiveVelocity of
           { id : Figure2.Id.t
@@ -529,11 +551,18 @@ module Make (N : Module_types.Number) = struct
           [%message "Unimplemented" ~time:(time : N.t) ~old_time:(old_time : N.t)]
       | Some (old_time, s) ->
         (* let s = Scene.update_coords1 s ~t:N.(time - old_time) ~eps in *)
-        let model = forward s ~old_time ~time ~eps in
+        let scenes = forward s ~old_time ~time ~eps in
+        let model =
+          Map.merge_skewed
+            model
+            (Map.of_alist_exn (module N) scenes)
+            ~combine:(fun ~key v1 v2 -> v1)
+        in
+        let old_time, s = List.last_exn scenes in
         let r =
           match action with
-          | Action.AddBody { id; x0; y0; r; mu } ->
-            Scene.{ s with figures = add_figure s.figures ~id ~x0 ~y0 ~r ~mu }
+          | Action.AddBody { id; x0; y0; r; mu; m } ->
+            Scene.{ s with figures = add_figure s.figures ~id ~x0 ~y0 ~r ~mu ~m }
           | GiveVelocity { id; v0 } ->
             let body = Map.find_exn s.figures id in
             let body =
@@ -556,7 +585,7 @@ module Make (N : Module_types.Number) = struct
         Map.update model time ~f:(function _ -> r), [ Events.SuccessfulAction a ]
       | None -> assert false, []
 
-    and forward (Scene.{ figures; global_values } as scene) ~eps ~time ~old_time
+    and forward (Scene.{ figures; global_values } as scene) ~eps ~old_time ~time
         : (N.t * Scene.t) list
       =
       let t = N.(time - old_time) in
@@ -585,11 +614,15 @@ module Make (N : Module_types.Number) = struct
         let body1 = Map.find_exn q id1 in
         let body2 = Map.find_exn q id2 in
         let v1n, v2n = Scene.collision_body2 body1 body2 in
-        let q = Map.update q id1 ~f:(fun _ -> body1) in
-        let q = Map.update q id2 ~f:(fun _ -> body2) in
+        let q =
+          Map.update q id1 ~f:(fun _ -> Figure2.update body1 `v0 (Expr.Vector v1n))
+        in
+        let q =
+          Map.update q id2 ~f:(fun _ -> Figure2.update body2 `v0 (Expr.Vector v2n))
+        in
         let s = { scene with figures = q } in
-        (time, s) :: forward s ~eps ~time ~old_time
-        (* { scene with figures = q } *)
+        let new_time = N.(old_time + t) in
+        (new_time, s) :: forward s ~eps ~time ~old_time:new_time
       | _ ->
         let q =
           Map.map figures ~f:(fun f ->
@@ -605,7 +638,7 @@ module Make (N : Module_types.Number) = struct
               | Some xy -> Figure2.update_x0y0 f xy
               | None -> f)
         in
-        (* { scene with figures = q } *) assert false
+        [ time, { scene with figures = q } ]
     ;;
   end
 end
