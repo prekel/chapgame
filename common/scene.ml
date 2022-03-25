@@ -230,6 +230,26 @@ module Make (N : Module_types.Number) = struct
           in
           p1 |> Sequence.concat
         ;;
+
+        let collision v1 v2 theta1 theta2 phi m1 m2 two pi =
+          let v1x =
+            Expr.Syntax.(
+              (((v1 * cos (theta1 - phi) * (m1 - m2))
+               + (two * m2 * v2 * cos (theta2 - phi)))
+              / (m1 + m2)
+              * cos phi)
+              + (v1 * sin (theta1 - phi) * cos (phi + (pi / two))))
+          in
+          let v1y =
+            Expr.Syntax.(
+              (((v1 * cos (theta1 - phi) * (m1 - m2))
+               + (two * m2 * v2 * cos (theta2 - phi)))
+              / (m1 + m2)
+              * sin phi)
+              + (v1 * sin (theta1 - phi) * cos (phi + (pi / two))))
+          in
+          assert false
+        ;;
       end
     end
   end
@@ -273,6 +293,7 @@ module Make (N : Module_types.Number) = struct
       let border_l2 = border_r1
       let three = scalar_const N.(one + one + one)
       let two = scalar_const N.(one + one)
+      let pi = scalar_const N.pi
     end
 
     module Formulas = struct
@@ -371,7 +392,9 @@ module Make (N : Module_types.Number) = struct
     let t1 = t
 
     let update_coords1 ({ figures; global_values } as scene) ~eps ~t =
-      let qt = t1 ~eps scene |> Sequence.find_map ~f:(fun (_, _, r) -> Sequence.hd r) in
+      let qt =
+        t1 ~eps scene |> Sequence.find_map ~f:(fun (id1, id2, r) -> Sequence.hd r)
+      in
       match qt with
       | Some qt when N.(qt < t) ->
         let t = qt in
@@ -388,7 +411,7 @@ module Make (N : Module_types.Number) = struct
               match xy with
               | Some xy -> Figure2.update_x0y0 f xy
               | None -> f)
-        in 
+        in
         { scene with figures = q }
       | _ ->
         let q =
@@ -483,6 +506,46 @@ module Make (N : Module_types.Number) = struct
         Map.update model time ~f:(function _ -> r), [ Events.SuccessfulAction a ]
       | None -> assert false, []
 
-    and forward = ()
+    and forward (Scene.{ figures; global_values } as scene) ~eps ~t =
+      let qt =
+        Scene.t1 ~eps scene
+        |> Sequence.find_map ~f:(fun (id1, id2, r) ->
+               Sequence.hd r |> Option.map ~f:(fun r -> id1, id2, r))
+      in
+      match qt with
+      | Some (id1, id2, r) when N.(r < t) ->
+        let t = r in
+        let q =
+          Map.map figures ~f:(fun f ->
+              let xy =
+                Figure2.calc
+                  f
+                  ~scoped_values:(function
+                    | -1 -> Map.find_exn global_values
+                    | _ -> assert false)
+                  ~t
+              in
+              match xy with
+              | Some xy -> Figure2.update_x0y0 f xy
+              | None -> f)
+        in
+        { scene with figures = q }
+      | _ ->
+        let q =
+          Map.map figures ~f:(fun f ->
+              let xy =
+                Figure2.calc
+                  f
+                  ~scoped_values:(function
+                    | -1 -> Map.find_exn global_values
+                    | _ -> assert false)
+                  ~t
+              in
+              match xy with
+              | Some xy -> Figure2.update_x0y0 f xy
+              | None -> f)
+        in
+        { scene with figures = q }
+    ;;
   end
 end

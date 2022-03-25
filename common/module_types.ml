@@ -1,17 +1,26 @@
 open Core
 
+module type BasicOps = sig
+  type t
+
+  val zero : t
+  val ( + ) : t -> t -> t
+  val ( * ) : t -> t -> t
+  val ( / ) : t -> t -> t
+  val ( - ) : t -> t -> t
+  val ( ~- ) : t -> t
+  val sin : t -> t
+  val cos : t -> t
+  val atan2 : t -> t -> t
+end
+
 module type Number = sig
   type t [@@deriving sexp, compare, equal]
 
+  include BasicOps with type t := t
   include Comparable.S with type t := t
 
-  val ( ~- ) : t -> t
-  val ( + ) : t -> t -> t
-  val ( - ) : t -> t -> t
-  val ( * ) : t -> t -> t
-  val ( / ) : t -> t -> t
   val ( ** ) : t -> t -> t
-  val zero : t
   val one : t
   val of_int : int -> t
   val infinity : t
@@ -20,6 +29,7 @@ module type Number = sig
   val abs : t -> t
   val sign_exn : t -> Sign.t
   val sqrt : t -> t
+  val pi : t
 
   val to_string_hum
     :  ?delimiter:char
@@ -28,17 +38,6 @@ module type Number = sig
     -> ?explicit_plus:bool
     -> t
     -> string
-end
-
-module type BasicOps = sig
-  type t
-
-  val zero : t
-  val ( + ) : t -> t -> t
-  val ( * ) : t -> t -> t
-  val ( / ) : t -> t -> t
-  val ( - ) : t -> t -> t 
-  val ( ~- ) : t -> t
 end
 
 module type Key = sig
