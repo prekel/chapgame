@@ -11,6 +11,9 @@ module type S = sig
     | Vector of vector
   [@@deriving sexp, equal]
 
+  val scalar_exn : value -> scalar
+  val vector_exn : value -> vector
+
   type values = key -> value
 
   type 'result t =

@@ -41,6 +41,7 @@ module Make (N : Module_types.Number) = struct
         | `r
         | `g
         | `mu
+        | `m
         ] = struct
     module T = struct
       type t =
@@ -50,6 +51,7 @@ module Make (N : Module_types.Number) = struct
         | `r
         | `g
         | `mu
+        | `m
         ]
       [@@deriving bin_io, hash, compare, sexp]
 
@@ -230,26 +232,6 @@ module Make (N : Module_types.Number) = struct
           in
           p1 |> Sequence.concat
         ;;
-
-        let collision v1 v2 theta1 theta2 phi m1 m2 two pi =
-          let v1x =
-            Expr.Syntax.(
-              (((v1 * cos (theta1 - phi) * (m1 - m2))
-               + (two * m2 * v2 * cos (theta2 - phi)))
-              / (m1 + m2)
-              * cos phi)
-              + (v1 * sin (theta1 - phi) * cos (phi + (pi / two))))
-          in
-          let v1y =
-            Expr.Syntax.(
-              (((v1 * cos (theta1 - phi) * (m1 - m2))
-               + (two * m2 * v2 * cos (theta2 - phi)))
-              / (m1 + m2)
-              * sin phi)
-              + (v1 * sin (theta1 - phi) * cos (phi + (pi / two))))
-          in
-          assert false
-        ;;
       end
     end
   end
@@ -311,7 +293,7 @@ module Make (N : Module_types.Number) = struct
       let r = Formula.of_alist_exn [ 0, r ]
     end
 
-    let add_figure figures ~id ~x0 ~y0 ~r ~mu =
+    let add_figure figures ~id ~x0 ~y0 ~r ~mu ~m =
       Map.add_exn
         figures
         ~key:id
@@ -326,6 +308,7 @@ module Make (N : Module_types.Number) = struct
                   ; `v0, Expr.Vector (N.zero, N.zero)
                   ; `r, Expr.Scalar r
                   ; `mu, Expr.Scalar mu
+                  ; `m, Expr.Scalar m
                   ]
             ; xy =
                 Figure2.
@@ -390,6 +373,72 @@ module Make (N : Module_types.Number) = struct
     ;;
 
     let t1 = t
+
+    let collision ~v1 ~v2 ~theta1 ~theta2 ~phi ~m1 ~m2 =
+      let two = N.(one + one) in
+      let v1x =
+        N.(
+          (((v1 * cos (theta1 - phi) * (m1 - m2)) + (two * m2 * v2 * cos (theta2 - phi)))
+          / (m1 + m2)
+          * cos phi)
+          + (v1 * sin (theta1 - phi) * cos (phi + (pi / two))))
+      in
+      let v1y =
+        N.(
+          (((v1 * cos (theta1 - phi) * (m1 - m2)) + (two * m2 * v2 * cos (theta2 - phi)))
+          / (m1 + m2)
+          * sin phi)
+          + (v1 * sin (theta1 - phi) * cos (phi + (pi / two))))
+      in
+      v1x, v1y
+    ;;
+
+    let collision_body ~v1 ~v2 ~m1 ~m2 ~x1 ~y1 ~x2 ~y2 =
+      let theta1 = N.atan2 (snd v1) (fst v1) in
+      let theta2 = N.atan2 (snd v2) (fst v2) in
+      let move = N.(x2 - x1), N.(y2 - y1) in
+      let phi = N.atan2 (snd move) (fst move) in
+      let len (x, y) = N.(sqrt ((x * x) + (y * y))) in
+      let v1new = collision ~v1:(len v1) ~v2:(len v2) ~theta1 ~theta2 ~phi ~m1 ~m2 in
+      let v2new =
+        collision
+          ~v1:(len v2)
+          ~v2:(len v1)
+          ~theta1:theta2
+          ~theta2:theta1
+          ~phi
+          ~m1:m2
+          ~m2:m1
+      in
+      v1new, v2new
+    ;;
+
+    let collision_body1 body1 body2 =
+      let v1 = Map.find_exn body1.Figure2.values `v0 |> Expr.vector_exn in
+      let v2 = Map.find_exn body2.Figure2.values `v0 |> Expr.vector_exn in
+      let m1 = Map.find_exn body1.values `m |> Expr.scalar_exn in
+      let m2 = Map.find_exn body2.values `m |> Expr.scalar_exn in
+      let x1 = Map.find_exn body1.values `x0 |> Expr.scalar_exn in
+      let y1 = Map.find_exn body1.values `y0 |> Expr.scalar_exn in
+      let x2 = Map.find_exn body2.values `x0 |> Expr.scalar_exn in
+      let y2 = Map.find_exn body2.values `y0 |> Expr.scalar_exn in
+      let v1new, v2new = collision_body ~v1 ~v2 ~m1 ~m2 ~x1 ~y1 ~x2 ~y2 in
+      let body1v = Map.update body1.values `v0 ~f:(fun _ -> Expr.Vector v1new) in
+      let body2v = Map.update body2.values `v0 ~f:(fun _ -> Expr.Vector v2new) in
+      { body1 with values = body1v }, { body2 with values = body2v }
+    ;;
+
+    let collision_body2 body1 body2 =
+      let v1 = Map.find_exn body1.Figure2.values `v0 |> Expr.vector_exn in
+      let v2 = Map.find_exn body2.Figure2.values `v0 |> Expr.vector_exn in
+      let m1 = Map.find_exn body1.values `m |> Expr.scalar_exn in
+      let m2 = Map.find_exn body2.values `m |> Expr.scalar_exn in
+      let x1 = Map.find_exn body1.values `x0 |> Expr.scalar_exn in
+      let y1 = Map.find_exn body1.values `y0 |> Expr.scalar_exn in
+      let x2 = Map.find_exn body2.values `x0 |> Expr.scalar_exn in
+      let y2 = Map.find_exn body2.values `y0 |> Expr.scalar_exn in
+      collision_body ~v1 ~v2 ~m1 ~m2 ~x1 ~y1 ~x2 ~y2
+    ;;
 
     let update_coords1 ({ figures; global_values } as scene) ~eps ~t =
       let qt =
@@ -479,7 +528,8 @@ module Make (N : Module_types.Number) = struct
         Error.raise_s
           [%message "Unimplemented" ~time:(time : N.t) ~old_time:(old_time : N.t)]
       | Some (old_time, s) ->
-        let s = Scene.update_coords1 s ~t:N.(time - old_time) ~eps in
+        (* let s = Scene.update_coords1 s ~t:N.(time - old_time) ~eps in *)
+        let model = forward s ~old_time ~time ~eps in
         let r =
           match action with
           | Action.AddBody { id; x0; y0; r; mu } ->
@@ -506,7 +556,10 @@ module Make (N : Module_types.Number) = struct
         Map.update model time ~f:(function _ -> r), [ Events.SuccessfulAction a ]
       | None -> assert false, []
 
-    and forward (Scene.{ figures; global_values } as scene) ~eps ~t =
+    and forward (Scene.{ figures; global_values } as scene) ~eps ~time ~old_time
+        : (N.t * Scene.t) list
+      =
+      let t = N.(time - old_time) in
       let qt =
         Scene.t1 ~eps scene
         |> Sequence.find_map ~f:(fun (id1, id2, r) ->
@@ -529,7 +582,14 @@ module Make (N : Module_types.Number) = struct
               | Some xy -> Figure2.update_x0y0 f xy
               | None -> f)
         in
-        { scene with figures = q }
+        let body1 = Map.find_exn q id1 in
+        let body2 = Map.find_exn q id2 in
+        let v1n, v2n = Scene.collision_body2 body1 body2 in
+        let q = Map.update q id1 ~f:(fun _ -> body1) in
+        let q = Map.update q id2 ~f:(fun _ -> body2) in
+        let s = { scene with figures = q } in
+        (time, s) :: forward s ~eps ~time ~old_time
+        (* { scene with figures = q } *)
       | _ ->
         let q =
           Map.map figures ~f:(fun f ->
@@ -545,7 +605,7 @@ module Make (N : Module_types.Number) = struct
               | Some xy -> Figure2.update_x0y0 f xy
               | None -> f)
         in
-        { scene with figures = q }
+        (* { scene with figures = q } *) assert false
     ;;
   end
 end
