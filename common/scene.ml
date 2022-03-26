@@ -539,48 +539,7 @@ module Make (N : Module_types.Number) = struct
   end
 
   module Engine = struct
-    let rec recv model (Action.{ time; action } as a) ~eps =
-      match Map.max_elt model with
-      | Some (old_time, _) when N.(old_time > time) ->
-        Error.raise_s
-          [%message "Unimplemented" ~time:(time : N.t) ~old_time:(old_time : N.t)]
-      | Some (old_time, s) ->
-        (* let s = Scene.update_coords1 s ~t:N.(time - old_time) ~eps in *)
-        let scenes = forward s ~old_time ~time ~eps in
-        let model =
-          Map.merge_skewed
-            model
-            (Map.of_alist_exn (module N) scenes)
-            ~combine:(fun ~key v1 v2 -> v1)
-        in
-        let old_time, s = List.last_exn scenes in
-        let r =
-          match action with
-          | Action.AddBody { id; x0; y0; r; mu; m } ->
-            Scene.{ s with figures = add_figure s.figures ~id ~x0 ~y0 ~r ~mu ~m }
-          | GiveVelocity { id; v0 } ->
-            let body = Map.find_exn s.figures id in
-            let body =
-              { body with
-                values =
-                  Map.update body.values `v0 ~f:(function
-                      | Some _ -> Vector v0
-                      | None -> assert false)
-              }
-            in
-            Scene.
-              { s with
-                figures =
-                  Map.update s.figures id ~f:(function
-                      | Some _ -> body
-                      | None -> assert false)
-              }
-          | Empty -> s
-        in
-        Map.update model time ~f:(function _ -> r), [ Events.SuccessfulAction a ]
-      | None -> assert false, []
-
-    and forward (Scene.{ figures; global_values } as scene) ~eps ~old_time ~time
+    let rec forward (Scene.{ figures; global_values } as scene) ~eps ~old_time ~time
         : (N.t * Scene.t) list
       =
       let t = N.(time - old_time) in
@@ -634,6 +593,48 @@ module Make (N : Module_types.Number) = struct
               | None -> f)
         in
         [ time, { scene with figures = q } ]
+    ;;
+
+    let recv model (Action.{ time; action } as a) ~eps =
+      match Map.max_elt model with
+      | Some (old_time, _) when N.(old_time > time) ->
+        Error.raise_s
+          [%message "Unimplemented" ~time:(time : N.t) ~old_time:(old_time : N.t)]
+      | Some (old_time, s) ->
+        (* let s = Scene.update_coords1 s ~t:N.(time - old_time) ~eps in *)
+        let scenes = forward s ~old_time ~time ~eps in
+        let model =
+          Map.merge_skewed
+            model
+            (Map.of_alist_exn (module N) scenes)
+            ~combine:(fun ~key v1 v2 -> v1)
+        in
+        let old_time, s = List.last_exn scenes in
+        let r =
+          match action with
+          | Action.AddBody { id; x0; y0; r; mu; m } ->
+            Scene.{ s with figures = add_figure s.figures ~id ~x0 ~y0 ~r ~mu ~m }
+          | GiveVelocity { id; v0 } ->
+            let body = Map.find_exn s.figures id in
+            let body =
+              { body with
+                values =
+                  Map.update body.values `v0 ~f:(function
+                      | Some _ -> Vector v0
+                      | None -> assert false)
+              }
+            in
+            Scene.
+              { s with
+                figures =
+                  Map.update s.figures id ~f:(function
+                      | Some _ -> body
+                      | None -> assert false)
+              }
+          | Empty -> s
+        in
+        Map.update model time ~f:(function _ -> r), [ Events.SuccessfulAction a ]
+      | None -> assert false, []
     ;;
   end
 end
