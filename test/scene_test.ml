@@ -7,7 +7,7 @@ let%expect_test "" =
   let eps = 1e-7 in
   let a = SC.Model.empty ~g:10. in
   let id1, id2 = SC.Figure2.Id.(next (), next ()) in
-  let a, _ =
+  let a =
     SC.Engine.recv
       ~eps
       a
@@ -16,7 +16,7 @@ let%expect_test "" =
           SC.Action.AddBody { id = id1; x0 = 1.; y0 = 1.; r = 1.; mu = 0.00001; m = 1. }
       }
   in
-  let a, _ =
+  let a =
     SC.Engine.recv
       ~eps
       a
@@ -25,13 +25,13 @@ let%expect_test "" =
           SC.Action.AddBody { id = id2; x0 = 7.; y0 = 5.; r = 2.; mu = 0.00001; m = 1. }
       }
   in
-  let a, _ =
+  let a =
     SC.Engine.recv
       ~eps
       a
       { time = 10.; action = SC.Action.GiveVelocity { id = id1; v0 = 2., 2. } }
   in
-  let a, _ =
+  let a =
     SC.Engine.recv
       ~eps
       a
@@ -195,7 +195,7 @@ let%expect_test "" =
         (1.0430824126779044 2.2903997684001469 14145.265140131578
          14149.008121436898))
        (1 0 (1.0430824126779044 2.2903997684001469))) |}];
-  let a, _ = SC.Engine.recv ~eps a { time = 11.; action = SC.Action.Empty } in
+  let a = SC.Engine.recv ~eps a { time = 11.; action = SC.Action.Empty } in
   let _elt, els = Map.max_elt_exn a in
   print_s [%sexp (els : SC.Scene.t)];
   [%expect
@@ -354,7 +354,7 @@ let%expect_test "" =
     {|
       ((0 1 (0.043082412677904358 1.2903997684001474 14144.006885188992))
        (1 0 (0.043082412677904358 1.2903997684001474))) |}];
-  let a, _ = SC.Engine.recv ~eps a { time = 12.; action = SC.Action.Empty } in
+  let a = SC.Engine.recv ~eps a { time = 12.; action = SC.Action.Empty } in
   let _elt, els = Map.max_elt_exn a in
   print_s [%sexp (els : SC.Scene.t)];
   [%expect
@@ -518,7 +518,7 @@ let%expect_test "to_sexp_test" =
   let a = SC.Model.empty ~g:10. in
   let id1, id2 = 0, 1 in
   let recv_and_print a b =
-    let ret, _ = SC.Engine.recv ~eps a b in
+    let ret = SC.Engine.recv ~eps a b in
     let r =
       Map.to_sequence ret
       |> Sequence.map ~f:(fun (time, scene) ->

@@ -1,37 +1,6 @@
 open Core
 
 module Make (N : Module_types.Number) = struct
-  module Solver = Solver.MakeSolver (N)
-
-  module Figure = struct
-    module Vec = struct
-      type _ t
-    end
-
-    module Kg = struct
-      type t
-    end
-
-    module Metre = struct
-      type t
-    end
-
-    module Velocity = struct
-      type t = M of float * float
-    end
-
-    module Newton = struct
-      type t
-    end
-
-    module Force = struct
-      type t =
-        | Const of Newton.t Vec.t
-        | Friction of float
-        | No
-    end
-  end
-
   module Vars :
     Identifiable.S
       with type t =
@@ -66,10 +35,42 @@ module Make (N : Module_types.Number) = struct
     include Identifiable.Make (T)
   end
 
+  module Solver = Solver.MakeSolver (N)
   module Expr = Expr.Make (Vars) (Int) (N)
   module Formula = Formula.Make (Vars) (Int) (N) (Expr) (Solver)
 
   type values = (Vars.t, Expr.value, Vars.comparator_witness) Map.t
+
+  module Values : sig
+    type t [@@deriving sexp]
+
+    val get_scalar_exn : t -> var:Vars.t -> N.t
+    val get_vector_exn : t -> var:Vars.t -> N.t * N.t
+    val update_scalar : t -> var:Vars.t -> N.t -> t
+    val update_vector : t -> var:Vars.t -> N.t * N.t -> t
+    val of_map : (Vars.t, Expr.value, Vars.comparator_witness) Map.t -> t
+  end = struct
+    type t = (Vars.t, Expr.value, Vars.comparator_witness) Map.t
+
+    let sexp_of_t : t -> _ = Common.Map.sexp_of_t Vars.sexp_of_t Expr.sexp_of_value
+
+    let t_of_sexp : _ -> t =
+      Common.Map.t_of_sexp Vars.t_of_sexp Expr.value_of_sexp (module Vars)
+    ;;
+
+    let get_scalar_exn values ~var = Map.find_exn values var |> Expr.scalar_exn
+    let get_vector_exn values ~var = Map.find_exn values var |> Expr.vector_exn
+
+    let update_scalar values ~var value =
+      Map.update values var ~f:(fun _ -> Expr.Scalar value)
+    ;;
+
+    let update_vector values ~var value =
+      Map.update values var ~f:(fun _ -> Expr.Vector value)
+    ;;
+
+    let of_map = Fn.id
+  end
 
   let sexp_of_values values = [%sexp (Map.to_alist values : (Vars.t * Expr.value) list)]
 
@@ -101,6 +102,18 @@ module Make (N : Module_types.Number) = struct
       ;;
     end
 
+    module Rule = struct
+      type t =
+        { interval :
+            [ `Interval of Expr.t_scalar * Expr.t_scalar | `PosInfinity of Expr.t_scalar ]
+        ; x : Formula.t
+        ; y : Formula.t
+        ; v_x : Formula.t
+        ; v_y : Formula.t
+        }
+      [@@deriving sexp]
+    end
+
     type formula =
       { interval :
           [ `Interval of Expr.t_scalar * Expr.t_scalar | `PosInfinity of Expr.t_scalar ]
@@ -114,26 +127,23 @@ module Make (N : Module_types.Number) = struct
     type t =
       { id : Id.t
       ; values : values
-      ; xy : formula list
+      ; rules : Rule.t list
       }
     [@@deriving sexp_of]
 
-    let calc { id; values; xy } ~scoped_values ~t =
+    let calc { id; values; rules } ~scoped_values ~t =
       let c = Expr.calc ~values:(Map.find_exn values) ~scoped_values (module N) in
       let calc_xy f =
         Formula.to_polynomial f ~values:(Map.find_exn values) ~scoped_values
         |> Solver.Polynomial.calc ~x:t
       in
-      List.find_map xy ~f:(fun { interval; x; y; v_x; v_y } ->
+      List.find_map rules ~f:(fun { interval; x; y; v_x; v_y } ->
           match interval with
-          | `Interval (l, r) ->
-            if N.(c l <= t && t < c r)
-            then Some (calc_xy x, calc_xy y, calc_xy v_x, calc_xy v_y)
-            else None
-          | `PosInfinity l ->
-            if N.(c l <= t)
-            then Some (calc_xy x, calc_xy y, calc_xy v_x, calc_xy v_y)
-            else None)
+          | `Interval (l, r) when N.(c l <= t && t < c r) ->
+            Some (calc_xy x, calc_xy y, calc_xy v_x, calc_xy v_y)
+          | `PosInfinity l when N.(c l <= t) ->
+            Some (calc_xy x, calc_xy y, calc_xy v_x, calc_xy v_y)
+          | _ -> None)
     ;;
 
     let update body key value =
@@ -166,7 +176,9 @@ module Make (N : Module_types.Number) = struct
       module Formulas = struct
         let b2 a b ~r =
           let p =
-            Sequence.cartesian_product (Sequence.of_list a.xy) (Sequence.of_list b.xy)
+            Sequence.cartesian_product
+              (Sequence.of_list a.rules)
+              (Sequence.of_list b.rules)
           in
           let p1 =
             Sequence.map p ~f:(fun (a, b) ->
@@ -237,17 +249,31 @@ module Make (N : Module_types.Number) = struct
   end
 
   module Scene = struct
+    module Cause = struct
+      type t =
+        | Init
+        | Collision
+        | VelocityGiven
+      [@@deriving sexp]
+    end
+
     type figures = (Figure2.Id.t, Figure2.t, Figure2.Id.comparator_witness) Map.t
 
     let sexp_of_figures a = [%sexp (Map.to_alist a : (Figure2.Id.t * Figure2.t) list)]
 
     type t =
-      { figures : figures
+      { time : N.t
+      ; figures : figures
       ; global_values : values
+      ; cause : Cause.t list
       }
     [@@deriving sexp_of]
 
     let figures { figures; _ } = figures
+
+    let update { global_values; _ } ~bodies ~cause ~time =
+      { time; figures = bodies; global_values; cause }
+    ;;
 
     module Exprs = struct
       open Expr.Syntax
@@ -310,7 +336,7 @@ module Make (N : Module_types.Number) = struct
                   ; `mu, Expr.Scalar mu
                   ; `m, Expr.Scalar m
                   ]
-            ; xy =
+            ; rules =
                 Figure2.
                   [ { interval = `Interval (Exprs.border_l1, Exprs.border_r1)
                     ; x = Formulas.x
@@ -329,27 +355,11 @@ module Make (N : Module_types.Number) = struct
     ;;
 
     let scene ~g =
-      { figures = Map.empty (module Figure2.Id)
+      { time = N.zero
+      ; figures = Map.empty (module Figure2.Id)
       ; global_values = Map.of_alist_exn (module Vars) [ `g, Expr.Scalar g ]
+      ; cause = [ Init ]
       }
-    ;;
-
-    let update_coords ({ figures; global_values } as scene) ~t =
-      let q =
-        Map.map figures ~f:(fun f ->
-            let xy =
-              Figure2.calc
-                f
-                ~scoped_values:(function
-                  | -1 -> Map.find_exn global_values
-                  | _ -> assert false)
-                ~t
-            in
-            match xy with
-            | Some xy -> Figure2.update_x0y0 f xy
-            | None -> f)
-      in
-      { scene with figures = q }
     ;;
 
     let distance ~x1 ~y1 ~x2 ~y2 =
@@ -455,52 +465,6 @@ module Make (N : Module_types.Number) = struct
       let y2 = Map.find_exn body2.values `y0 |> Expr.scalar_exn in
       collision_body ~v1 ~v2 ~m1 ~m2 ~x1 ~y1 ~x2 ~y2
     ;;
-
-    let update_coords1 ({ figures; global_values } as scene) ~eps ~t =
-      let qt =
-        t1 ~eps scene |> Sequence.find_map ~f:(fun (id1, id2, r) -> Sequence.hd r)
-      in
-      match qt with
-      | Some qt when N.(qt < t) ->
-        let t = qt in
-        let q =
-          Map.map figures ~f:(fun f ->
-              let xy =
-                Figure2.calc
-                  f
-                  ~scoped_values:(function
-                    | -1 -> Map.find_exn global_values
-                    | _ -> assert false)
-                  ~t
-              in
-              match xy with
-              | Some xy -> Figure2.update_x0y0 f xy
-              | None -> f)
-        in
-        { scene with figures = q }
-      | _ ->
-        let q =
-          Map.map figures ~f:(fun f ->
-              let xy =
-                Figure2.calc
-                  f
-                  ~scoped_values:(function
-                    | -1 -> Map.find_exn global_values
-                    | _ -> assert false)
-                  ~t
-              in
-              match xy with
-              | Some xy -> Figure2.update_x0y0 f xy
-              | None -> f)
-        in
-        { scene with figures = q }
-    ;;
-
-    (* let t1 scene = let scene = scene in let seq = Map.to_sequence scene.figures in let
-       p = Sequence.cartesian_product seq seq in let q = Sequence.map p ~f:(fun ((_id1,
-       f1), (_id2, f2)) -> Figure2.Sample.Formulas.b1 f1 f2 ~r:Formulas.r) in q ;; *)
-
-    (* let a = t (scene ()) *)
   end
 
   module Action = struct
@@ -525,10 +489,6 @@ module Make (N : Module_types.Number) = struct
       ; action : a
       }
     [@@deriving sexp]
-  end
-
-  module Events = struct
-    type t = SuccessfulAction of Action.t [@@deriving sexp]
   end
 
   module Model = struct
@@ -574,8 +534,8 @@ module Make (N : Module_types.Number) = struct
         let q =
           Map.update q id2 ~f:(fun _ -> Figure2.update body2 `v0 (Expr.Vector v2n))
         in
-        let s = { scene with figures = q } in
         let new_time = N.(old_time + t) in
+        let s = Scene.update scene ~bodies:q ~cause:[ Collision ] ~time:new_time in
         (new_time, s) :: forward s ~eps ~time ~old_time:new_time
       | _ ->
         let q =
@@ -595,7 +555,7 @@ module Make (N : Module_types.Number) = struct
         [ time, { scene with figures = q } ]
     ;;
 
-    let recv model (Action.{ time; action } as a) ~eps =
+    let recv model (Action.{ time; action } as _a) ~eps =
       match Map.max_elt model with
       | Some (old_time, _) when N.(old_time > time) ->
         Error.raise_s
@@ -633,8 +593,8 @@ module Make (N : Module_types.Number) = struct
               }
           | Empty -> s
         in
-        Map.update model time ~f:(function _ -> r), [ Events.SuccessfulAction a ]
-      | None -> assert false, []
+        Map.update model time ~f:(function _ -> r)
+      | None -> assert false
     ;;
   end
 end
