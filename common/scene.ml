@@ -349,8 +349,15 @@ module Make (N : Module_types.Number) = struct
     module Cause = struct
       type t =
         | Init
-        | Collision
-        | VelocityGiven
+        | Collision of
+            { id1 : Figure2.Id.t
+            ; id2 : Figure2.Id.t
+            }
+        | VelocityGiven of
+            { id : Figure2.Id.t
+            ; v : N.t * N.t
+            }
+        | BodyAdded of { id : Figure2.Id.t }
         | Stop
       [@@deriving sexp]
     end
@@ -499,7 +506,9 @@ module Make (N : Module_types.Number) = struct
           |> Scene.Figures.update_by_id ~id:id2 ~body:(Figure2.update_v0 body2 ~v:v2n)
         in
         let new_time = N.(old_time + t) in
-        let s = Scene.update scene ~bodies:q ~cause:[ Collision ] ~time:new_time in
+        let s =
+          Scene.update scene ~bodies:q ~cause:[ Collision { id1; id2 } ] ~time:new_time
+        in
         s :: forward s ~eps ~time ~old_time:new_time
       | _ ->
         let q =
@@ -530,15 +539,19 @@ module Make (N : Module_types.Number) = struct
         let r =
           match action with
           | Action.AddBody { id; x0; y0; r; mu; m } ->
-            Scene.{ s with figures = add_figure s.figures ~id ~x0 ~y0 ~r ~mu ~m }
+            Scene.update
+              s
+              ~bodies:(Scene.add_figure s.figures ~id ~x0 ~y0 ~r ~mu ~m)
+              ~cause:[ BodyAdded { id } ]
+              ~time
           | GiveVelocity { id; v0 } ->
             let body = Scene.Figures.get_by_id s.figures ~id in
             let body = Figure2.update_v0 body ~v:v0 in
             Scene.update
               s
               ~bodies:(Scene.Figures.update_by_id s.figures ~id:body.id ~body)
-              ~cause:[ VelocityGiven ]
-              ~time:s.time
+              ~cause:[ VelocityGiven { id; v = v0 } ]
+              ~time
           | Empty -> s
         in
         Map.update model time ~f:(function _ -> r)
