@@ -358,7 +358,7 @@ module Make (N : Module_types.Number) = struct
             ; v : N.t * N.t
             }
         | BodyAdded of { id : Figure2.Id.t }
-        | Stop
+        | Empty
       [@@deriving sexp]
     end
 
@@ -441,7 +441,7 @@ module Make (N : Module_types.Number) = struct
             }
     ;;
 
-    let scene ~g =
+    let init ~g =
       { time = N.zero
       ; figures = Figures.empty
       ; global_values = Values.of_alist [ `g, Expr.Scalar g ]
@@ -475,67 +475,64 @@ module Make (N : Module_types.Number) = struct
   end
 
   module Model = struct
-    type t = (N.t, Scene.t, N.comparator_witness) Map.t
+    type t = Scene.t list [@@deriving sexp_of]
 
-    let sexp_of_t t = [%sexp (Map.to_alist t : (N.t * Scene.t) list)]
-    let empty ~g : t = Map.of_alist_exn (module N) [ N.zero, Scene.scene ~g ]
+    let empty ~g = [ Scene.init ~g ]
   end
 
   module Engine = struct
-    let rec forward (scene : Scene.t) ~eps ~old_time ~time : Scene.t list =
-      let global_values = Values.to_function scene.global_values in
-      let time_rel = N.(time - old_time) in
-      let qt =
-        CollisionDetection.collisions
-          ~eps
-          ~global_values
-          ~r:Formulas.r
-          (Scene.Figures.to_sequence scene.figures)
-        |> Sequence.find_map ~f:(fun (id1, id2, r) ->
-               Sequence.hd r |> Option.map ~f:(fun r -> id1, id2, r))
+    let forward (scene : Scene.t) ~eps ~old_time ~time : Scene.t list =
+      let rec forward_rec (scene : Scene.t) ~old_time =
+        let global_values = Values.to_function scene.global_values in
+        let time_rel = N.(time - old_time) in
+        let qt =
+          CollisionDetection.collisions
+            ~eps
+            ~global_values
+            ~r:Formulas.r
+            (Scene.Figures.to_sequence scene.figures)
+          |> Sequence.find_map ~f:(fun (id1, id2, r) ->
+                 Sequence.hd r |> Option.map ~f:(fun r -> id1, id2, r))
+        in
+        match qt with
+        | Some (id1, id2, r) when N.(r < time_rel) ->
+          let t = r in
+          let q =
+            Scene.Figures.calc scene.figures ~t ~global_values:scene.global_values
+          in
+          let body1 = Scene.Figures.get_by_id q ~id:id1 in
+          let body2 = Scene.Figures.get_by_id q ~id:id2 in
+          let v1n, v2n = CollisionHandle.calculate_new_v body1.values body2.values in
+          let q =
+            Scene.Figures.update_by_id q ~id:id1 ~body:(Figure2.update_v0 body1 ~v:v1n)
+            |> Scene.Figures.update_by_id ~id:id2 ~body:(Figure2.update_v0 body2 ~v:v2n)
+          in
+          let new_time = N.(old_time + t) in
+          let s =
+            Scene.update scene ~bodies:q ~cause:[ Collision { id1; id2 } ] ~time:new_time
+          in
+          s :: forward_rec s ~old_time:new_time
+        | _ ->
+          let q =
+            Scene.Figures.calc
+              scene.figures
+              ~t:time_rel
+              ~global_values:scene.global_values
+          in
+          [ Scene.update scene ~bodies:q ~cause:[ Empty ] ~time ]
       in
-      match qt with
-      | Some (id1, id2, r) when N.(r < time_rel) ->
-        let t = r in
-        let q = Scene.Figures.calc scene.figures ~t ~global_values:scene.global_values in
-        let body1 = Scene.Figures.get_by_id q ~id:id1 in
-        let body2 = Scene.Figures.get_by_id q ~id:id2 in
-        let v1n, v2n = CollisionHandle.calculate_new_v body1.values body2.values in
-        let q =
-          Scene.Figures.update_by_id q ~id:id1 ~body:(Figure2.update_v0 body1 ~v:v1n)
-          |> Scene.Figures.update_by_id ~id:id2 ~body:(Figure2.update_v0 body2 ~v:v2n)
-        in
-        let new_time = N.(old_time + t) in
-        let s =
-          Scene.update scene ~bodies:q ~cause:[ Collision { id1; id2 } ] ~time:new_time
-        in
-        s :: forward s ~eps ~time ~old_time:new_time
-      | _ ->
-        let q =
-          Scene.Figures.calc scene.figures ~t:time_rel ~global_values:scene.global_values
-        in
-        [ Scene.update scene ~bodies:q ~cause:[ Stop ] ~time ]
+      if N.(old_time = time) then [] else forward_rec scene ~old_time |> List.rev
     ;;
 
-    let recv model (Action.{ time; action } as _a) ~eps =
-      match Map.max_elt model with
-      | Some (old_time, _) when N.(old_time > time) ->
+    let recv (model : Model.t) (Action.{ time; action } as _a) ~eps =
+      match model with
+      | { time = old_time; _ } :: _ when N.(old_time > time) ->
         Error.raise_s
           [%message "Unimplemented" ~time:(time : N.t) ~old_time:(old_time : N.t)]
-      | Some (old_time, s) ->
-        (* let s = Scene.update_coords1 s ~t:N.(time - old_time) ~eps in *)
-        let scenes =
-          forward s ~old_time ~time ~eps
-          |> Sequence.of_list
-          |> Sequence.map ~f:(fun b -> b.time, b)
-        in
-        let model =
-          Map.merge_skewed
-            model
-            (Map.of_sequence_exn (module N) scenes)
-            ~combine:(fun ~key:_ v1 v2 -> { v1 with cause = v2.cause @ v1.cause })
-        in
-        let _old_time, s = Map.max_elt_exn model in
+      | ({ time = old_time; _ } as s) :: _ ->
+        let scenes = forward s ~old_time ~time ~eps in
+        let model = scenes @ model in
+        let s = List.hd_exn model in
         let r =
           match action with
           | Action.AddBody { id; x0; y0; r; mu; m } ->
@@ -554,8 +551,14 @@ module Make (N : Module_types.Number) = struct
               ~time
           | Empty -> s
         in
-        Map.update model time ~f:(function _ -> r)
-      | None -> assert false
+        begin
+          match model with
+          | ({ time = old_time; _ } as s) :: other_scenes when N.(old_time = time) ->
+            Scene.update r ~bodies:r.figures ~cause:(r.cause @ s.cause) ~time
+            :: other_scenes
+          | _ -> r :: model
+        end
+      | _ -> assert false
     ;;
   end
 end
