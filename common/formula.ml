@@ -9,6 +9,8 @@ module Make
     struct
   type t = (int, Expr.scalar Expr.t, Int.comparator_witness) Map.t
 
+  let equal : t -> t -> bool = Map.equal Expr.equal
+
   let sexp_of_t (t : t) =
     [%sexp
       (Map.to_alist t |> List.map ~f:(fun (d, v) -> d, Expr.sexp_of_t v)

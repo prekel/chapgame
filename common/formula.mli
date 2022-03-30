@@ -4,7 +4,7 @@ module Make
     (N : Module_types.Number)
     (Expr : Expr.S with type key = Key.t and type scope = Scope.t and type scalar = N.t)
     (Solver : module type of Solver.MakeSolver (N)) : sig
-  type t [@@deriving sexp]
+  type t [@@deriving sexp, equal]
 
   val of_alist_exn : (int * Expr.scalar Expr.t) list -> t
 

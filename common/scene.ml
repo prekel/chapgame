@@ -43,7 +43,7 @@ module Make (N : Module_types.Number) = struct
   let global_scope : Scope.t = -1
 
   module Values : sig
-    type t [@@deriving sexp]
+    type t [@@deriving sexp, equal]
 
     val get_scalar_exn : t -> var:Vars.t -> N.t
     val get_vector_exn : t -> var:Vars.t -> N.t * N.t
@@ -55,6 +55,7 @@ module Make (N : Module_types.Number) = struct
   end = struct
     type t = (Vars.t, Expr.value, Vars.comparator_witness) Map.t
 
+    let equal = Map.equal Expr.equal_value
     let sexp_of_t : t -> _ = Common.Map.sexp_of_t Vars.sexp_of_t Expr.sexp_of_value
 
     let t_of_sexp : _ -> t =
@@ -117,15 +118,15 @@ module Make (N : Module_types.Number) = struct
         ; v_x : Formula.t
         ; v_y : Formula.t
         }
-      [@@deriving sexp]
+      [@@deriving sexp, equal]
     end
 
     type t =
       { id : Id.t
       ; values : Values.t
-      ; rules : Rule.t list
+      ; rules : Rule.t list [@sexp.opaque]
       }
-    [@@deriving sexp_of]
+    [@@deriving sexp, equal]
 
     let calc ~values ~rules ~scoped_values ~t =
       let c = Expr.calc ~values ~scoped_values (module N) in
@@ -359,11 +360,11 @@ module Make (N : Module_types.Number) = struct
             }
         | BodyAdded of { id : Figure2.Id.t }
         | Empty
-      [@@deriving sexp]
+      [@@deriving sexp, equal]
     end
 
     module Figures : sig
-      type t [@@deriving sexp_of]
+      type t [@@deriving sexp, equal]
 
       val calc : t -> t:N.t -> global_values:Values.t -> t
       val add : t -> id:Figure2.Id.t -> body:Figure2.t -> t
@@ -375,7 +376,12 @@ module Make (N : Module_types.Number) = struct
     end = struct
       type t = (Figure2.Id.t, Figure2.t, Figure2.Id.comparator_witness) Map.t
 
+      let equal = Map.equal Figure2.equal
       let sexp_of_t = Common.Map.sexp_of_t Figure2.Id.sexp_of_t Figure2.sexp_of_t
+
+      let t_of_sexp =
+        Common.Map.t_of_sexp Figure2.Id.t_of_sexp Figure2.t_of_sexp (module Figure2.Id)
+      ;;
 
       let calc (figures : t) ~t ~global_values =
         Map.map figures ~f:(fun f ->
@@ -402,7 +408,7 @@ module Make (N : Module_types.Number) = struct
       ; global_values : Values.t
       ; cause : Cause.t list
       }
-    [@@deriving sexp_of]
+    [@@deriving sexp, equal]
 
     let update { global_values; _ } ~bodies ~cause ~time =
       { time; figures = bodies; global_values; cause }
@@ -465,7 +471,7 @@ module Make (N : Module_types.Number) = struct
           ; v0 : N.t * N.t
           }
       | Empty
-    [@@deriving sexp]
+    [@@deriving sexp, equal]
 
     type t =
       { time : N.t
@@ -475,16 +481,16 @@ module Make (N : Module_types.Number) = struct
   end
 
   module Model = struct
-    type t = Scene.t list [@@deriving sexp_of]
+    type t = Scene.t list [@@deriving sexp, equal]
 
     let empty ~g = [ Scene.init ~g ]
   end
 
   module Engine = struct
-    let forward (scene : Scene.t) ~eps ~old_time ~time : Scene.t list =
-      let rec forward_rec (scene : Scene.t) ~old_time =
+    let forward (scene : Scene.t) ~eps ~time =
+      let rec forward_rec (scene : Scene.t) =
         let global_values = Values.to_function scene.global_values in
-        let time_rel = N.(time - old_time) in
+        let time_rel = N.(time - scene.time) in
         let qt =
           CollisionDetection.collisions
             ~eps
@@ -507,11 +513,11 @@ module Make (N : Module_types.Number) = struct
             Scene.Figures.update_by_id q ~id:id1 ~body:(Figure2.update_v0 body1 ~v:v1n)
             |> Scene.Figures.update_by_id ~id:id2 ~body:(Figure2.update_v0 body2 ~v:v2n)
           in
-          let new_time = N.(old_time + t) in
+          let new_time = N.(scene.time + t) in
           let s =
             Scene.update scene ~bodies:q ~cause:[ Collision { id1; id2 } ] ~time:new_time
           in
-          s :: forward_rec s ~old_time:new_time
+          s :: forward_rec s
         | _ ->
           let q =
             Scene.Figures.calc
@@ -521,16 +527,12 @@ module Make (N : Module_types.Number) = struct
           in
           [ Scene.update scene ~bodies:q ~cause:[ Empty ] ~time ]
       in
-      if N.(old_time = time) then [] else forward_rec scene ~old_time |> List.rev
+      if N.(scene.time = time) then [] else forward_rec scene |> List.rev
     ;;
 
-    let recv (model : Model.t) (Action.{ time; action } as _a) ~eps =
-      match model with
-      | { time = old_time; _ } :: _ when N.(old_time > time) ->
-        Error.raise_s
-          [%message "Unimplemented" ~time:(time : N.t) ~old_time:(old_time : N.t)]
-      | ({ time = old_time; _ } as s) :: _ ->
-        let scenes = forward s ~old_time ~time ~eps in
+    let recv (model : Model.t) ~action:(Action.{ time; action } as _a) ~eps =
+      let handle s =
+        let scenes = forward s ~time ~eps in
         let model = scenes @ model in
         let s = List.hd_exn model in
         let r =
@@ -551,13 +553,16 @@ module Make (N : Module_types.Number) = struct
               ~time
           | Empty -> s
         in
-        begin
-          match model with
-          | ({ time = old_time; _ } as s) :: other_scenes when N.(old_time = time) ->
-            Scene.update r ~bodies:r.figures ~cause:(r.cause @ s.cause) ~time
-            :: other_scenes
-          | _ -> r :: model
-        end
+        match model with
+        | ({ time = old_time; _ } as s) :: other_scenes when N.(old_time = time) ->
+          Scene.update r ~bodies:r.figures ~cause:(r.cause @ s.cause) ~time
+          :: other_scenes
+        | _ -> r :: model
+      in
+      match model with
+      | { time = old_time; _ } :: _ when N.(old_time > time) ->
+        List.filter model ~f:(fun s -> N.(s.time <= time)) |> List.hd_exn |> handle
+      | s :: _ -> handle s
       | _ -> assert false
     ;;
   end
