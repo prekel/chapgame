@@ -480,10 +480,49 @@ module Make (N : Module_types.Number) = struct
     [@@deriving sexp]
   end
 
-  module Model = struct
-    type t = Scene.t list [@@deriving sexp, equal]
+  module Model : sig
+    type t [@@deriving sexp, equal]
 
-    let empty ~g = [ Scene.init ~g ]
+    val empty : g:N.t -> t
+    val update : t -> time:N.t -> scene:Scene.t -> t
+    val before : t -> time:N.t -> t
+    val merge_with_list : t -> Scene.t list -> t
+    val last_exn : t -> Scene.t
+  end = struct
+    type t = (N.t, Scene.t, N.comparator_witness) Map.t
+
+    let equal = Map.equal Scene.equal
+    let sexp_of_t = Common.Map.sexp_of_t N.sexp_of_t Scene.sexp_of_t
+    let t_of_sexp = Common.Map.t_of_sexp N.t_of_sexp Scene.t_of_sexp (module N)
+    let empty ~g = Map.of_alist_exn (module N) [ N.zero, Scene.init ~g ]
+
+    let update t ~time ~scene =
+      Map.update t time ~f:(function
+          | Some s ->
+            Scene.update
+              s
+              ~bodies:scene.Scene.figures
+              ~cause:(scene.cause @ s.cause)
+              ~time
+          | None -> scene)
+    ;;
+
+    let before t ~time =
+      let b, e, _ = Map.split t time in
+      match e with
+      | Some (k, v) -> Map.add_exn b ~key:k ~data:v
+      | None -> b
+    ;;
+
+    let merge_with_list t l =
+      let l =
+        Map.of_alist_exn (module N) (List.map l ~f:(fun scene -> scene.Scene.time, scene))
+      in
+      Map.merge_skewed t l ~combine:(fun ~key v1 v2 ->
+          Scene.update v2 ~bodies:v2.figures ~cause:(v2.cause @ v1.cause) ~time:key)
+    ;;
+
+    let last_exn = Common.Fn.(Map.max_elt_exn >> snd)
   end
 
   module Engine = struct
@@ -518,7 +557,7 @@ module Make (N : Module_types.Number) = struct
             Scene.update scene ~bodies:q ~cause:[ Collision { id1; id2 } ] ~time:new_time
           in
           s :: forward_rec s
-        | _ ->
+        | None ->
           let q =
             Scene.Figures.calc
               scene.figures
@@ -526,6 +565,23 @@ module Make (N : Module_types.Number) = struct
               ~global_values:scene.global_values
           in
           [ Scene.update scene ~bodies:q ~cause:[ Empty ] ~time ]
+        | Some (id1, id2, r) ->
+          let t = r in
+          let q =
+            Scene.Figures.calc scene.figures ~t ~global_values:scene.global_values
+          in
+          let body1 = Scene.Figures.get_by_id q ~id:id1 in
+          let body2 = Scene.Figures.get_by_id q ~id:id2 in
+          let v1n, v2n = CollisionHandle.calculate_new_v body1.values body2.values in
+          let q =
+            Scene.Figures.update_by_id q ~id:id1 ~body:(Figure2.update_v0 body1 ~v:v1n)
+            |> Scene.Figures.update_by_id ~id:id2 ~body:(Figure2.update_v0 body2 ~v:v2n)
+          in
+          let new_time = N.(scene.time + t) in
+          let s =
+            Scene.update scene ~bodies:q ~cause:[ Collision { id1; id2 } ] ~time:new_time
+          in
+          s :: forward_rec s
       in
       if N.(scene.time = time) then [] else forward_rec scene |> List.rev
     ;;
@@ -533,8 +589,8 @@ module Make (N : Module_types.Number) = struct
     let recv (model : Model.t) ~action:(Action.{ time; action } as _a) ~eps =
       let handle s =
         let scenes = forward s ~time ~eps in
-        let model = scenes @ model in
-        let s = List.hd_exn model in
+        let model = Model.merge_with_list model scenes in
+        let s = model |> Model.before ~time |> Model.last_exn in
         let r =
           match action with
           | Action.AddBody { id; x0; y0; r; mu; m } ->
@@ -553,17 +609,11 @@ module Make (N : Module_types.Number) = struct
               ~time
           | Empty -> s
         in
-        match model with
-        | ({ time = old_time; _ } as s) :: other_scenes when N.(old_time = time) ->
-          Scene.update r ~bodies:r.figures ~cause:(r.cause @ s.cause) ~time
-          :: other_scenes
-        | _ -> r :: model
+        let m = model |> Model.before ~time |> Model.update ~time:r.time ~scene:r in
+        let f = forward (Model.last_exn m) ~time ~eps in
+        Model.merge_with_list m f
       in
-      match model with
-      | { time = old_time; _ } :: _ when N.(old_time > time) ->
-        List.filter model ~f:(fun s -> N.(s.time <= time)) |> List.hd_exn |> handle
-      | s :: _ -> handle s
-      | _ -> assert false
+      model |> Model.before ~time |> Model.last_exn |> handle
     ;;
   end
 end

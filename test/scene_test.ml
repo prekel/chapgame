@@ -1,4 +1,4 @@
-open Core
+(* open Core
 open Chapgame
 module SC = Scene.Make (Float)
 module SF = Solver.MakeSolver (Float)
@@ -566,4 +566,4 @@ let%expect_test "test 2" =
            (v0 (Vector (2.0399696092268953 2.1384093245589737)))
            (x0 (Scalar 27.186803198788049)) (y0 (Scalar 16.247447621991665))))))
        (global_values ((g (Scalar 10)))) (cause (Empty Empty))))) |}]
-;;
+;; *)

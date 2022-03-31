@@ -55,14 +55,9 @@ let scene =
       [%here]
       (module S.Model)
       (module S.Action)
-      ~default_model:[ S.Scene.init ~g:10. ]
+      ~default_model:(S.Model.empty ~g:10.)
       ~apply_action:(fun ~inject:_ ~schedule_event:_ model action ->
-        let ret =
-          S.Engine.recv model ~action ~eps
-          |> S.Engine.recv
-               ~action:{ time = action.time +. 10.; action = S.Action.Empty }
-               ~eps
-        in
+        let ret = S.Engine.recv model ~action ~eps in
         print_s [%sexp (ret : S.Model.t)];
         ret)
   in
@@ -76,7 +71,7 @@ let scene =
   let%sub last_scene =
     let%arr state = state
     and time = time in
-    state |> List.filter ~f:(fun s -> Float.(s.time <= time)) |> List.hd_exn
+    state |> S.Model.before ~time |> S.Model.last_exn
   in
   let cl =
     dispatch
