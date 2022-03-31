@@ -338,8 +338,8 @@ module Make (N : Module_types.Number) = struct
     open Exprs
     open Expr.Syntax
 
-    let x = Formula.of_alist_exn [ 0, x0; 1, v0_x; 2, a_x * half ]
-    let y = Formula.of_alist_exn [ 0, y0; 1, v0_y; 2, a_y * half ]
+    let x = Formula.of_alist_exn [ 0, x0; 1, v0_x; 2, a_x / two ]
+    let y = Formula.of_alist_exn [ 0, y0; 1, v0_y; 2, a_y / two ]
     let v_x = Formula.of_alist_exn [ 0, v0_x; 1, a_x ]
     let v_y = Formula.of_alist_exn [ 0, v0_y; 1, a_y ]
 
