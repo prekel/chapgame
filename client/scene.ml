@@ -5,7 +5,7 @@ open Js_of_ocaml
 module Svg = Virtual_dom_svg
 module S = Chapgame.Scene.Make (Float)
 
-let eps = 1e-7
+let eps = 1e-9
 
 type circle =
   { id : S.Figure2.Id.t
@@ -71,7 +71,7 @@ let scene =
   let%sub last_scene =
     let%arr state = state
     and time = time in
-    state |> S.Model.before ~time |> S.Model.last_exn
+    state |> S.Model.before ~time |> snd
   in
   let cl =
     dispatch

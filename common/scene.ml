@@ -124,7 +124,7 @@ module Make (N : Module_types.Number) = struct
     type t =
       { id : Id.t
       ; values : Values.t
-      ; rules : Rule.t list [@sexp.opaque]
+      ; rules : (Rule.t[@sexp.opaque]) list
       }
     [@@deriving sexp, equal]
 
@@ -339,8 +339,25 @@ module Make (N : Module_types.Number) = struct
     let y = Formula.of_alist_exn [ 0, y0; 1, v0_y; 2, a_y * half ]
     let v_x = Formula.of_alist_exn [ 0, v0_x; 1, a_x ]
     let v_y = Formula.of_alist_exn [ 0, v0_y; 1, a_y ]
-    let x_after = Formula.of_alist_exn [ 0, x0 + (three * sqr v0_x / (two * a_x)) ]
-    let y_after = Formula.of_alist_exn [ 0, y0 + (three * sqr v0_y / (two * a_y)) ]
+
+    let x_after =
+      Formula.of_alist_exn
+        [ ( 0
+          , x0
+            + (v0_x * vector_length v0_vec / vector_length a_vec)
+            + (a_x * sqr (vector_length v0_vec) / (two * sqr (vector_length a_vec))) )
+        ]
+    ;;
+
+    let y_after =
+      Formula.of_alist_exn
+        [ ( 0
+          , y0
+            + (v0_y * vector_length v0_vec / vector_length a_vec)
+            + (a_y * sqr (vector_length v0_vec) / (two * sqr (vector_length a_vec))) )
+        ]
+    ;;
+
     let v_x_after = Formula.of_alist_exn [ 0, zero ]
     let v_y_after = Formula.of_alist_exn [ 0, zero ]
     let r = Formula.of_alist_exn [ 0, r ]
@@ -485,7 +502,7 @@ module Make (N : Module_types.Number) = struct
 
     val empty : g:N.t -> t
     val update : t -> time:N.t -> scene:Scene.t -> t
-    val before : t -> time:N.t -> t
+    val before : t -> time:N.t -> t * Scene.t
     val merge_with_list : t -> Scene.t list -> t
     val last_exn : t -> Scene.t
   end = struct
@@ -496,8 +513,8 @@ module Make (N : Module_types.Number) = struct
     let t_of_sexp = Common.Map.t_of_sexp N.t_of_sexp Scene.t_of_sexp (module N)
     let empty ~g = Map.of_alist_exn (module N) [ N.zero, Scene.init ~g ]
 
-    let update t ~time ~scene =
-      Map.update t time ~f:(function
+    let update model ~time ~scene =
+      Map.update model time ~f:(function
           | Some s ->
             Scene.update
               s
@@ -507,18 +524,17 @@ module Make (N : Module_types.Number) = struct
           | None -> scene)
     ;;
 
-    let before t ~time =
-      let b, e, _ = Map.split t time in
-      match e with
-      | Some (k, v) -> Map.add_exn b ~key:k ~data:v
-      | None -> b
+    let before model ~time =
+      match Map.split model time with
+      | l, Some (_, v), _ -> l, v
+      | l, None, _ -> l, snd @@ Map.max_elt_exn l
     ;;
 
-    let merge_with_list t l =
+    let merge_with_list model l =
       let l =
         Map.of_alist_exn (module N) (List.map l ~f:(fun scene -> scene.Scene.time, scene))
       in
-      Map.merge_skewed t l ~combine:(fun ~key v1 v2 ->
+      Map.merge_skewed model l ~combine:(fun ~key v1 v2 ->
           Scene.update v2 ~bodies:v2.figures ~cause:(v2.cause @ v1.cause) ~time:key)
     ;;
 
@@ -587,33 +603,51 @@ module Make (N : Module_types.Number) = struct
     ;;
 
     let recv (model : Model.t) ~action:(Action.{ time; action } as _a) ~eps =
-      let handle s =
-        let scenes = forward s ~time ~eps in
-        let model = Model.merge_with_list model scenes in
-        let s = model |> Model.before ~time |> Model.last_exn in
-        let r =
-          match action with
-          | Action.AddBody { id; x0; y0; r; mu; m } ->
-            Scene.update
-              s
-              ~bodies:(Scene.add_figure s.figures ~id ~x0 ~y0 ~r ~mu ~m)
-              ~cause:[ BodyAdded { id } ]
-              ~time
-          | GiveVelocity { id; v0 } ->
-            let body = Scene.Figures.get_by_id s.figures ~id in
-            let body = Figure2.update_v0 body ~v:v0 in
-            Scene.update
-              s
-              ~bodies:(Scene.Figures.update_by_id s.figures ~id:body.id ~body)
-              ~cause:[ VelocityGiven { id; v = v0 } ]
-              ~time
-          | Empty -> s
-        in
-        let m = model |> Model.before ~time |> Model.update ~time:r.time ~scene:r in
-        let f = forward (Model.last_exn m) ~time ~eps in
-        Model.merge_with_list m f
+      let before, s = Model.before model ~time in
+      let scenes = forward s ~time ~eps in
+      let model = Model.merge_with_list before scenes in
+      let before, s = Model.before model ~time in
+      let r =
+        match action with
+        | Action.AddBody { id; x0; y0; r; mu; m } ->
+          Scene.update
+            s
+            ~bodies:(Scene.add_figure s.figures ~id ~x0 ~y0 ~r ~mu ~m)
+            ~cause:[ BodyAdded { id } ]
+            ~time
+        | GiveVelocity { id; v0 } ->
+          let body = Scene.Figures.get_by_id s.figures ~id in
+          let body = Figure2.update_v0 body ~v:v0 in
+          Scene.update
+            s
+            ~bodies:(Scene.Figures.update_by_id s.figures ~id:body.id ~body)
+            ~cause:[ VelocityGiven { id; v = v0 } ]
+            ~time
+        | Empty -> s
       in
-      model |> Model.before ~time |> Model.last_exn |> handle
+      let m = before |> Model.update ~time:r.time ~scene:r in
+      let f =
+        forward
+          (Model.last_exn m)
+          ~time:
+            N.(
+              time
+              + one
+              + one
+              + one
+              + one
+              + one
+              + one
+              + one
+              + one
+              + one
+              + one
+              + one
+              + one
+              + one)
+          ~eps
+      in
+      Model.merge_with_list m f
     ;;
   end
 end
