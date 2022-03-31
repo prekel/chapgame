@@ -113,6 +113,7 @@ module Make (N : Module_types.Number) = struct
       type t =
         { interval :
             [ `Interval of Expr.t_scalar * Expr.t_scalar | `PosInfinity of Expr.t_scalar ]
+        ; is_v_zero : bool
         ; x : Formula.t
         ; y : Formula.t
         ; v_x : Formula.t
@@ -133,13 +134,16 @@ module Make (N : Module_types.Number) = struct
       let calc_xy f =
         Formula.to_polynomial f ~values ~scoped_values |> Solver.Polynomial.calc ~x:t
       in
-      List.find_map rules ~f:(fun Rule.{ interval; x; y; v_x; v_y } ->
-          match interval with
-          | `Interval (l, r) when N.(c l <= t && t < c r) ->
-            Some (calc_xy x, calc_xy y, calc_xy v_x, calc_xy v_y)
-          | `PosInfinity l when N.(c l <= t) ->
-            Some (calc_xy x, calc_xy y, calc_xy v_x, calc_xy v_y)
-          | _ -> None)
+      List.find_map rules ~f:(fun Rule.{ interval; is_v_zero; x; y; v_x; v_y } ->
+          if (is_v_zero && N.(calc_xy v_x = zero && calc_xy v_y = zero)) || not is_v_zero
+          then (
+            match interval with
+            | `Interval (l, r) when N.(c l <= t && t < c r) ->
+              Some (calc_xy x, calc_xy y, calc_xy v_x, calc_xy v_y)
+            | `PosInfinity l when N.(c l <= t) ->
+              Some (calc_xy x, calc_xy y, calc_xy v_x, calc_xy v_y)
+            | _ -> None)
+          else None)
     ;;
 
     let update_x0y0 body (x, y, v_x, v_y) =
@@ -179,13 +183,17 @@ module Make (N : Module_types.Number) = struct
     let b3 p ~values1 ~values2 ~global =
       let inter values =
         let calc v =
-          Expr.calc
-            ~values
-            ~scoped_values:(function
-              | -1 -> global
-              | _ -> assert false)
-            (module N)
-            v
+          let r =
+            Expr.calc
+              ~values
+              ~scoped_values:(function
+                | s when s = global_scope -> global
+                | _ -> assert false)
+              (module N)
+              v
+          in
+          assert (N.is_finite r);
+          r
         in
         function
         | `Interval (l, r) -> `Interval (calc l, calc r)
@@ -195,7 +203,7 @@ module Make (N : Module_types.Number) = struct
           ( inter values1 ai
           , inter values2 bi
           , Formula.to_polynomial f ~values:global ~scoped_values:(function
-                | -1 -> global
+                | s when s = global_scope -> global
                 | 1 -> values1
                 | 2 -> values2
                 | _ -> assert false) ))
@@ -207,10 +215,7 @@ module Make (N : Module_types.Number) = struct
         | `PosInfinity l -> N.(l <= n)
       in
       Sequence.filter_map p ~f:(fun (ai, bi, p) ->
-          let roots =
-            try Solver.PolynomialEquation.roots p ~eps with
-            | _ -> []
-          in
+          let roots = Solver.PolynomialEquation.roots p ~eps in
           match
             roots
             |> List.filter ~f:(fun root ->
@@ -239,13 +244,30 @@ module Make (N : Module_types.Number) = struct
       |> Sequence.filter_map ~f:(fun ((id1, f1), (id2, f2)) ->
              let r1 = Values.get_scalar_exn f1.values ~var:`r in
              let r2 = Values.get_scalar_exn f2.values ~var:`r in
+             let v1 =
+               Values.get_vector_exn f1.values ~var:`v0
+               |> Expr.equal_vector (N.zero, N.zero)
+             in
+             let v2 =
+               Values.get_vector_exn f2.values ~var:`v0
+               |> Expr.equal_vector (N.zero, N.zero)
+             in
              if N.(distance_bentween_bodies f1.values f2.values < r1 + r2 + eps)
              then None
              else
                Some
                  ( id1
                  , id2
-                 , b2 ~rules1:f1.rules ~rules2:f2.rules ~r
+                 , b2
+                     ~rules1:
+                       (if v1
+                       then List.filter f1.rules ~f:(fun rule -> rule.is_v_zero)
+                       else f1.rules)
+                     ~rules2:
+                       (if v2
+                       then List.filter f2.rules ~f:(fun rule -> rule.is_v_zero)
+                       else f2.rules)
+                     ~r
                    |> b3
                         ~values1:(Values.to_function f1.values)
                         ~values2:(Values.to_function f2.values)
@@ -305,7 +327,7 @@ module Make (N : Module_types.Number) = struct
   module Exprs = struct
     open Expr.Syntax
 
-    let g = scope ~scope:(-1) (fst @@ scalar_var `g)
+    let g = scope ~scope:global_scope (fst @@ scalar_var `g)
     let mu, _ = scalar_var `mu
     let v0_vec, v0_vec_name = vector_var `v0
 
@@ -358,6 +380,8 @@ module Make (N : Module_types.Number) = struct
         ]
     ;;
 
+    let x0 = Formula.of_alist_exn [ 0, x0 ]
+    let y0 = Formula.of_alist_exn [ 0, y0 ]
     let v_x_after = Formula.of_alist_exn [ 0, zero ]
     let v_y_after = Formula.of_alist_exn [ 0, zero ]
     let r = Formula.of_alist_exn [ 0, r ]
@@ -451,14 +475,23 @@ module Make (N : Module_types.Number) = struct
                   ]
             ; rules =
                 [ { interval = `Interval (Exprs.border_l1, Exprs.border_r1)
+                  ; is_v_zero = false
                   ; x = Formulas.x
                   ; y = Formulas.y
                   ; v_x = Formulas.v_x
                   ; v_y = Formulas.v_y
                   }
                 ; { interval = `PosInfinity Exprs.border_l2
+                  ; is_v_zero = false
                   ; x = Formulas.x_after
                   ; y = Formulas.y_after
+                  ; v_x = Formulas.v_x_after
+                  ; v_y = Formulas.v_y_after
+                  }
+                ; { interval = `PosInfinity Exprs.border_l1
+                  ; is_v_zero = true
+                  ; x = Formulas.x0
+                  ; y = Formulas.y0
                   ; v_x = Formulas.v_x_after
                   ; v_y = Formulas.v_y_after
                   }
@@ -533,6 +566,7 @@ module Make (N : Module_types.Number) = struct
     ;;
 
     let merge_with_list model l =
+      (* TODO *)
       let l =
         Map.of_alist_reduce
           (module N)

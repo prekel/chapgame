@@ -41,7 +41,10 @@ module Make
   end
 
   let to_polynomial p ~values ~scoped_values =
-    Map.map p ~f:(fun a -> Expr.calc ~values ~scoped_values (module N) a)
+    Map.filter_map p ~f:(fun a ->
+        match Expr.calc ~values ~scoped_values (module N) a with
+        | c when N.is_finite c -> Some c
+        | _ -> None)
     |> Solver.Polynomial.of_map
   ;;
 end

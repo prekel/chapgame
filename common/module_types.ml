@@ -1,7 +1,7 @@
 open Core
 
 module type BasicOps = sig
-  type t
+  type t [@@deriving equal]
 
   val zero : t
   val ( + ) : t -> t -> t
@@ -15,7 +15,7 @@ module type BasicOps = sig
 end
 
 module type Number = sig
-  type t [@@deriving sexp, compare, equal]
+  type t [@@deriving sexp, compare]
 
   include BasicOps with type t := t
   include Comparable.S with type t := t
@@ -30,6 +30,7 @@ module type Number = sig
   val sign_exn : t -> Sign.t
   val sqrt : t -> t
   val pi : t
+  val is_finite : t -> bool
 
   val to_string_hum
     :  ?delimiter:char

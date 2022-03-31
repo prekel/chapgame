@@ -5,7 +5,7 @@ open Js_of_ocaml
 module Svg = Virtual_dom_svg
 module S = Chapgame.Scene.Make (Float)
 
-let eps = 1e-9
+let eps = 1e-8
 
 type circle =
   { id : S.Figure2.Id.t
@@ -61,7 +61,32 @@ let scene =
       [%here]
       (module S.Model)
       (module S.Action)
-      ~default_model:(S.Model.empty ~g:10.)
+      ~default_model:
+        (S.Model.empty ~g:10.
+        |> S.Engine.recv
+             ~action:
+               { time = 0.
+               ; action =
+                   S.Action.AddBody
+                     { id = 0; x0 = 250.; y0 = 250.; r = 50.; mu = 3.; m = 1. }
+               }
+             ~eps
+        |> S.Engine.recv
+             ~action:
+               { time = 0.
+               ; action =
+                   S.Action.AddBody
+                     { id = 1; x0 = 500.; y0 = 200.; r = 75.; mu = 3.; m = 2. }
+               }
+             ~eps
+        |> S.Engine.recv
+             ~action:
+               { time = 0.
+               ; action =
+                   S.Action.AddBody
+                     { id = 2; x0 = 500.; y0 = 500.; r = 100.; mu = 3.; m = 3. }
+               }
+             ~eps)
       ~apply_action:(fun ~inject:_ ~schedule_event:_ model action ->
         let ret = S.Engine.recv model ~action ~eps in
         print_s [%sexp (ret : S.Model.t)];
@@ -85,7 +110,7 @@ let scene =
           a
             { time
             ; action =
-                S.Action.GiveVelocity { id; v0 = Float.((x - r) * -2., (y - r) * -2.) }
+                S.Action.GiveVelocity { id; v0 = Float.((x - r) / r * -200., (y - r) / r * -200.) }
             })
     <*> time
   in
@@ -103,30 +128,30 @@ let scene =
                  { time
                  ; action =
                      S.Action.AddBody
-                       { id = 0; x0 = 250.; y0 = 250.; r = 50.; mu = 3.; m = 1. }
+                       { id = 3; x0 = 350.; y0 = 350.; r = 50.; mu = 3.; m = 1. }
                  }
                  |> dispatch))
-          [ Node.text "add 0" ]
+          [ Node.text "add 3" ]
       ; Node.button
           ~attr:
             (Attr.on_click (fun _ ->
                  { time
                  ; action =
                      S.Action.AddBody
-                       { id = 1; x0 = 500.; y0 = 200.; r = 75.; mu = 3.; m = 2. }
+                       { id = 4; x0 = 700.; y0 = 500.; r = 75.; mu = 3.; m = 2. }
                  }
                  |> dispatch))
-          [ Node.text "add 1" ]
+          [ Node.text "add 4" ]
       ; Node.button
           ~attr:
             (Attr.on_click (fun _ ->
                  { time
                  ; action =
                      S.Action.AddBody
-                       { id = 2; x0 = 500.; y0 = 500.; r = 100.; mu = 3.; m = 3. }
+                       { id = 5; x0 = 120.; y0 = 500.; r = 100.; mu = 3.; m = 3. }
                  }
                  |> dispatch))
-          [ Node.text "add 2" ]
+          [ Node.text "add 5" ]
       ; Node.br ()
       ; frame
       ])

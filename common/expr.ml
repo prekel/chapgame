@@ -231,7 +231,7 @@ struct
   let sexp_of_t_vector : t_vector -> Sexp.t = sexp_of_t
 
   module VectorOps : Module_types.BasicOps with type t = vector = struct
-    type t = vector
+    type t = vector [@@deriving equal]
 
     let zero = N.zero, N.zero
 
@@ -290,7 +290,7 @@ struct
       let calc = calc ~values ~scoped_values (module Ops) in
       let ca = calc a in
       let cb = calc b in
-      Ops.(ca / cb)
+      Ops.(if equal ca zero && equal cb zero then zero else ca / cb)
     | Neg a ->
       let ca = calc ~values ~scoped_values (module Ops) a in
       Ops.(-ca)
@@ -316,7 +316,7 @@ struct
     | UnitVector v ->
       let x, y = calc ~values ~scoped_values (module VectorOps) v in
       let length = N.(sqrt ((x * x) + (y * y))) in
-      N.(x / length, y / length)
+      N.(if equal length zero then zero, zero else x / length, y / length)
     | VectorOfXY (a, b) ->
       let calc = calc ~values ~scoped_values (module N) in
       let x = calc a in

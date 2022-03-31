@@ -214,7 +214,7 @@ module MakeSolver (N : Module_types.Number) = struct
     let search ~f ~eps =
       let rec search_rec cnt ~f (xl, xr) =
         assert (N.(f xl < f xr));
-        if cnt > 100
+        if cnt > 250
         then
           Error.raise_s
             [%message
@@ -229,7 +229,7 @@ module MakeSolver (N : Module_types.Number) = struct
       in
       let search_rec = search_rec 0 in
       let rec increase_rec cnt ~f ~t ~y x k =
-        if cnt > 100
+        if cnt > 125
         then
           Error.raise_s
             [%message
