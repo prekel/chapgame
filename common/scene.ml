@@ -113,11 +113,11 @@ module Make (N : Module_types.Number) = struct
       type t =
         { interval :
             [ `Interval of Expr.t_scalar * Expr.t_scalar | `PosInfinity of Expr.t_scalar ]
-        ; is_v_zero : bool
         ; x : Formula.t
         ; y : Formula.t
         ; v_x : Formula.t
         ; v_y : Formula.t
+        ; after : (t[@sexp.opaque]) list
         }
       [@@deriving sexp, equal]
     end
@@ -134,30 +134,28 @@ module Make (N : Module_types.Number) = struct
       let calc_xy f =
         Formula.to_polynomial f ~values ~scoped_values |> Solver.Polynomial.calc ~x:t
       in
-      List.find_map rules ~f:(fun Rule.{ interval; is_v_zero; x; y; v_x; v_y } ->
-          if (is_v_zero && N.(calc_xy v_x = zero && calc_xy v_y = zero)) || not is_v_zero
-          then (
-            match interval with
-            | `Interval (l, r) when N.(c l <= t && t < c r) ->
-              Some (calc_xy x, calc_xy y, calc_xy v_x, calc_xy v_y)
-            | `PosInfinity l when N.(c l <= t) ->
-              Some (calc_xy x, calc_xy y, calc_xy v_x, calc_xy v_y)
-            | _ -> None)
-          else None)
+      List.find_map rules ~f:(fun Rule.{ interval; x; y; v_x; v_y; after } ->
+          match interval with
+          | `Interval (l, r) when N.(c l <= t && t < c r) ->
+            Some ((calc_xy x, calc_xy y, calc_xy v_x, calc_xy v_y), after)
+          | `PosInfinity l when N.(c l <= t) ->
+            Some ((calc_xy x, calc_xy y, calc_xy v_x, calc_xy v_y), after)
+          | _ -> None)
     ;;
 
-    let update_x0y0 body (x, y, v_x, v_y) =
+    let update_x0y0 ~body (x, y, v_x, v_y) ~rules =
       { body with
         values =
           body.values
           |> Values.update_scalar ~var:`x0 ~value:x
           |> Values.update_scalar ~var:`y0 ~value:y
           |> Values.update_vector ~var:`v0 ~value:(v_x, v_y)
+      ; rules
       }
     ;;
 
-    let update_v0 body ~v =
-      { body with values = body.values |> Values.update_vector ~var:`v0 ~value:v }
+    let update_v0 body ~v ~rules =
+      { body with values = body.values |> Values.update_vector ~var:`v0 ~value:v; rules }
     ;;
 
     let update body ~var ~value =
@@ -244,30 +242,13 @@ module Make (N : Module_types.Number) = struct
       |> Sequence.filter_map ~f:(fun ((id1, f1), (id2, f2)) ->
              let r1 = Values.get_scalar_exn f1.values ~var:`r in
              let r2 = Values.get_scalar_exn f2.values ~var:`r in
-             let v1 =
-               Values.get_vector_exn f1.values ~var:`v0
-               |> Expr.equal_vector (N.zero, N.zero)
-             in
-             let v2 =
-               Values.get_vector_exn f2.values ~var:`v0
-               |> Expr.equal_vector (N.zero, N.zero)
-             in
              if N.(distance_bentween_bodies f1.values f2.values < r1 + r2 + eps)
              then None
              else
                Some
                  ( id1
                  , id2
-                 , b2
-                     ~rules1:
-                       (if v1
-                       then List.filter f1.rules ~f:(fun rule -> rule.is_v_zero)
-                       else f1.rules)
-                     ~rules2:
-                       (if v2
-                       then List.filter f2.rules ~f:(fun rule -> rule.is_v_zero)
-                       else f2.rules)
-                     ~r
+                 , b2 ~rules1:f1.rules ~rules2:f2.rules ~r
                    |> b3
                         ~values1:(Values.to_function f1.values)
                         ~values2:(Values.to_function f2.values)
@@ -433,7 +414,7 @@ module Make (N : Module_types.Number) = struct
               ~rules:f.rules
               ~scoped_values:(Values.global_to_scoped global_values)
               ~t
-            |> Option.map ~f:(Figure2.update_x0y0 f)
+            |> Option.map ~f:(fun (xy, rules) -> Figure2.update_x0y0 ~body:f xy ~rules)
             |> Option.value ~default:f)
       ;;
 
@@ -457,6 +438,35 @@ module Make (N : Module_types.Number) = struct
       { time; figures = bodies; global_values; cause }
     ;;
 
+    let rec rules1 =
+      Figure2.Rule.
+        [ { interval = `Interval (Exprs.border_l1, Exprs.border_r1)
+          ; x = Formulas.x
+          ; y = Formulas.y
+          ; v_x = Formulas.v_x
+          ; v_y = Formulas.v_y
+          ; after = rules1
+          }
+        ; { interval = `PosInfinity Exprs.border_l2
+          ; x = Formulas.x_after
+          ; y = Formulas.y_after
+          ; v_x = Formulas.v_x_after
+          ; v_y = Formulas.v_y_after
+          ; after = rules0
+          }
+        ]
+
+    and rules0 =
+      [ { interval = `PosInfinity Exprs.border_l1
+        ; x = Formulas.x0
+        ; y = Formulas.y0
+        ; v_x = Formulas.v_x_after
+        ; v_y = Formulas.v_y_after
+        ; after = rules0
+        }
+      ]
+    ;;
+
     let add_figure figures ~id ~x0 ~y0 ~r ~mu ~m =
       Figures.add
         figures
@@ -473,29 +483,7 @@ module Make (N : Module_types.Number) = struct
                   ; `mu, Expr.Scalar mu
                   ; `m, Expr.Scalar m
                   ]
-            ; rules =
-                [ { interval = `Interval (Exprs.border_l1, Exprs.border_r1)
-                  ; is_v_zero = false
-                  ; x = Formulas.x
-                  ; y = Formulas.y
-                  ; v_x = Formulas.v_x
-                  ; v_y = Formulas.v_y
-                  }
-                ; { interval = `PosInfinity Exprs.border_l2
-                  ; is_v_zero = false
-                  ; x = Formulas.x_after
-                  ; y = Formulas.y_after
-                  ; v_x = Formulas.v_x_after
-                  ; v_y = Formulas.v_y_after
-                  }
-                ; { interval = `PosInfinity Exprs.border_l1
-                  ; is_v_zero = true
-                  ; x = Formulas.x0
-                  ; y = Formulas.y0
-                  ; v_x = Formulas.v_x_after
-                  ; v_y = Formulas.v_y_after
-                  }
-                ]
+            ; rules = rules0
             }
     ;;
 
@@ -602,8 +590,13 @@ module Make (N : Module_types.Number) = struct
           let body2 = Scene.Figures.get_by_id q ~id:id2 in
           let v1n, v2n = CollisionHandle.calculate_new_v body1.values body2.values in
           let q =
-            Scene.Figures.update_by_id q ~id:id1 ~body:(Figure2.update_v0 body1 ~v:v1n)
-            |> Scene.Figures.update_by_id ~id:id2 ~body:(Figure2.update_v0 body2 ~v:v2n)
+            Scene.Figures.update_by_id
+              q
+              ~id:id1
+              ~body:(Figure2.update_v0 body1 ~v:v1n ~rules:Scene.rules1)
+            |> Scene.Figures.update_by_id
+                 ~id:id2
+                 ~body:(Figure2.update_v0 body2 ~v:v2n ~rules:Scene.rules1)
           in
           let new_time = N.(scene.time + t) in
           let s =
@@ -659,7 +652,7 @@ module Make (N : Module_types.Number) = struct
             ~time
         | GiveVelocity { id; v0 } ->
           let body = Scene.Figures.get_by_id s.figures ~id in
-          let body = Figure2.update_v0 body ~v:v0 in
+          let body = Figure2.update_v0 body ~v:v0 ~rules:Scene.rules1 in
           Scene.update
             s
             ~bodies:(Scene.Figures.update_by_id s.figures ~id:body.id ~body)
