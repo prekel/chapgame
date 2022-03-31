@@ -29,22 +29,28 @@ let scene_frame ~scene ~on_click ~time =
   and on_click = on_click
   and time = time in
   let t = time -. scene.time in
-  Svg.Node.svg
-    (scene.figures
-    |> S.Scene.Figures.calc ~t ~global_values:scene.global_values
-    |> S.Scene.Figures.to_sequence
-    |> Sequence.map ~f:(fun (id, figure) ->
-           circle
-             ~c:
-               { id
-               ; x = S.Values.get_scalar_exn figure.values ~var:`x0
-               ; y = S.Values.get_scalar_exn figure.values ~var:`y0
-               ; r = S.Values.get_scalar_exn figure.values ~var:`r
-               }
-             ~on_click:(fun id event ->
-               Firebug.console##log event;
-               on_click id))
-    |> Sequence.to_list)
+  Vdom.(
+    Svg.Node.svg
+      ~attr:(Attr.many [ Svg.Attr.width 1280.; Svg.Attr.height 720. ])
+      (scene.figures
+      |> S.Scene.Figures.calc ~t ~global_values:scene.global_values
+      |> S.Scene.Figures.to_sequence
+      |> Sequence.map ~f:(fun (id, figure) ->
+             circle
+               ~c:
+                 { id
+                 ; x = S.Values.get_scalar_exn figure.values ~var:`x0
+                 ; y = S.Values.get_scalar_exn figure.values ~var:`y0
+                 ; r = S.Values.get_scalar_exn figure.values ~var:`r
+                 }
+               ~on_click:(fun id evt ->
+                 let e = (evt##.target |> Js.Opt.get) (fun _ -> assert false) in
+                 let dim = e##getBoundingClientRect in
+                 let r = S.Values.get_scalar_exn figure.values ~var:`r in
+                 let x = Float.(of_int evt##.clientX - dim##.left) in
+                 let y = Float.(of_int evt##.clientY - dim##.top) in
+                 on_click id x y r))
+      |> Sequence.to_list))
 ;;
 
 let frame_time60 = 1. /. 60.
@@ -75,18 +81,11 @@ let scene =
   in
   let cl =
     dispatch
-    >>| (fun a time id ->
+    >>| (fun a time id x y r ->
           a
             { time
             ; action =
-                S.Action.GiveVelocity
-                  { id
-                  ; v0 =
-                      (match id with
-                      | 0 -> 25., 25.
-                      | 1 -> -25., -25.
-                      | _ -> assert false)
-                  }
+                S.Action.GiveVelocity { id; v0 = Float.((x - r) * -2., (y - r) * -2.) }
             })
     <*> time
   in
@@ -104,7 +103,7 @@ let scene =
                  { time
                  ; action =
                      S.Action.AddBody
-                       { id = 0; x0 = 25.; y0 = 25.; r = 10.; mu = 1.; m = 1. }
+                       { id = 0; x0 = 250.; y0 = 250.; r = 50.; mu = 3.; m = 1. }
                  }
                  |> dispatch))
           [ Node.text "add 0" ]
@@ -114,10 +113,20 @@ let scene =
                  { time
                  ; action =
                      S.Action.AddBody
-                       { id = 1; x0 = 100.; y0 = 100.; r = 15.; mu = 1.; m = 1. }
+                       { id = 1; x0 = 500.; y0 = 200.; r = 75.; mu = 3.; m = 2. }
                  }
                  |> dispatch))
           [ Node.text "add 1" ]
+      ; Node.button
+          ~attr:
+            (Attr.on_click (fun _ ->
+                 { time
+                 ; action =
+                     S.Action.AddBody
+                       { id = 2; x0 = 500.; y0 = 500.; r = 100.; mu = 3.; m = 3. }
+                 }
+                 |> dispatch))
+          [ Node.text "add 2" ]
       ; Node.br ()
       ; frame
       ])

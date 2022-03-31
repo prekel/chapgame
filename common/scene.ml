@@ -238,8 +238,8 @@ module Make (N : Module_types.Number) = struct
       Sequence.cartesian_product bodies bodies
       |> Sequence.filter_map ~f:(fun ((id1, f1), (id2, f2)) ->
              let r1 = Values.get_scalar_exn f1.values ~var:`r in
-             let r2 = Values.get_scalar_exn f1.values ~var:`r in
-             if N.(distance_bentween_bodies f1.values f2.values < r1 + r2)
+             let r2 = Values.get_scalar_exn f2.values ~var:`r in
+             if N.(distance_bentween_bodies f1.values f2.values < r1 + r2 + eps)
              then None
              else
                Some
@@ -370,6 +370,8 @@ module Make (N : Module_types.Number) = struct
         | Collision of
             { id1 : Figure2.Id.t
             ; id2 : Figure2.Id.t
+            ; v1 : N.t * N.t
+            ; v2 : N.t * N.t
             }
         | VelocityGiven of
             { id : Figure2.Id.t
@@ -526,13 +528,16 @@ module Make (N : Module_types.Number) = struct
 
     let before model ~time =
       match Map.split model time with
-      | l, Some (_, v), _ -> l, v
+      | l, Some (k, v), _ -> Map.add_exn l ~key:k ~data:v, v
       | l, None, _ -> l, snd @@ Map.max_elt_exn l
     ;;
 
     let merge_with_list model l =
       let l =
-        Map.of_alist_exn (module N) (List.map l ~f:(fun scene -> scene.Scene.time, scene))
+        Map.of_alist_reduce
+          (module N)
+          (List.map l ~f:(fun scene -> scene.Scene.time, scene))
+          ~f:(fun _a b -> b)
       in
       Map.merge_skewed model l ~combine:(fun ~key v1 v2 ->
           Scene.update v2 ~bodies:v2.figures ~cause:(v2.cause @ v1.cause) ~time:key)
@@ -542,22 +547,20 @@ module Make (N : Module_types.Number) = struct
   end
 
   module Engine = struct
-    let forward (scene : Scene.t) ~eps ~time =
+    let forward ?time (scene : Scene.t) ~eps =
       let rec forward_rec (scene : Scene.t) =
         let global_values = Values.to_function scene.global_values in
-        let time_rel = N.(time - scene.time) in
         let qt =
           CollisionDetection.collisions
             ~eps
             ~global_values
             ~r:Formulas.r
             (Scene.Figures.to_sequence scene.figures)
-          |> Sequence.find_map ~f:(fun (id1, id2, r) ->
+          |> Sequence.filter_map ~f:(fun (id1, id2, r) ->
                  Sequence.hd r |> Option.map ~f:(fun r -> id1, id2, r))
+          |> Sequence.min_elt ~compare:(fun (_, _, r1) (_, _, r2) -> N.(compare r1 r2))
         in
-        match qt with
-        | Some (id1, id2, r) when N.(r < time_rel) ->
-          let t = r in
+        let coll t ~id1 ~id2 =
           let q =
             Scene.Figures.calc scene.figures ~t ~global_values:scene.global_values
           in
@@ -570,36 +573,41 @@ module Make (N : Module_types.Number) = struct
           in
           let new_time = N.(scene.time + t) in
           let s =
-            Scene.update scene ~bodies:q ~cause:[ Collision { id1; id2 } ] ~time:new_time
+            Scene.update
+              scene
+              ~bodies:q
+              ~cause:[ Collision { id1; id2; v1 = v1n; v2 = v2n } ]
+              ~time:new_time
           in
+          s
+        in
+        match qt, time with
+        | Some (id1, id2, t), Some time ->
+          let s = coll t ~id1 ~id2 in
+          if N.(s.time < time)
+          then s :: forward_rec s
+          else (
+            let q =
+              Scene.Figures.calc
+                scene.figures
+                ~t:N.(time - scene.time)
+                ~global_values:scene.global_values
+            in
+            [ Scene.update scene ~bodies:q ~cause:[] ~time ])
+        | Some (id1, id2, r), None ->
+          let s = coll r ~id1 ~id2 in
           s :: forward_rec s
-        | None ->
+        | None, Some time ->
           let q =
             Scene.Figures.calc
               scene.figures
-              ~t:time_rel
+              ~t:N.(time - scene.time)
               ~global_values:scene.global_values
           in
-          [ Scene.update scene ~bodies:q ~cause:[ Empty ] ~time ]
-        | Some (id1, id2, r) ->
-          let t = r in
-          let q =
-            Scene.Figures.calc scene.figures ~t ~global_values:scene.global_values
-          in
-          let body1 = Scene.Figures.get_by_id q ~id:id1 in
-          let body2 = Scene.Figures.get_by_id q ~id:id2 in
-          let v1n, v2n = CollisionHandle.calculate_new_v body1.values body2.values in
-          let q =
-            Scene.Figures.update_by_id q ~id:id1 ~body:(Figure2.update_v0 body1 ~v:v1n)
-            |> Scene.Figures.update_by_id ~id:id2 ~body:(Figure2.update_v0 body2 ~v:v2n)
-          in
-          let new_time = N.(scene.time + t) in
-          let s =
-            Scene.update scene ~bodies:q ~cause:[ Collision { id1; id2 } ] ~time:new_time
-          in
-          s :: forward_rec s
+          [ Scene.update scene ~bodies:q ~cause:[] ~time ]
+        | None, None -> []
       in
-      if N.(scene.time = time) then [] else forward_rec scene |> List.rev
+      forward_rec scene |> List.rev
     ;;
 
     let recv (model : Model.t) ~action:(Action.{ time; action } as _a) ~eps =
@@ -626,27 +634,7 @@ module Make (N : Module_types.Number) = struct
         | Empty -> s
       in
       let m = before |> Model.update ~time:r.time ~scene:r in
-      let f =
-        forward
-          (Model.last_exn m)
-          ~time:
-            N.(
-              time
-              + one
-              + one
-              + one
-              + one
-              + one
-              + one
-              + one
-              + one
-              + one
-              + one
-              + one
-              + one
-              + one)
-          ~eps
-      in
+      let f = forward (Model.last_exn m) ~eps in
       Model.merge_with_list m f
     ;;
   end
