@@ -153,7 +153,7 @@ module MakeSolver (N : Module_types.Number) = struct
     type t = (int, N.t, Int.comparator_witness) Map.t
 
     let equal = Map.equal N.equal
-    let normalize = Map.filter ~f:N.(( <> ) zero)
+    let normalize = Map.filter ~f:N.(fun coef -> N.is_finite coef && coef <> zero)
     let of_list a = Map.of_alist_exn (module Int) a |> normalize
     let t_of_sexp s = List.Assoc.t_of_sexp Int.t_of_sexp N.t_of_sexp s |> of_list
     let sexp_of_t t = [%sexp (Map.to_alist t : (int * N.t) list)]
@@ -214,7 +214,7 @@ module MakeSolver (N : Module_types.Number) = struct
     let search ~f ~eps =
       let rec search_rec cnt ~f (xl, xr) =
         assert (N.(f xl < f xr));
-        if cnt > 250
+        if cnt > 500
         then
           Error.raise_s
             [%message
