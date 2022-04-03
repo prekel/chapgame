@@ -5,17 +5,18 @@ let%test_module "float solver" =
   (module struct
     module SF = Solver.MakeSolver (Float)
 
+    let eps = 1e-3
+
     let _print_calcs poly =
       let print_calc x = printf "x:%f y:%f\n" x @@ SF.Polynomial.calc ~x poly in
       List.iter ~f:print_calc
     ;;
 
-    let sample_poly = SF.Polynomial.of_list [ 3, 1.; 1, -1.; 2, -2.; 0, 2. ]
+    let sample_poly = SF.Polynomial.of_list [ 3, 1.; 1, -1.; 2, -2.; 0, 2. ] ~eps
     let sample_poly_d1 = SF.Polynomial.derivative sample_poly
     let sample_poly_d2 = SF.Polynomial.derivative sample_poly_d1
     let sample_poly_d3 = SF.Polynomial.derivative sample_poly_d2
     let sample_poly_d4 = SF.Polynomial.derivative sample_poly_d3
-    let eps = 1e-3
 
     let%expect_test "to_sexp_test" =
       print_s [%sexp (sample_poly : SF.Polynomial.t)];
@@ -172,7 +173,7 @@ let%test_module "float solver" =
 
     let%test_module "-4 1 3 5" =
       (module struct
-        let pd0 = SF.Polynomial.of_list [ 0, 60.; 1, 43.; 2, -21.; 3, -3.; 4, 1. ]
+        let pd0 = SF.Polynomial.of_list [ 0, 60.; 1, 43.; 2, -21.; 3, -3.; 4, 1. ] ~eps
         let pd1 = SF.Polynomial.derivative pd0
 
         let%expect_test "" =

@@ -129,10 +129,10 @@ module Make (N : Module_types.Number) = struct
       }
     [@@deriving sexp, equal]
 
-    let calc ~values ~rules ~scoped_values ~t =
+    let calc ~values ~rules ~scoped_values ~t ~eps =
       let c = Expr.calc ~values ~scoped_values (module N) in
       let calc_xy f =
-        Formula.to_polynomial f ~values ~scoped_values |> Solver.Polynomial.calc ~x:t
+        Formula.to_polynomial f ~values ~scoped_values ~eps |> Solver.Polynomial.calc ~x:t
       in
       List.find_map rules ~f:(fun Rule.{ interval; x; y; v_x; v_y; after } ->
           match interval with
@@ -178,7 +178,7 @@ module Make (N : Module_types.Number) = struct
              a.interval, b.interval, f)
     ;;
 
-    let b3 p ~values1 ~values2 ~global =
+    let b3 p ~values1 ~values2 ~global ~eps =
       let inter values =
         let calc v =
           let r =
@@ -200,7 +200,7 @@ module Make (N : Module_types.Number) = struct
       Sequence.map p ~f:(fun (ai, bi, f) ->
           ( inter values1 ai
           , inter values2 bi
-          , Formula.to_polynomial f ~values:global ~scoped_values:(function
+          , Formula.to_polynomial f ~eps ~values:global ~scoped_values:(function
                 | s when s = global_scope -> global
                 | 1 -> values1
                 | 2 -> values2
@@ -253,6 +253,7 @@ module Make (N : Module_types.Number) = struct
                         ~values1:(Values.to_function f1.values)
                         ~values2:(Values.to_function f2.values)
                         ~global:global_values
+                        ~eps
                    |> b4 ~eps ))
     ;;
   end
@@ -390,7 +391,7 @@ module Make (N : Module_types.Number) = struct
     module Figures : sig
       type t [@@deriving sexp, equal]
 
-      val calc : t -> t:N.t -> global_values:Values.t -> t
+      val calc : t -> t:N.t -> global_values:Values.t -> eps:N.t -> t
       val add : t -> id:Figure2.Id.t -> body:Figure2.t -> t
       val empty : t
       val to_sequence : t -> (Figure2.Id.t * Figure2.t) Sequence.t
@@ -407,13 +408,14 @@ module Make (N : Module_types.Number) = struct
         Common.Map.t_of_sexp Figure2.Id.t_of_sexp Figure2.t_of_sexp (module Figure2.Id)
       ;;
 
-      let calc (figures : t) ~t ~global_values =
+      let calc (figures : t) ~t ~global_values ~eps =
         Map.map figures ~f:(fun f ->
             Figure2.calc
               ~values:(Values.to_function f.values)
               ~rules:f.rules
               ~scoped_values:(Values.global_to_scoped global_values)
               ~t
+              ~eps
             |> Option.map ~f:(fun (xy, rules) -> Figure2.update_x0y0 ~body:f xy ~rules)
             |> Option.value ~default:f)
       ;;
@@ -584,7 +586,7 @@ module Make (N : Module_types.Number) = struct
         in
         let coll t ~id1 ~id2 =
           let q =
-            Scene.Figures.calc scene.figures ~t ~global_values:scene.global_values
+            Scene.Figures.calc scene.figures ~t ~global_values:scene.global_values ~eps
           in
           let body1 = Scene.Figures.get_by_id q ~id:id1 in
           let body2 = Scene.Figures.get_by_id q ~id:id2 in
@@ -619,6 +621,7 @@ module Make (N : Module_types.Number) = struct
                 scene.figures
                 ~t:N.(time - scene.time)
                 ~global_values:scene.global_values
+                ~eps
             in
             [ Scene.update scene ~bodies:q ~cause:[] ~time ])
         | Some (id1, id2, r), None ->
@@ -630,6 +633,7 @@ module Make (N : Module_types.Number) = struct
               scene.figures
               ~t:N.(time - scene.time)
               ~global_values:scene.global_values
+              ~eps
           in
           [ Scene.update scene ~bodies:q ~cause:[] ~time ]
         | None, None -> []

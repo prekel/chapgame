@@ -4,9 +4,11 @@ open Bonsai.Let_syntax
 open Js_of_ocaml
 module SF = Chapgame.Solver.MakeSolver (Float)
 
+let eps = 1e-7
+
 let state () =
   let init =
-    [%sexp (SF.Polynomial.of_list [ 3, 1.; 2, -2.; 1, -1.; 0, 2. ] : SF.Polynomial.t)]
+    [%sexp (SF.Polynomial.of_list [ 3, 1.; 2, -2.; 1, -1.; 0, 2. ] ~eps : SF.Polynomial.t)]
     |> Sexp.to_string_hum
   in
   let%sub state, set_state = Bonsai.state [%here] (module String) ~default_model:init in

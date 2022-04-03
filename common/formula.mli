@@ -19,5 +19,6 @@ module Make
     :  t
     -> values:Expr.values
     -> scoped_values:(Scope.t -> Expr.values)
+    -> eps:N.t
     -> Solver.Polynomial.t
 end

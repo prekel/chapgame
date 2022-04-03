@@ -33,7 +33,7 @@ let scene_frame ~scene ~on_click ~time =
     Svg.Node.svg
       ~attr:(Attr.many [ Svg.Attr.width 1280.; Svg.Attr.height 720. ])
       (scene.figures
-      |> S.Scene.Figures.calc ~t ~global_values:scene.global_values
+      |> S.Scene.Figures.calc ~t ~global_values:scene.global_values ~eps
       |> S.Scene.Figures.to_sequence
       |> Sequence.map ~f:(fun (id, figure) ->
              circle

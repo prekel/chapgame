@@ -142,20 +142,21 @@ module MakeSolver (N : Module_types.Number) = struct
   module Polynomial : sig
     type t [@@deriving sexp, equal]
 
-    val of_list : (int * N.t) list -> t
+    val of_list : (int * N.t) list -> eps:N.t -> t
     val derivative : t -> t
     val calc : t -> x:N.t -> N.t
     val degree : t -> int
     val to_map : t -> (int, N.t, Int.comparator_witness) Map.t
-    val of_map : (int, N.t, Int.comparator_witness) Map.t -> t
+    val of_map : (int, N.t, Int.comparator_witness) Map.t -> eps:N.t -> t
     val to_string_hum : ?var:string -> t -> string
   end = struct
     type t = (int, N.t, Int.comparator_witness) Map.t
 
     let equal = Map.equal N.equal
-    let normalize = Map.filter ~f:N.(fun coef -> N.is_finite coef && coef <> zero)
-    let of_list a = Map.of_alist_exn (module Int) a |> normalize
-    let t_of_sexp s = List.Assoc.t_of_sexp Int.t_of_sexp N.t_of_sexp s |> of_list
+    let normalize ~eps = Map.filter ~f:N.(fun coef -> N.is_finite coef && abs coef > eps)
+    let of_list a ~eps = Map.of_alist_exn (module Int) a |> normalize ~eps
+    let of_list_raw a = Map.of_alist_exn (module Int) a
+    let t_of_sexp s = List.Assoc.t_of_sexp Int.t_of_sexp N.t_of_sexp s |> of_list_raw
     let sexp_of_t t = [%sexp (Map.to_alist t : (int * N.t) list)]
 
     let derivative p =
@@ -178,7 +179,7 @@ module MakeSolver (N : Module_types.Number) = struct
     ;;
 
     let to_map = Fn.id
-    let of_map = normalize
+    let of_map m ~eps = normalize m ~eps
 
     let to_string_hum ?var =
       let var = Option.value ~default:"x" var in
@@ -211,14 +212,19 @@ module MakeSolver (N : Module_types.Number) = struct
   module BinarySearch = struct
     let two = N.(one + one)
 
-    let search ~f ~eps =
+    let search ~f ~eps ~poly =
       let rec search_rec cnt ~f (xl, xr) =
         assert (N.(f xl < f xr));
         if cnt > 500
         then
           Error.raise_s
             [%message
-              "search_rec" ~cnt:(cnt : int) ~xl:(xl : N.t) ~xr:(xr : N.t) ~f:(f xl : N.t)];
+              "search_rec"
+                ~cnt:(cnt : int)
+                ~xl:(xl : N.t)
+                ~xr:(xr : N.t)
+                ~f:(f xl : N.t)
+                ~poly:(poly : Polynomial.t)];
         let xm = N.((xl + xr) / two) in
         let ym = f xm in
         if N.(abs ym < eps)
@@ -233,7 +239,12 @@ module MakeSolver (N : Module_types.Number) = struct
         then
           Error.raise_s
             [%message
-              "increase_rec" ~cnt:(cnt : int) ~x:(x : N.t) ~k:(k : N.t) ~y:(y : N.t)];
+              "increase_rec"
+                ~cnt:(cnt : int)
+                ~x:(x : N.t)
+                ~k:(k : N.t)
+                ~y:(y : N.t)
+                ~poly:(poly : Polynomial.t)];
         if Sign.(N.(sign_exn (f x)) <> N.(sign_exn y))
         then search_rec ~f (t ~x)
         else increase_rec (cnt + 1) ~f ~t ~y N.(x + k) N.(k * two)
@@ -278,8 +289,14 @@ module MakeSolver (N : Module_types.Number) = struct
         |> Polynomial.derivative
         |> roots ~eps
         |> Interval.intervals_of_list
-        |> List.filter_map ~f:(BinarySearch.search ~f:calc ~eps)
+        |> List.filter_map ~f:(BinarySearch.search ~f:calc ~eps ~poly)
         |> List.sort ~compare:N.ascending
+    ;;
+
+    let roots ~eps poly =
+      let ret = roots ~eps poly in
+      List.iter ret ~f:(fun root -> assert (N.(abs (Polynomial.calc poly ~x:root) < eps)));
+      ret
     ;;
   end
 end
