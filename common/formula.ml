@@ -27,7 +27,8 @@ module Make
 
   module Syntax = struct
     let ( + ) = Map.merge_skewed ~combine:(fun ~key:_ a b -> Expr.Sum (a, b))
-    let ( - ) = Map.merge_skewed ~combine:(fun ~key:_ a b -> Expr.Sub (a, b))
+    let ( ~- ) = Map.map ~f:(fun b -> Expr.Neg b)
+    let ( - ) a b = a + -b
 
     let sqr a =
       Map.to_sequence a

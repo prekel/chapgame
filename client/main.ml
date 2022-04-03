@@ -4,7 +4,7 @@ open Bonsai.Let_syntax
 open Js_of_ocaml
 module SF = Chapgame.Solver.MakeSolver (Float)
 
-let eps = 1e-7
+let eps = 1e-5
 
 let state () =
   let init =

@@ -191,5 +191,23 @@ let%test_module "float solver" =
         ;;
       end)
     ;;
+
+    let%test_module "fails" =
+      (module struct
+        let%expect_test "1" =
+          let sexp =
+            {|((0 25746835.984231804) (1 4577291.1195623642) (2 101561.48085614311) (3 -9013.8329630027256) (4 99.999999999999986))|}
+          in
+          let poly = SF.Polynomial.t_of_sexp (Sexp.of_string sexp) in
+          let eps = 1e-7 in
+          let roots = SF.PolynomialEquation.roots ~eps poly in
+          print_s [%sexp (roots : float list)];
+          [%expect
+            {|
+            (-9.6463872572101224 -9.0187820495752291 54.087946864587636
+             54.715552072224668) |}]
+        ;;
+      end)
+    ;;
   end)
 ;;
