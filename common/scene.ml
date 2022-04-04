@@ -383,52 +383,50 @@ module Make (N : Module_types.Number) = struct
   end
 
   module CollisionHandle = struct
-    let collision ~v1 ~v2 ~theta1 ~theta2 ~phi ~m1 ~m2 =
+    module Vector : sig
+      include module type of Expr.VectorOps
+
+      val dot : t -> t -> N.t
+      val len : t -> N.t
+      val ( *^ ) : t -> N.t -> t
+      val ( ^* ) : N.t -> t -> t
+    end = struct
+      include Expr.VectorOps
+
+      let dot a b =
+        let x, y = a * b in
+        N.(x + y)
+      ;;
+
+      let len (x, y) = N.(sqrt ((x * x) + (y * y)))
+      let ( *^ ) (a, b) c = N.(a * c, b * c)
+      let ( ^* ) c (a, b) = N.(a * c, b * c)
+    end
+
+    let collision ~v1 ~v2 ~x1 ~x2 ~m1 ~m2 =
+      let module V = Vector in
       let two = N.(one + one) in
-      let v1x =
-        N.(
-          (((v1 * cos (theta1 - phi) * (m1 - m2)) + (two * m2 * v2 * cos (theta2 - phi)))
-          / (m1 + m2)
-          * cos phi)
-          + (v1 * sin (theta1 - phi) * cos (phi + (pi / two))))
-      in
-      let v1y =
-        N.(
-          (((v1 * cos (theta1 - phi) * (m1 - m2)) + (two * m2 * v2 * cos (theta2 - phi)))
-          / (m1 + m2)
-          * sin phi)
-          + (v1 * sin (theta1 - phi) * cos (phi + (pi / two))))
-      in
-      v1x, v1y
+      let sqr a = N.(a * a) in
+      let q1 = v1 in
+      let q2 = N.(two * m2 / (m1 + m2)) in
+      let q3 = N.(V.(dot (v1 - v2) (x1 - x2)) / sqr V.(len (x2 - x1))) in
+      let q4 = V.(x1 - x2) in
+      V.(q1 - (N.(q2 * q3) ^* q4))
     ;;
 
     let collision_body ~v1 ~v2 ~m1 ~m2 ~x1 ~y1 ~x2 ~y2 ~eps =
-      let len (x, y) = N.(sqrt ((x * x) + (y * y))) in
-      let v1len = len v1 in
-      let v2len = len v2 in
-      let theta1 = N.(if v1len = zero then zero else atan2 (snd v1) (fst v1)) in
-      let theta2 = N.(if v2len = zero then zero else atan2 (snd v2) (fst v2)) in
-      let move = N.(x2 - x1), N.(y2 - y1) in
-      let phi = N.atan2 (snd move) (fst move) in
-      let v1new = collision ~v1:v1len ~v2:v2len ~theta1 ~theta2 ~phi ~m1 ~m2 in
-      let v2new =
-        collision ~v1:v2len ~v2:v1len ~theta1:theta2 ~theta2:theta1 ~phi ~m1:m2 ~m2:m1
-      in
+      let _ = eps in
+      let v1' = collision ~v1 ~v2 ~x1:(x1, y1) ~x2:(x2, y2) ~m1 ~m2 in
+      let v2' = collision ~v1:v2 ~v2:v1 ~x1:(x2, y2) ~x2:(x1, y1) ~m1:m2 ~m2:m1 in
       if not
            N.(
-             abs ((len v1 * m1) + (len v2 * m2) - ((len v1new * m1) + (len v2new * m2)))
-             < eps)
+             abs Vector.(len ((v1 *^ m1) + (v2 *^ m2) - (v1' *^ m1) - (v2' *^ m2))) < eps)
       then
         Error.raise_s
           [%message
             "collision_body"
               ~v1:(v1 : N.t * N.t)
               ~v2:(v2 : N.t * N.t)
-              ~v1len:(v1len : N.t)
-              ~v2len:(v2len : N.t)
-              ~theta1:(theta1 : N.t)
-              ~theta2:(theta2 : N.t)
-              ~phi:(phi : N.t)
               ~m1:(m1 : N.t)
               ~m2:(m2 : N.t)
               ~x1:(x1 : N.t)
@@ -436,13 +434,9 @@ module Make (N : Module_types.Number) = struct
               ~x2:(x2 : N.t)
               ~y2:(y2 : N.t)
               ~eps:(eps : N.t)
-              ~v1new:(v1new : N.t * N.t)
-              ~v2new:(v2new : N.t * N.t)
-              ~mom1:(N.(len v1 * m1) : N.t)
-              ~mom2:(N.(len v2 * m2) : N.t)
-              ~mom1new:(N.(len v1new * m1) : N.t)
-              ~mom2new:(N.(len v2new * m2) : N.t)]
-      else v1new, v2new
+              ~v1':(v1' : N.t * N.t)
+              ~v2':(v2' : N.t * N.t)]
+      else v1', v2'
     ;;
 
     let calculate_new_v values1 values2 ~eps =
