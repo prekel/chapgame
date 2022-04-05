@@ -169,6 +169,28 @@ module Make (N : Module_types.Number) = struct
     ;;
   end
 
+  module Point = struct
+    module Id = Utils.MakeIntId (struct
+      let module_name = "Point.Id"
+    end)
+
+    type t =
+      { id : Id.t
+      ; x : N.t
+      ; y : N.t
+      }
+    [@@deriving sexp, equal]
+  end
+
+  module LineSegmentRay = struct
+    type t =
+      { point1 : Point.t
+      ; point2 : Point.t
+      ; kind : [ `Line | `Segment | `Ray ]
+      }
+    [@@deriving sexp, equal]
+  end
+
   module CollisionDetection = struct
     let b2 ~rules1 ~rules2 ~r =
       Sequence.cartesian_product (Sequence.of_list rules1) (Sequence.of_list rules2)
