@@ -183,8 +183,13 @@ module Make (N : Module_types.Number) = struct
   end
 
   module LineSegmentRay = struct
+    module Id = Utils.MakeIntId (struct
+      let module_name = "LineSegmentRay.Id"
+    end)
+
     type t =
-      { point1 : Point.t
+      { id : Id.t
+      ; point1 : Point.t
       ; point2 : Point.t
       ; kind : [ `Line | `Segment | `Ray ]
       }
