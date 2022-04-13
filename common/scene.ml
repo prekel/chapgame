@@ -520,7 +520,7 @@ module Make (N : Module_types.Number) = struct
     end = struct
       include Utils.MakeAdvancedMap (Figure2.Id) (Figure2)
 
-      let calc (figures : t) ~t ~global_values ~eps =
+      let calc figures ~t ~global_values ~eps =
         to_map figures
         |> Map.map ~f:(fun f ->
                Figure2.calc

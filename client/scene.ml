@@ -118,7 +118,12 @@ let scene =
   let%sub a =
     let%arr is_pause = is_pause
     and speed = speed in
-    fun t -> t +. if is_pause then 0. else Float.(frame_time60 * speed)
+    fun t ->
+      let open Float in
+      match t + (frame_time60 * speed), is_pause with
+      | _, true -> t
+      | nt, _ when nt < 0. -> 0.
+      | nt, false -> nt
   in
   let%sub () =
     Bonsai.Clock.every
@@ -149,7 +154,8 @@ let scene =
   and is_pause = is_pause
   and set_is_pause = set_is_pause
   and speed = speed
-  and set_speed = set_speed in
+  and set_speed = set_speed
+  and set_time = update_time in
   Vdom.(
     Node.div
       [ Node.text (Float.to_string time)
@@ -208,10 +214,25 @@ let scene =
       ; Node.input
           ~attr:
             (Attr.many
-               [ Attr.on_change (fun _ a ->
+               [ Attr.type_ "range"
+               ; Attr.min (-25.)
+               ; Attr.max 25.
+               ; Attr.on_input (fun _ a ->
                      try a |> Float.of_string |> set_speed with
                      | _ -> Effect.Ignore)
                ; Attr.value (Float.to_string speed)
+               ])
+          []
+      ; Node.input
+          ~attr:
+            (Attr.many
+               [ Attr.type_ "range"
+               ; Attr.min 0.
+               ; Attr.max 100.
+               ; Attr.on_input (fun _ a ->
+                     try a |> Float.of_string |> set_time with
+                     | _ -> Effect.Ignore)
+               ; Attr.value_prop (Float.to_string time)
                ])
           []
       ; Node.br ()
