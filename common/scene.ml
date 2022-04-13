@@ -262,31 +262,36 @@ module Make (N : Module_types.Number) = struct
   end
 
   module Point = struct
-    module Id = Utils.MakeIntId (struct
-      let module_name = "Point.Id"
-    end)
+    module T = struct
+      type t =
+        { x : N.t
+        ; y : N.t
+        }
+      [@@deriving sexp, equal, compare]
+    end
 
-    type t =
-      { id : Id.t
-      ; x : N.t
-      ; y : N.t
-      }
-    [@@deriving sexp, equal]
+    include T
+    include Comparable.Make (T)
   end
+
+  module Points = Utils.MakeAdvancedSet (Point)
 
   module LineSegmentRay = struct
-    module Id = Utils.MakeIntId (struct
-      let module_name = "LineSegmentRay.Id"
-    end)
+    module T = struct
+      type t =
+        { a : N.t
+        ; b : N.t
+        ; c : N.t
+        ; kind : [ `Line | `Segment of Point.t * Point.t | `Ray of Point.t ]
+        }
+      [@@deriving sexp, equal, compare]
+    end
 
-    type t =
-      { id : Id.t
-      ; point1 : Point.t
-      ; point2 : Point.t
-      ; kind : [ `Line | `Segment | `Ray ]
-      }
-    [@@deriving sexp, equal]
+    include T
+    include Comparable.Make (T)
   end
+
+  module Lines = Utils.MakeAdvancedSet (LineSegmentRay)
 
   module CollisionDetection = struct
     type extra =
@@ -509,55 +514,39 @@ module Make (N : Module_types.Number) = struct
     end
 
     module Figures : sig
-      type t [@@deriving sexp, equal]
+      include module type of Utils.MakeAdvancedMap (Figure2.Id) (Figure2)
 
       val calc : t -> t:N.t -> global_values:Values.t -> eps:N.t -> t
-      val add : t -> id:Figure2.Id.t -> body:Figure2.t -> t
-      val empty : t
-      val to_sequence : t -> (Figure2.Id.t * Figure2.t) Sequence.t
-      val get_by_id : t -> id:Figure2.Id.t -> Figure2.t
-      val update_by_id : t -> id:Figure2.Id.t -> body:Figure2.t -> t
-      val to_map : t -> (Figure2.Id.t, Figure2.t, Figure2.Id.comparator_witness) Map.t
     end = struct
-      type t = (Figure2.Id.t, Figure2.t, Figure2.Id.comparator_witness) Map.t
-
-      let equal = Map.equal Figure2.equal
-      let sexp_of_t = Common.Map.sexp_of_t Figure2.Id.sexp_of_t Figure2.sexp_of_t
-
-      let t_of_sexp =
-        Common.Map.t_of_sexp Figure2.Id.t_of_sexp Figure2.t_of_sexp (module Figure2.Id)
-      ;;
+      include Utils.MakeAdvancedMap (Figure2.Id) (Figure2)
 
       let calc (figures : t) ~t ~global_values ~eps =
-        Map.map figures ~f:(fun f ->
-            Figure2.calc
-              ~values:(Values.to_function f.values)
-              ~rules:f.rules
-              ~scoped_values:(Values.global_to_scoped global_values)
-              ~t
-              ~eps
-            |> Option.map ~f:(fun (xy, rules) -> Figure2.update_x0y0 ~body:f xy ~rules)
-            |> Option.value ~default:f)
+        to_map figures
+        |> Map.map ~f:(fun f ->
+               Figure2.calc
+                 ~values:(Values.to_function f.values)
+                 ~rules:f.rules
+                 ~scoped_values:(Values.global_to_scoped global_values)
+                 ~t
+                 ~eps
+               |> Option.map ~f:(fun (xy, rules) -> Figure2.update_x0y0 ~body:f xy ~rules)
+               |> Option.value ~default:f)
+        |> of_map
       ;;
-
-      let empty = Map.empty (module Figure2.Id)
-      let add t ~id ~body = Map.add_exn t ~key:id ~data:body
-      let to_sequence t = Map.to_sequence t
-      let get_by_id t ~id = Map.find_exn t id
-      let update_by_id t ~id ~body = Map.update t id ~f:(fun _ -> body)
-      let to_map = Fn.id
     end
 
     type t =
       { time : N.t
-      ; figures : Figures.t
+      ; bodies : Figures.t
+      ; points : Points.t
+      ; lines : Lines.t
       ; global_values : Values.t
       ; cause : Cause.t list
       }
     [@@deriving sexp, equal]
 
-    let update { global_values; _ } ~bodies ~cause ~time =
-      { time; figures = bodies; global_values; cause }
+    let update { global_values; _ } ~bodies ~points ~lines ~cause ~time =
+      { time; bodies; points; lines; global_values; cause }
     ;;
 
     let add_figure figures ~id ~x0 ~y0 ~r ~mu ~m =
@@ -583,7 +572,9 @@ module Make (N : Module_types.Number) = struct
 
     let init ~g =
       { time = N.zero
-      ; figures = Figures.empty
+      ; bodies = Figures.empty
+      ; points = Points.empty
+      ; lines = Lines.empty
       ; global_values = Values.of_alist [ `g, g ]
       ; cause = [ Init ]
       }
@@ -635,8 +626,10 @@ module Make (N : Module_types.Number) = struct
           | Some s ->
             Scene.update
               s
-              ~bodies:scene.Scene.figures
+              ~bodies:scene.Scene.bodies
               ~cause:(scene.cause @ s.cause)
+              ~points:scene.points
+              ~lines:scene.lines
               ~time
           | None -> scene)
     ;;
@@ -656,7 +649,13 @@ module Make (N : Module_types.Number) = struct
           ~f:(fun _a b -> b)
       in
       Map.merge_skewed model l ~combine:(fun ~key v1 v2 ->
-          Scene.update v2 ~bodies:v2.figures ~cause:(v2.cause @ v1.cause) ~time:key)
+          Scene.update
+            v2
+            ~bodies:v2.bodies
+            ~cause:(v2.cause @ v1.cause)
+            ~points:v2.points
+            ~lines:v2.lines
+            ~time:key)
     ;;
 
     let last_exn = Common.Fn.(Map.max_elt_exn >> snd)
@@ -666,7 +665,7 @@ module Make (N : Module_types.Number) = struct
     let forward ?time (scene : Scene.t) ~eps =
       let rec forward_rec (scene : Scene.t) =
         let qt =
-          Scene.Figures.to_sequence scene.figures
+          Scene.Figures.to_sequence scene.bodies
           |> CollisionDetection.collisions_extra
                ~eps
                ~global_values:scene.global_values
@@ -682,7 +681,7 @@ module Make (N : Module_types.Number) = struct
         in
         let coll r t ~id1 ~id2 =
           let q =
-            Scene.Figures.calc scene.figures ~t ~global_values:scene.global_values ~eps
+            Scene.Figures.calc scene.bodies ~t ~global_values:scene.global_values ~eps
           in
           let body1 = Scene.Figures.get_by_id q ~id:id1 in
           let body2 = Scene.Figures.get_by_id q ~id:id2 in
@@ -698,8 +697,8 @@ module Make (N : Module_types.Number) = struct
           in
           let new_time = N.(scene.time + t) in
           let s =
-            let body1 = Scene.Figures.get_by_id scene.figures ~id:id1 in
-            let body2 = Scene.Figures.get_by_id scene.figures ~id:id2 in
+            let body1 = Scene.Figures.get_by_id scene.bodies ~id:id1 in
+            let body2 = Scene.Figures.get_by_id scene.bodies ~id:id2 in
             Scene.update
               scene
               ~bodies:q
@@ -723,35 +722,51 @@ module Make (N : Module_types.Number) = struct
                     }
                 ]
               ~time:new_time
+              ~points:scene.points
+              ~lines:scene.lines
           in
           s
         in
         match qt, time with
         | Some (({ id1; id2; _ } as r), t), Some time ->
           let s = coll r t ~id1 ~id2 in
-          if N.(s.time < time)
+          if N.(s.Scene.time < time)
           then s :: forward_rec s
           else (
             let q =
               Scene.Figures.calc
-                scene.figures
+                scene.bodies
                 ~t:N.(time - scene.time)
                 ~global_values:scene.global_values
                 ~eps
             in
-            [ Scene.update scene ~bodies:q ~cause:[] ~time ])
+            [ Scene.update
+                scene
+                ~bodies:q
+                ~cause:[]
+                ~time
+                ~points:scene.points
+                ~lines:scene.lines
+            ])
         | Some (({ id1; id2; _ } as r), t), None ->
           let s = coll r t ~id1 ~id2 in
           s :: forward_rec s
         | _, Some time ->
           let q =
             Scene.Figures.calc
-              scene.figures
+              scene.bodies
               ~t:N.(time - scene.time)
               ~global_values:scene.global_values
               ~eps
           in
-          [ Scene.update scene ~bodies:q ~cause:[] ~time ]
+          [ Scene.update
+              scene
+              ~bodies:q
+              ~cause:[]
+              ~time
+              ~points:scene.points
+              ~lines:scene.lines
+          ]
         | _, None -> []
       in
       forward_rec scene |> List.rev
@@ -767,17 +782,21 @@ module Make (N : Module_types.Number) = struct
         | Action.AddBody { id; x0; y0; r; mu; m } ->
           Scene.update
             s
-            ~bodies:(Scene.add_figure s.figures ~id ~x0 ~y0 ~r ~mu ~m)
+            ~bodies:(Scene.add_figure s.bodies ~id ~x0 ~y0 ~r ~mu ~m)
             ~cause:[ BodyAdded { id } ]
             ~time
+            ~points:s.points
+            ~lines:s.lines
         | GiveVelocity { id; v0 } ->
-          let body = Scene.Figures.get_by_id s.figures ~id in
+          let body = Scene.Figures.get_by_id s.bodies ~id in
           let body = Figure2.update_v0 body ~v:v0 ~rules:Figure2.Rule.rules1 in
           Scene.update
             s
-            ~bodies:(Scene.Figures.update_by_id s.figures ~id:body.id ~body)
+            ~bodies:(Scene.Figures.update_by_id s.bodies ~id:body.id ~body)
             ~cause:[ VelocityGiven { id; v = v0 } ]
             ~time
+            ~points:s.points
+            ~lines:s.lines
         | Empty -> s
       in
       let m = before |> Model.update ~time:r.time ~scene:r in
