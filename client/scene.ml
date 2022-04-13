@@ -114,9 +114,11 @@ let scene =
   let%sub is_pause, set_is_pause =
     Bonsai.state [%here] (module Bool) ~default_model:false
   in
+  let%sub speed, set_speed = Bonsai.state [%here] (module Float) ~default_model:1. in
   let%sub a =
-    let%arr is_pause = is_pause in
-    fun t -> t +. if is_pause then 0. else frame_time60
+    let%arr is_pause = is_pause
+    and speed = speed in
+    fun t -> t +. if is_pause then 0. else Float.(frame_time60 * speed)
   in
   let%sub () =
     Bonsai.Clock.every
@@ -145,7 +147,9 @@ let scene =
   and frame = frame
   and dispatch = dispatch
   and is_pause = is_pause
-  and set_is_pause = set_is_pause in
+  and set_is_pause = set_is_pause
+  and speed = speed
+  and set_speed = set_speed in
   Vdom.(
     Node.div
       [ Node.text (Float.to_string time)
@@ -201,6 +205,15 @@ let scene =
       ; Node.button
           ~attr:(Attr.on_click (fun _ -> set_is_pause (not is_pause)))
           [ Node.text (if is_pause then "unpause" else "pause") ]
+      ; Node.input
+          ~attr:
+            (Attr.many
+               [ Attr.on_change (fun _ a ->
+                     try a |> Float.of_string |> set_speed with
+                     | _ -> Effect.Ignore)
+               ; Attr.value (Float.to_string speed)
+               ])
+          []
       ; Node.br ()
       ; frame
       ])
