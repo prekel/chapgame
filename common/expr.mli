@@ -4,16 +4,6 @@ module type S = sig
   type vector = scalar * scalar [@@deriving sexp, equal]
   type scope [@@deriving sexp, equal]
 
-  type value =
-    | Scalar of scalar
-    | Vector of vector
-  [@@deriving sexp, equal]
-
-  val scalar_exn : value -> scalar
-  val vector_exn : value -> vector
-
-  type values = key -> value
-
   type 'result t =
     | ScalarConst : scalar -> scalar t
     | VectorConst : vector -> vector t
@@ -21,7 +11,7 @@ module type S = sig
     | ScalarPosInf : scalar t
     | ScalarZero : scalar t
     | ScalarVar : key -> scalar t
-    | VectorVar : key -> vector t
+    | VectorVar : key * key -> vector t
     | Sum : 'a t * 'a t -> 'a t
     | SumList : 'a t list -> 'a t
     | Sub : 'a t * 'a t -> 'a t
@@ -45,8 +35,8 @@ module type S = sig
   type t_vector = vector t [@@deriving sexp, equal]
 
   val calc
-    :  values:values
-    -> scoped_values:(scope -> values)
+    :  values:(key -> scalar)
+    -> scoped_values:(scope -> key -> scalar)
     -> (module Module_types.BasicOps with type t = 'result)
     -> 'result t
     -> 'result
@@ -54,8 +44,8 @@ module type S = sig
   module VectorOps : Module_types.BasicOps with type t = vector
 
   module Syntax : sig
-    val scalar_var : key -> scalar t * key
-    val vector_var : key -> vector t * key
+    val scalar_var : key -> scalar t
+    val vector_var : key -> key -> vector t
     val scalar_const : scalar -> scalar t
     val vector_const : vector -> vector t
     val ( + ) : 'a t -> 'a t -> 'a t

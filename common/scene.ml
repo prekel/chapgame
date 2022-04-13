@@ -6,7 +6,8 @@ module Make (N : Module_types.Number) = struct
       with type t =
         [ `x0
         | `y0
-        | `v0
+        | `v0_x
+        | `v0_y
         | `r
         | `g
         | `mu
@@ -16,7 +17,8 @@ module Make (N : Module_types.Number) = struct
       type t =
         [ `x0
         | `y0
-        | `v0
+        | `v0_x
+        | `v0_y
         | `r
         | `g
         | `mu
@@ -46,31 +48,32 @@ module Make (N : Module_types.Number) = struct
     type t [@@deriving sexp, equal]
 
     val get_scalar_exn : t -> var:Vars.t -> N.t
-    val get_vector_exn : t -> var:Vars.t -> N.t * N.t
+    val get_vector_exn : t -> var_x:Vars.t -> var_y:Vars.t -> N.t * N.t
     val update_scalar : t -> var:Vars.t -> value:N.t -> t
-    val update_vector : t -> var:Vars.t -> value:N.t * N.t -> t
-    val of_alist : (Vars.t * Expr.value) list -> t
-    val to_function : t -> Expr.values
-    val global_to_scoped : t -> Scope.t -> Expr.values
+    val update_vector : t -> var_x:Vars.t -> var_y:Vars.t -> value:N.t * N.t -> t
+    val of_alist : (Vars.t * N.t) list -> t
+    val to_function : t -> Vars.t -> N.t
+    val global_to_scoped : t -> Scope.t -> Vars.t -> N.t
   end = struct
-    type t = (Vars.t, Expr.value, Vars.comparator_witness) Map.t
+    type t = (Vars.t, N.t, Vars.comparator_witness) Map.t
 
-    let equal = Map.equal Expr.equal_value
-    let sexp_of_t : t -> _ = Common.Map.sexp_of_t Vars.sexp_of_t Expr.sexp_of_value
+    let equal = Map.equal N.equal
+    let sexp_of_t : t -> _ = Common.Map.sexp_of_t Vars.sexp_of_t N.sexp_of_t
+    let t_of_sexp : _ -> t = Common.Map.t_of_sexp Vars.t_of_sexp N.t_of_sexp (module Vars)
+    let get_scalar_exn values ~var = Map.find_exn values var
 
-    let t_of_sexp : _ -> t =
-      Common.Map.t_of_sexp Vars.t_of_sexp Expr.value_of_sexp (module Vars)
+    let get_vector_exn values ~var_x ~var_y =
+      let x = Map.find_exn values var_x in
+      let y = Map.find_exn values var_y in
+      x, y
     ;;
 
-    let get_scalar_exn values ~var = Map.find_exn values var |> Expr.scalar_exn
-    let get_vector_exn values ~var = Map.find_exn values var |> Expr.vector_exn
+    let update_scalar values ~var ~value = Map.update values var ~f:(fun _ -> value)
 
-    let update_scalar values ~var ~value =
-      Map.update values var ~f:(fun _ -> Expr.Scalar value)
-    ;;
-
-    let update_vector values ~var ~value =
-      Map.update values var ~f:(fun _ -> Expr.Vector value)
+    let update_vector values ~var_x ~var_y ~value =
+      let wx = Map.update values var_x ~f:(fun _ -> fst value) in
+      let wy = Map.update wx var_y ~f:(fun _ -> snd value) in
+      wy
     ;;
 
     let of_alist = Map.of_alist_exn (module Vars)
@@ -112,20 +115,107 @@ module Make (N : Module_types.Number) = struct
     module Rule = struct
       type t =
         { interval :
-            ([ `Interval of Expr.t_scalar * Expr.t_scalar
-             | `PosInfinity of Expr.t_scalar
-             ]
-            [@sexp.opaque])
-        ; x : (Formula.t[@sexp.opaque])
-        ; y : (Formula.t[@sexp.opaque])
-        ; v_x : (Formula.t[@sexp.opaque])
-        ; v_y : (Formula.t[@sexp.opaque])
-        ; after : ((t[@sexp.opaque]) list[@sexp.opaque])
+            [ `Interval of Expr.t_scalar * Expr.t_scalar | `PosInfinity of Expr.t_scalar ]
+        ; x : Formula.t
+        ; y : Formula.t
+        ; v_x : Formula.t
+        ; v_y : Formula.t
+        ; after : t list
         ; name : string
         }
-      [@@deriving of_sexp, equal]
+      [@@deriving equal]
+
+      module Exprs = struct
+        open Expr.Syntax
+
+        let g = scope ~scope:global_scope (scalar_var `g)
+        let mu = scalar_var `mu
+        let v0_vec = vector_var `v0_x `v0_y
+
+        let a_vec =
+          let f = mu * g in
+          -vector_unit v0_vec * vector_of_scalar f f
+        ;;
+
+        let a_x = vector_x a_vec
+        let a_y = vector_y a_vec
+        let v0_x = vector_x v0_vec
+        let v0_y = vector_y v0_vec
+        let x0 = scalar_var `x0
+        let y0 = scalar_var `y0
+        let r = scalar_var `r
+        let half = scalar_const N.(one / (one + one))
+        let zero = scalar_const N.zero
+        let three = scalar_const N.(one + one + one)
+        let two = scalar_const N.(one + one)
+        let pi = scalar_const N.pi
+      end
+
+      open Expr.Syntax
+
+      let rec rules1 =
+        [ { interval = `Interval Exprs.(zero, vector_length v0_vec / vector_length a_vec)
+          ; x = Formula.of_alist_exn Exprs.[ 0, x0; 1, v0_x; 2, a_x / two ]
+          ; y = Formula.of_alist_exn Exprs.[ 0, y0; 1, v0_y; 2, a_y / two ]
+          ; v_x = Formula.of_alist_exn Exprs.[ 0, v0_x; 1, a_x ]
+          ; v_y = Formula.of_alist_exn Exprs.[ 0, v0_y; 1, a_y ]
+          ; after = rules1
+          ; name = "rules1 - 0"
+          }
+        ; { interval = `PosInfinity Exprs.(vector_length v0_vec / vector_length a_vec)
+          ; x =
+              Formula.of_alist_exn
+                Exprs.
+                  [ ( 0
+                    , x0
+                      + (v0_x * vector_length v0_vec / vector_length a_vec)
+                      + (a_x
+                        * sqr (vector_length v0_vec)
+                        / (two * sqr (vector_length a_vec))) )
+                  ]
+          ; y =
+              Formula.of_alist_exn
+                Exprs.
+                  [ ( 0
+                    , y0
+                      + (v0_y * vector_length v0_vec / vector_length a_vec)
+                      + (a_y
+                        * sqr (vector_length v0_vec)
+                        / (two * sqr (vector_length a_vec))) )
+                  ]
+          ; v_x = Formula.of_alist_exn Exprs.[ 0, zero ]
+          ; v_y = Formula.of_alist_exn Exprs.[ 0, zero ]
+          ; after = rules0
+          ; name = "rules1 - 1"
+          }
+        ]
+
+      and rules0 =
+        [ { interval = `PosInfinity Exprs.zero
+          ; x = Formula.of_alist_exn Exprs.[ 0, x0 ]
+          ; y = Formula.of_alist_exn Exprs.[ 0, y0 ]
+          ; v_x = Formula.of_alist_exn Exprs.[ 0, zero ]
+          ; v_y = Formula.of_alist_exn Exprs.[ 0, zero ]
+          ; after = rules0
+          ; name = "rules0 - 0"
+          }
+        ]
+      ;;
+
+      let rules1_0, rules1_1, rules0_0 =
+        match rules1, rules0 with
+        | [ rules1_0; rules1_1 ], [ rules0_0 ] -> rules1_0, rules1_1, rules0_0
+        | _ -> assert false
+      ;;
 
       let sexp_of_t { name; _ } = Sexp.Atom name
+
+      let t_of_sexp = function
+        | Sexp.Atom "rules1 - 0" -> rules1_0
+        | Sexp.Atom "rules1 - 1" -> rules1_1
+        | Sexp.Atom "rules0 - 0" -> rules0_0
+        | _ -> assert false
+      ;;
     end
 
     type t =
@@ -155,18 +245,20 @@ module Make (N : Module_types.Number) = struct
           body.values
           |> Values.update_scalar ~var:`x0 ~value:x
           |> Values.update_scalar ~var:`y0 ~value:y
-          |> Values.update_vector ~var:`v0 ~value:(v_x, v_y)
+          |> Values.update_vector ~var_x:`v0_x ~var_y:`v0_y ~value:(v_x, v_y)
       ; rules
       }
     ;;
 
     let update_v0 body ~v ~rules =
-      { body with values = body.values |> Values.update_vector ~var:`v0 ~value:v; rules }
+      { body with
+        values = body.values |> Values.update_vector ~var_x:`v0_x ~var_y:`v0_y ~value:v
+      ; rules
+      }
     ;;
 
-    let update body ~var ~value =
-      { body with values = body.values |> Values.update_vector ~var ~value }
-    ;;
+    (* let update body ~var ~value = { body with values = body.values |>
+       Values.update_vector ~var ~value } ;; *)
   end
 
   module Point = struct
@@ -197,66 +289,6 @@ module Make (N : Module_types.Number) = struct
   end
 
   module CollisionDetection = struct
-    let b2 ~rules1 ~rules2 ~r =
-      Sequence.cartesian_product (Sequence.of_list rules1) (Sequence.of_list rules2)
-      |> Sequence.map ~f:(fun (a, b) ->
-             let open Formula.Syntax in
-             let x_1 = scope a.Figure2.Rule.x ~scope:1 in
-             let x_2 = scope b.Figure2.Rule.x ~scope:2 in
-             let y_1 = scope a.y ~scope:1 in
-             let y_2 = scope b.y ~scope:2 in
-             let r_1 = scope r ~scope:1 in
-             let r_2 = scope r ~scope:2 in
-             let f = sqr (x_2 - x_1) + sqr (y_2 - y_1) - sqr (r_1 + r_2) in
-             a.interval, b.interval, f)
-    ;;
-
-    let b3 p ~values1 ~values2 ~global ~eps =
-      let inter values =
-        let calc v =
-          let r =
-            Expr.calc
-              ~values
-              ~scoped_values:(function
-                | s when s = global_scope -> global
-                | _ -> assert false)
-              (module N)
-              v
-          in
-          assert (N.is_finite r);
-          r
-        in
-        function
-        | `Interval (l, r) -> `Interval (calc l, calc r)
-        | `PosInfinity l -> `PosInfinity (calc l)
-      in
-      Sequence.map p ~f:(fun (ai, bi, f) ->
-          ( inter values1 ai
-          , inter values2 bi
-          , Formula.to_polynomial f ~eps ~values:global ~scoped_values:(function
-                | s when s = global_scope -> global
-                | 1 -> values1
-                | 2 -> values2
-                | _ -> assert false) ))
-    ;;
-
-    let b4 p ~eps =
-      let is_in_interval n = function
-        | `Interval (l, r) -> N.(l <= n && n < r)
-        | `PosInfinity l -> N.(l <= n)
-      in
-      Sequence.filter_map p ~f:(fun (ai, bi, p) ->
-          let roots = Solver.PolynomialEquation.roots p ~eps in
-          match
-            roots
-            |> List.filter ~f:(fun root ->
-                   is_in_interval root ai && is_in_interval root bi)
-          with
-          | [] -> None
-          | l -> Some (Sequence.of_list l))
-      |> Sequence.concat
-    ;;
-
     type extra =
       { id1 : Figure2.Id.t
       ; id2 : Figure2.Id.t
@@ -278,9 +310,7 @@ module Make (N : Module_types.Number) = struct
         let calc v =
           Expr.calc
             ~values:(Values.to_function values)
-            ~scoped_values:(function
-              | s when s = global_scope -> Values.to_function global
-              | _ -> assert false)
+            ~scoped_values:(Values.global_to_scoped global)
             (module N)
             v
         in
@@ -357,31 +387,6 @@ module Make (N : Module_types.Number) = struct
       let x2 = Values.get_scalar_exn values2 ~var:`x0 in
       let y2 = Values.get_scalar_exn values2 ~var:`y0 in
       distance ~x1 ~y1 ~x2 ~y2
-    ;;
-
-    let collisions ~eps ~global_values (bodies : (_ * Figure2.t) Sequence.t) ~r =
-      Sequence.cartesian_product bodies bodies
-      |> Sequence.filter_map ~f:(fun ((id1, f1), (id2, f2)) ->
-             let r1 = Values.get_scalar_exn f1.values ~var:`r in
-             let r2 = Values.get_scalar_exn f2.values ~var:`r in
-             let distance = distance_bentween_bodies f1.values f2.values in
-             if N.(r1 + r2 + eps < distance)
-             then
-               Some
-                 ( id1
-                 , id2
-                 , let p2 = b2 ~rules1:f1.rules ~rules2:f2.rules ~r in
-                   let p3 =
-                     b3
-                       p2
-                       ~values1:(Values.to_function f1.values)
-                       ~values2:(Values.to_function f2.values)
-                       ~global:global_values
-                       ~eps
-                   in
-                   let p4 = b4 p3 ~eps in
-                   p4 )
-             else None)
     ;;
 
     let collisions_extra ~eps ~global_values (bodies : (_ * Figure2.t) Sequence.t) ~r ~a =
@@ -467,8 +472,8 @@ module Make (N : Module_types.Number) = struct
     ;;
 
     let calculate_new_v values1 values2 ~eps =
-      let v1 = Values.get_vector_exn values1 ~var:`v0 in
-      let v2 = Values.get_vector_exn values2 ~var:`v0 in
+      let v1 = Values.get_vector_exn values1 ~var_x:`v0_x ~var_y:`v0_y in
+      let v2 = Values.get_vector_exn values2 ~var_x:`v0_x ~var_y:`v0_y in
       let m1 = Values.get_scalar_exn values1 ~var:`m in
       let m2 = Values.get_scalar_exn values2 ~var:`m in
       let x1 = Values.get_scalar_exn values1 ~var:`x0 in
@@ -477,69 +482,6 @@ module Make (N : Module_types.Number) = struct
       let y2 = Values.get_scalar_exn values2 ~var:`y0 in
       collision_body ~v1 ~v2 ~m1 ~m2 ~x1 ~y1 ~x2 ~y2 ~eps
     ;;
-  end
-
-  module Exprs = struct
-    open Expr.Syntax
-
-    let g = scope ~scope:global_scope (fst @@ scalar_var `g)
-    let mu, _ = scalar_var `mu
-    let v0_vec, v0_vec_name = vector_var `v0
-
-    let a_vec =
-      let f = mu * g in
-      -vector_unit v0_vec * vector_of_scalar f f
-    ;;
-
-    let a_x = vector_x a_vec
-    let a_y = vector_y a_vec
-    let v0_x = vector_x v0_vec
-    let v0_y = vector_y v0_vec
-    let x0, x0_name = scalar_var `x0
-    let y0, y0_name = scalar_var `y0
-    let r, r_name = scalar_var `r
-    let half = scalar_const N.(one / (one + one))
-    let zero = Expr.ScalarZero
-    let border_l1 = zero
-    let border_r1 = vector_length v0_vec / vector_length a_vec
-    let border_l2 = border_r1
-    let three = scalar_const N.(one + one + one)
-    let two = scalar_const N.(one + one)
-    let pi = scalar_const N.pi
-  end
-
-  module Formulas = struct
-    open Exprs
-    open Expr.Syntax
-
-    let x = Formula.of_alist_exn [ 0, x0; 1, v0_x; 2, a_x / two ]
-    let y = Formula.of_alist_exn [ 0, y0; 1, v0_y; 2, a_y / two ]
-    let v_x = Formula.of_alist_exn [ 0, v0_x; 1, a_x ]
-    let v_y = Formula.of_alist_exn [ 0, v0_y; 1, a_y ]
-
-    let x_after =
-      Formula.of_alist_exn
-        [ ( 0
-          , x0
-            + (v0_x * vector_length v0_vec / vector_length a_vec)
-            + (a_x * sqr (vector_length v0_vec) / (two * sqr (vector_length a_vec))) )
-        ]
-    ;;
-
-    let y_after =
-      Formula.of_alist_exn
-        [ ( 0
-          , y0
-            + (v0_y * vector_length v0_vec / vector_length a_vec)
-            + (a_y * sqr (vector_length v0_vec) / (two * sqr (vector_length a_vec))) )
-        ]
-    ;;
-
-    let x0 = Formula.of_alist_exn [ 0, x0 ]
-    let y0 = Formula.of_alist_exn [ 0, y0 ]
-    let v_x_after = Formula.of_alist_exn [ 0, zero ]
-    let v_y_after = Formula.of_alist_exn [ 0, zero ]
-    let r = Formula.of_alist_exn [ 0, r ]
   end
 
   module Scene = struct
@@ -618,38 +560,6 @@ module Make (N : Module_types.Number) = struct
       { time; figures = bodies; global_values; cause }
     ;;
 
-    let rec rules1 =
-      Figure2.Rule.
-        [ { interval = `Interval (Exprs.border_l1, Exprs.border_r1)
-          ; x = Formulas.x
-          ; y = Formulas.y
-          ; v_x = Formulas.v_x
-          ; v_y = Formulas.v_y
-          ; after = rules1
-          ; name = "rules1 - 0"
-          }
-        ; { interval = `PosInfinity Exprs.border_l2
-          ; x = Formulas.x_after
-          ; y = Formulas.y_after
-          ; v_x = Formulas.v_x_after
-          ; v_y = Formulas.v_y_after
-          ; after = rules0
-          ; name = "rules1 - 1"
-          }
-        ]
-
-    and rules0 =
-      [ { interval = `PosInfinity Exprs.border_l1
-        ; x = Formulas.x0
-        ; y = Formulas.y0
-        ; v_x = Formulas.v_x_after
-        ; v_y = Formulas.v_y_after
-        ; after = rules0
-        ; name = "rules0 - 0"
-        }
-      ]
-    ;;
-
     let add_figure figures ~id ~x0 ~y0 ~r ~mu ~m =
       Figures.add
         figures
@@ -659,21 +569,22 @@ module Make (N : Module_types.Number) = struct
             { id
             ; values =
                 Values.of_alist
-                  [ `x0, Expr.Scalar x0
-                  ; `y0, Expr.Scalar y0
-                  ; `v0, Expr.Vector (N.zero, N.zero)
-                  ; `r, Expr.Scalar r
-                  ; `mu, Expr.Scalar mu
-                  ; `m, Expr.Scalar m
+                  [ `x0, x0
+                  ; `y0, y0
+                  ; `v0_x, N.zero
+                  ; `v0_y, N.zero
+                  ; `r, r
+                  ; `mu, mu
+                  ; `m, m
                   ]
-            ; rules = rules0
+            ; rules = Rule.rules0
             }
     ;;
 
     let init ~g =
       { time = N.zero
       ; figures = Figures.empty
-      ; global_values = Values.of_alist [ `g, Expr.Scalar g ]
+      ; global_values = Values.of_alist [ `g, g ]
       ; cause = [ Init ]
       }
     ;;
@@ -759,8 +670,8 @@ module Make (N : Module_types.Number) = struct
           |> CollisionDetection.collisions_extra
                ~eps
                ~global_values:scene.global_values
-               ~r:Formulas.r
-               ~a:Exprs.a_vec
+               ~r:(Formula.of_alist_exn Figure2.Rule.Exprs.[ 0, r ])
+               ~a:Figure2.Rule.Exprs.a_vec
           |> Sequence.filter_map ~f:(fun a ->
                  match
                    List.min_elt a.CollisionDetection.roots_filtered ~compare:N.compare
@@ -780,10 +691,10 @@ module Make (N : Module_types.Number) = struct
             Scene.Figures.update_by_id
               q
               ~id:id1
-              ~body:(Figure2.update_v0 body1 ~v:v1n ~rules:Scene.rules1)
+              ~body:(Figure2.update_v0 body1 ~v:v1n ~rules:Figure2.Rule.rules1)
             |> Scene.Figures.update_by_id
                  ~id:id2
-                 ~body:(Figure2.update_v0 body2 ~v:v2n ~rules:Scene.rules1)
+                 ~body:(Figure2.update_v0 body2 ~v:v2n ~rules:Figure2.Rule.rules1)
           in
           let new_time = N.(scene.time + t) in
           let s =
@@ -802,8 +713,10 @@ module Make (N : Module_types.Number) = struct
                     ; xy2 =
                         ( Values.get_scalar_exn body2.values ~var:`x0
                         , Values.get_scalar_exn body2.values ~var:`y0 )
-                    ; v1_before = Values.get_vector_exn body1.values ~var:`v0
-                    ; v2_before = Values.get_vector_exn body2.values ~var:`v0
+                    ; v1_before =
+                        Values.get_vector_exn body1.values ~var_x:`v0_x ~var_y:`v0_y
+                    ; v2_before =
+                        Values.get_vector_exn body2.values ~var_x:`v0_x ~var_y:`v0_y
                     ; v1 = v1n
                     ; v2 = v2n
                     ; extra = r
@@ -859,7 +772,7 @@ module Make (N : Module_types.Number) = struct
             ~time
         | GiveVelocity { id; v0 } ->
           let body = Scene.Figures.get_by_id s.figures ~id in
-          let body = Figure2.update_v0 body ~v:v0 ~rules:Scene.rules1 in
+          let body = Figure2.update_v0 body ~v:v0 ~rules:Figure2.Rule.rules1 in
           Scene.update
             s
             ~bodies:(Scene.Figures.update_by_id s.figures ~id:body.id ~body)

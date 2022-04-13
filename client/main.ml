@@ -8,7 +8,8 @@ let eps = 1e-5
 
 let state () =
   let init =
-    [%sexp (SF.Polynomial.of_list [ 3, 1.; 2, -2.; 1, -1.; 0, 2. ] ~eps : SF.Polynomial.t)]
+    [%sexp
+      (SF.Polynomial.of_list [ 3, 1.; 2, -2.; 1, -1.; 0, 2. ] ~eps : SF.Polynomial.t)]
     |> Sexp.to_string_hum
   in
   let%sub state, set_state = Bonsai.state [%here] (module String) ~default_model:init in
@@ -76,9 +77,9 @@ module ExprDemo = struct
       Bonsai.state
         [%here]
         (module struct
-          type t = (string * Expr.value) list [@@deriving sexp, equal]
+          type t = (string * float) list [@@deriving sexp, equal]
         end)
-        ~default_model:[ "x", Scalar 1.; "v", Vector (1., 4.) ]
+        ~default_model:[ "x", 1.; "v_x", 1.; "v_y", 4. ]
     in
     let%sub exprs, set_exprs =
       Bonsai.state
@@ -88,14 +89,7 @@ module ExprDemo = struct
 
           let equal = List.equal Expr.equal
         end)
-        ~default_model:
-          Expr.Syntax.
-            [ (let v, _ = scalar_var "x" in
-               v)
-            ; vector_y
-                (let v, _ = vector_var "v" in
-                 v)
-            ]
+        ~default_model:Expr.Syntax.[ scalar_var "x"; vector_y (vector_var "v_x" "v_y") ]
     in
     let%arr values = values
     and set_values = set_values
@@ -110,10 +104,10 @@ module ExprDemo = struct
                        set_values
                          (List.Assoc.t_of_sexp
                             String.t_of_sexp
-                            Expr.value_of_sexp
+                            float_of_sexp
                             (Sexp.of_string s)))
                  ; Attr.value_prop
-                     (Sexp.to_string_hum [%sexp (values : (string * Expr.value) list)])
+                     (Sexp.to_string_hum [%sexp (values : (string * float) list)])
                  ])
             []
         ; Node.textarea

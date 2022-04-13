@@ -6,16 +6,6 @@ module type S = sig
   type vector = scalar * scalar [@@deriving sexp, equal]
   type scope [@@deriving sexp, equal]
 
-  type value =
-    | Scalar of scalar
-    | Vector of vector
-  [@@deriving sexp, equal]
-
-  val scalar_exn : value -> scalar
-  val vector_exn : value -> vector
-
-  type values = key -> value
-
   type 'result t =
     | ScalarConst : scalar -> scalar t
     | VectorConst : vector -> vector t
@@ -23,7 +13,7 @@ module type S = sig
     | ScalarPosInf : scalar t
     | ScalarZero : scalar t
     | ScalarVar : key -> scalar t
-    | VectorVar : key -> vector t
+    | VectorVar : key * key -> vector t
     | Sum : 'a t * 'a t -> 'a t
     | SumList : 'a t list -> 'a t
     | Sub : 'a t * 'a t -> 'a t
@@ -47,8 +37,8 @@ module type S = sig
   type t_vector = vector t [@@deriving sexp, equal]
 
   val calc
-    :  values:values
-    -> scoped_values:(scope -> values)
+    :  values:(key -> scalar)
+    -> scoped_values:(scope -> key -> scalar)
     -> (module Module_types.BasicOps with type t = 'result)
     -> 'result t
     -> 'result
@@ -56,8 +46,8 @@ module type S = sig
   module VectorOps : Module_types.BasicOps with type t = vector
 
   module Syntax : sig
-    val scalar_var : key -> scalar t * key
-    val vector_var : key -> vector t * key
+    val scalar_var : key -> scalar t
+    val vector_var : key -> key -> vector t
     val scalar_const : scalar -> scalar t
     val vector_const : vector -> vector t
     val ( + ) : 'a t -> 'a t -> 'a t
@@ -88,23 +78,6 @@ struct
   type vector = N.t * N.t [@@deriving sexp, equal]
   type scope = Scope.t [@@deriving sexp, equal]
 
-  type value =
-    | Scalar of scalar
-    | Vector of vector
-  [@@deriving sexp, equal]
-
-  let scalar_exn = function
-    | Scalar s -> s
-    | Vector v -> Error.raise_s [%message "Expected scalar, got vector" ~v:(v : vector)]
-  ;;
-
-  let vector_exn = function
-    | Scalar s -> Error.raise_s [%message "Expected vector, got scalar" ~s:(s : scalar)]
-    | Vector v -> v
-  ;;
-
-  type values = key -> value
-
   type 'result t =
     | ScalarConst : scalar -> scalar t
     | VectorConst : vector -> vector t
@@ -112,7 +85,7 @@ struct
     | ScalarPosInf : scalar t
     | ScalarZero : scalar t
     | ScalarVar : key -> scalar t
-    | VectorVar : key -> vector t
+    | VectorVar : key * key -> vector t
     | Sum : 'a t * 'a t -> 'a t
     | SumList : 'a t list -> 'a t
     | Sub : 'a t * 'a t -> 'a t
@@ -136,7 +109,8 @@ struct
     | VectorConst (ax, ay), VectorConst (bx, by) -> N.(ax = bx) && N.(ay = by)
     | ScalarNegInf, ScalarNegInf | ScalarPosInf, ScalarPosInf | ScalarZero, ScalarZero ->
       true
-    | ScalarVar a, ScalarVar b | VectorVar a, VectorVar b -> Key.(equal a b)
+    | ScalarVar a, ScalarVar b -> Key.(equal a b)
+    | VectorVar (a_x, a_y), VectorVar (b_x, b_y) -> Key.(equal a_x b_x && equal a_y b_y)
     | Sum (al, ar), Sum (bl, br)
     | Sub (al, ar), Sub (bl, br)
     | Mult (al, ar), Mult (bl, br)
@@ -187,7 +161,7 @@ struct
 
   and t_vector_of_sexp = function
     | Sexp.List [ Atom "VectorConst"; v ] -> VectorConst (vector_of_sexp v)
-    | Sexp.List [ Atom "VectorVar"; v ] -> VectorVar (key_of_sexp v)
+    | Sexp.List [ Atom "VectorVar"; x; y ] -> VectorVar (key_of_sexp x, key_of_sexp y)
     | Sexp.List [ Atom "Sum"; a; b ] -> Sum (t_vector_of_sexp a, t_vector_of_sexp b)
     | Sexp.List [ Atom "SumList"; l ] -> SumList (List.t_of_sexp t_vector_of_sexp l)
     | Sexp.List [ Atom "Sub"; a; b ] -> Sub (t_vector_of_sexp a, t_vector_of_sexp b)
@@ -209,7 +183,7 @@ struct
     | ScalarPosInf -> List [ Atom "ScalarPosInf" ]
     | ScalarZero -> List [ Atom "ScalarZero" ]
     | ScalarVar s -> List [ Atom "ScalarVar"; [%sexp (s : key)] ]
-    | VectorVar v -> List [ Atom "VectorVar"; [%sexp (v : key)] ]
+    | VectorVar (x, y) -> List [ Atom "VectorVar"; [%sexp (x : key)]; [%sexp (y : key)] ]
     | Sum (a, b) -> List [ Atom "Sum"; sexp_of_t a; sexp_of_t b ]
     | SumList l -> List [ Atom "SumList"; List (List.map l ~f:sexp_of_t) ]
     | Sub (a, b) -> List [ Atom "Sub"; sexp_of_t a; sexp_of_t b ]
@@ -250,8 +224,8 @@ struct
 
   let rec calc
       : type result.
-        values:values
-        -> scoped_values:(Scope.t -> values)
+        values:(key -> N.t)
+        -> scoped_values:(Scope.t -> key -> N.t)
         -> (module Module_types.BasicOps with type t = result)
         -> result t
         -> result
@@ -262,8 +236,8 @@ struct
     | ScalarNegInf -> N.neg_infinity
     | ScalarPosInf -> N.infinity
     | ScalarZero -> N.zero
-    | ScalarVar name -> values name |> scalar_exn
-    | VectorVar name -> values name |> vector_exn
+    | ScalarVar name -> values name
+    | VectorVar (name_x, name_y) -> values name_x, values name_y
     | Sum (a, b) ->
       let calc = calc ~values ~scoped_values (module Ops) in
       let ca = calc a in
@@ -326,8 +300,8 @@ struct
  ;;
 
   module Syntax = struct
-    let scalar_var s = ScalarVar s, s
-    let vector_var v = VectorVar v, v
+    let scalar_var s = ScalarVar s
+    let vector_var x y = VectorVar (x, y)
     let scalar_const s = ScalarConst s
     let vector_const v = VectorConst v
     let ( + ) a b = Sum (a, b)

@@ -111,11 +111,18 @@ let scene =
         ret)
   in
   let%sub time, update_time = Bonsai.state [%here] (module Float) ~default_model:0. in
+  let%sub is_pause, set_is_pause =
+    Bonsai.state [%here] (module Bool) ~default_model:false
+  in
+  let%sub a =
+    let%arr is_pause = is_pause in
+    fun t -> t +. if is_pause then 0. else frame_time60
+  in
   let%sub () =
     Bonsai.Clock.every
       [%here]
       (Time_ns.Span.of_sec frame_time60)
-      (update_time <*> (time >>| fun t -> t +. frame_time60))
+      (update_time <*> (a <*> time))
   in
   let%sub last_scene =
     let%arr state = state
@@ -136,7 +143,9 @@ let scene =
   let%sub frame = scene_frame ~scene:last_scene ~time ~on_click:cl in
   let%arr time = time
   and frame = frame
-  and dispatch = dispatch in
+  and dispatch = dispatch
+  and is_pause = is_pause
+  and set_is_pause = set_is_pause in
   Vdom.(
     Node.div
       [ Node.text (Float.to_string time)
@@ -189,6 +198,9 @@ let scene =
                  }
                  |> dispatch))
           [ Node.text "add " ]
+      ; Node.button
+          ~attr:(Attr.on_click (fun _ -> set_is_pause (not is_pause)))
+          [ Node.text (if is_pause then "unpause" else "pause") ]
       ; Node.br ()
       ; frame
       ])

@@ -16,12 +16,12 @@ let%test_module "" =
           (Nothing)
           (Float)
       in
-      let x, _ = Expr.Syntax.scalar_var `X in
-      let y, _ = Expr.Syntax.scalar_var `Y in
+      let x = Expr.Syntax.scalar_var `X in
+      let y = Expr.Syntax.scalar_var `Y in
       let xy = Expr.Syntax.(((x * y) - x) / sqr y) in
       print_s [%sexp (xy : Expr.t)];
       [%expect
-      {|
+        {|
         (Div (Sub (Mult (ScalarVar X) (ScalarVar Y)) (ScalarVar X))
          (Sqr (ScalarVar Y)))|}];
       (* ((-11 * 2) - -11) / sqr 2 = -2.75 *)
@@ -29,8 +29,8 @@ let%test_module "" =
         [%sexp
           (Expr.calc
              ~values:(function
-               | `X -> Scalar (-11.)
-               | `Y -> Scalar 2.)
+               | `X -> -11.
+               | `Y -> 2.)
              ~scoped_values:never_returns
              (module Float)
              xy
@@ -42,8 +42,8 @@ let%test_module "" =
         [%sexp
           (Expr.calc
              ~values:(function
-               | `X -> Scalar 12.
-               | `Y -> Scalar (-12.))
+               | `X -> 12.
+               | `Y -> -12.)
              ~scoped_values:never_returns
              (module Float)
              xy
@@ -57,16 +57,18 @@ let%test_module "" =
         Expr.Make
           (struct
             type t =
-              [ `X
-              | `Y
+              [ `X_x
+              | `X_y
+              | `Y_x
+              | `Y_y
               ]
             [@@deriving sexp, equal]
           end)
           (Nothing)
           (Float)
       in
-      let x, _ = Expr.Syntax.vector_var `X in
-      let y, _ = Expr.Syntax.vector_var `Y in
+      let x = Expr.Syntax.vector_var `X_x `X_y in
+      let y = Expr.Syntax.vector_var `Y_x `Y_y in
       let xy = Expr.Syntax.(((x * y) - x) / sqr y) in
       print_s [%sexp (xy : Expr.t)];
       [%expect
@@ -77,8 +79,10 @@ let%test_module "" =
         [%sexp
           (Expr.calc
              ~values:(function
-               | `X -> Vector (-10., 10.)
-               | `Y -> Vector (2., -2.))
+               | `X_x -> -10.
+               | `X_y -> 10.
+               | `Y_x -> 2.
+               | `Y_y -> -2.)
              ~scoped_values:never_returns
              (module Expr.VectorOps)
              xy
@@ -89,8 +93,10 @@ let%test_module "" =
         [%sexp
           (Expr.calc
              ~values:(function
-               | `X -> Vector (12., -12.)
-               | `Y -> Vector (-12., 1.))
+               | `X_x -> 12.
+               | `X_y -> -12.
+               | `Y_x -> -12.
+               | `Y_y -> 1.)
              ~scoped_values:never_returns
              (module Expr.VectorOps)
              xy

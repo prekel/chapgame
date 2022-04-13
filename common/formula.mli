@@ -17,8 +17,8 @@ module Make
 
   val to_polynomial
     :  t
-    -> values:Expr.values
-    -> scoped_values:(Scope.t -> Expr.values)
+    -> values:(Key.t -> N.t)
+    -> scoped_values:(Scope.t -> Key.t -> N.t)
     -> eps:N.t
     -> Solver.Polynomial.t
 end
