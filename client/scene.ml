@@ -54,6 +54,8 @@ let scene_frame ~scene ~on_click ~time =
 ;;
 
 let frame_time60 = 1. /. 60.
+let to_prec a = a *. 1000.
+let of_prec a = a /. 1000.
 
 let scene =
   let%sub state, dispatch =
@@ -215,9 +217,18 @@ let scene =
           ~attr:
             (Attr.many
                [ Attr.type_ "range"
-               ; Attr.min (-25.)
-               ; Attr.max 25.
+               ; Attr.min (to_prec (-25.))
+               ; Attr.max (to_prec 25.)
                ; Attr.on_input (fun _ a ->
+                     try a |> Float.of_string |> of_prec |> set_speed with
+                     | _ -> Effect.Ignore)
+               ; Attr.value (Float.to_string speed)
+               ])
+          []
+      ; Node.input
+          ~attr:
+            (Attr.many
+               [ Attr.on_change (fun _ a ->
                      try a |> Float.of_string |> set_speed with
                      | _ -> Effect.Ignore)
                ; Attr.value (Float.to_string speed)
@@ -227,12 +238,21 @@ let scene =
           ~attr:
             (Attr.many
                [ Attr.type_ "range"
-               ; Attr.min 0.
-               ; Attr.max 100.
-               ; Attr.on_input (fun _ a ->
-                     try a |> Float.of_string |> set_time with
+               ; Attr.min (to_prec 0.)
+               ; Attr.max (to_prec 100.)
+               ; Attr.on_change (fun _ a ->
+                     try a |> Float.of_string |> of_prec |> set_time with
                      | _ -> Effect.Ignore)
                ; Attr.value_prop (Float.to_string time)
+               ])
+          []
+      ; Node.input
+          ~attr:
+            (Attr.many
+               [ Attr.on_change (fun _ a ->
+                     try a |> Float.of_string |> set_time with
+                     | _ -> Effect.Ignore)
+               ; Attr.value (Float.to_string time)
                ])
           []
       ; Node.br ()
