@@ -330,10 +330,7 @@ module Make (N : Module_types.Number) = struct
         -> (N.t * Figure2.Id.t * Point.t) option
     end
   end = struct
-    let distance ~x1 ~y1 ~x2 ~y2 =
-      let sqr a = N.(a * a) in
-      N.(sqrt (sqr (x2 - x1) + sqr (y2 - y1)))
-    ;;
+    let distance ~x1 ~y1 ~x2 ~y2 = N.(sqrt (square (x2 - x1) + square (y2 - y1)))
 
     let inter values ~global =
       let calc v =
@@ -540,7 +537,6 @@ module Make (N : Module_types.Number) = struct
     let collision ~v1 ~v2 ~x1 ~x2 ~m1 ~m2 =
       let module V = Vector in
       let two = N.(one + one) in
-      let sqr a = N.(a * a) in
       let q1 = v1 in
       let q2 =
         N.(
@@ -550,7 +546,7 @@ module Make (N : Module_types.Number) = struct
           then zero
           else two * m2 / (m1 + m2))
       in
-      let q3 = N.(V.(dot (v1 - v2) (x1 - x2)) / sqr V.(len (x2 - x1))) in
+      let q3 = N.(V.(dot (v1 - v2) (x1 - x2)) / square V.(len (x2 - x1))) in
       let q4 = V.(x1 - x2) in
       V.(q1 - (N.(q2 * q3) ^* q4))
     ;;

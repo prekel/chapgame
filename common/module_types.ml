@@ -31,6 +31,7 @@ module type Number = sig
   val sqrt : t -> t
   val pi : t
   val is_finite : t -> bool
+  val square : t -> t
 
   val to_string_hum
     :  ?delimiter:char
