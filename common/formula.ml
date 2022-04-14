@@ -30,14 +30,14 @@ module Make
     let ( ~- ) = Map.map ~f:(fun b -> Expr.Neg b)
     let ( - ) a b = a + -b
 
-    let sqr a =
-      Map.to_sequence a
-      |> Sequence.cartesian_product (Map.to_sequence a)
+    let ( * ) a b =
+      Sequence.cartesian_product (Map.to_sequence a) (Map.to_sequence b)
       |> Sequence.map ~f:(fun ((d1, c1), (d2, c2)) -> Int.(d1 + d2), Expr.Mult (c1, c2))
       |> Map.of_sequence_multi (module Int)
       |> Map.map ~f:(fun a -> Expr.SumList a)
     ;;
 
+    let sqr a = a * a
     let scope m ~scope = Map.map m ~f:(fun v -> Expr.Scope (scope, v))
   end
 

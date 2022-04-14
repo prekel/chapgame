@@ -57,6 +57,21 @@ let scene_frame ~scene ~on_click ~time =
                   Svg.Node.circle
                     ~attr:(Attr.many [ Svg.Attr.cx x; Svg.Attr.cy y; Svg.Attr.r 1. ])
                     []))
+      |> Sequence.append
+           (scene.lines
+           |> S.Lines.to_sequence
+           |> Sequence.map ~f:(fun { a; b; c; _ } ->
+                  Svg.Node.line
+                    ~attr:
+                      (Attr.many
+                         Float.
+                           [ Svg.Attr.x1 0.
+                           ; Svg.Attr.y1 (-c / b)
+                           ; Svg.Attr.x2 1280.
+                           ; Svg.Attr.y2 (-(c + (1280. * a)) / b)
+                           ; Svg.Attr.stroke (`Name "black")
+                           ])
+                    []))
       |> Sequence.to_list))
 ;;
 
@@ -116,6 +131,24 @@ let scene =
              ~eps
         |> S.Engine.recv
              ~action:{ time = 0.; action = S.Action.AddPoint { x = 350.; y = 350. } }
+             ~eps
+        |> S.Engine.recv
+             ~action:
+               { time = 0.
+               ; action = S.Action.AddLine { a = 1.; b = -2.; c = -100.; kind = `Line }
+               }
+             ~eps
+        |> S.Engine.recv
+             ~action:
+               { time = 0.
+               ; action = S.Action.AddLine { a = 1.; b = -2.; c = 400.; kind = `Line }
+               }
+             ~eps
+        |> S.Engine.recv
+             ~action:
+               { time = 0.
+               ; action = S.Action.AddLine { a = -1.; b = -2.; c = 400.; kind = `Line }
+               }
              ~eps)
       ~apply_action:(fun ~inject:_ ~schedule_event:_ model action ->
         let ret = S.Engine.recv model ~action ~eps in

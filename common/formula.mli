@@ -10,7 +10,9 @@ module Make
 
   module Syntax : sig
     val ( + ) : t -> t -> t
+    val ( ~- ) : t -> t
     val ( - ) : t -> t -> t
+    val ( * ) : t -> t -> t
     val sqr : t -> t
     val scope : t -> scope:Scope.t -> t
   end

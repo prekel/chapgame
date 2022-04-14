@@ -12,6 +12,8 @@ module Make (N : Module_types.Number) = struct
         | `g
         | `mu
         | `m
+        | `with_point of [ `x | `y ]
+        | `with_line of [ `a | `b | `c | `a2b2 ]
         ] = struct
     module T = struct
       type t =
@@ -23,6 +25,8 @@ module Make (N : Module_types.Number) = struct
         | `g
         | `mu
         | `m
+        | `with_point of [ `x | `y ]
+        | `with_line of [ `a | `b | `c | `a2b2 ]
         ]
       [@@deriving bin_io, hash, compare, sexp]
 
@@ -314,7 +318,7 @@ module Make (N : Module_types.Number) = struct
       val collisions_extra
         :  eps:N.t
         -> global_values:Values.t
-        -> (int * Figure2.t) Sequence.t
+        -> (Figure2.Id.t * Figure2.t) Sequence.t
         -> r:Formula.t
         -> a:Expr.vector Expr.t
         -> extra Sequence.t
@@ -328,6 +332,16 @@ module Make (N : Module_types.Number) = struct
         -> points:Point.t Sequence.t
         -> r:Formula.t
         -> (N.t * Figure2.Id.t * Point.t) option
+    end
+
+    module WithLine : sig
+      val first_collision
+        :  eps:N.t
+        -> global:Values.t
+        -> (Figure2.Id.t * Figure2.t) Sequence.t
+        -> lines:LineSegmentRay.t Sequence.t
+        -> r:Formula.t
+        -> (N.t * Figure2.Id.t * LineSegmentRay.t) option
     end
   end = struct
     let distance ~x1 ~y1 ~x2 ~y2 = N.(sqrt (square (x2 - x1) + square (y2 - y1)))
@@ -457,7 +471,7 @@ module Make (N : Module_types.Number) = struct
     end
 
     module WithPoint = struct
-      let distance_bentween_body_and_point
+      let distance_beetween_body_and_point
           ~(body : Figure2.t)
           ~point:Point.{ x = x2; y = y2 }
         =
@@ -474,10 +488,14 @@ module Make (N : Module_types.Number) = struct
                let x_1 = scope rule.x ~scope:1 in
                let y_1 = scope rule.y ~scope:1 in
                let x_2 =
-                 x |> Expr.Syntax.scalar_const |> Formula.singleton_zero |> scope ~scope:2
+                 Expr.Syntax.scalar_var (`with_point `x)
+                 |> Formula.singleton_zero
+                 |> scope ~scope:2
                in
                let y_2 =
-                 y |> Expr.Syntax.scalar_const |> Formula.singleton_zero |> scope ~scope:2
+                 Expr.Syntax.scalar_var (`with_point `y)
+                 |> Formula.singleton_zero
+                 |> scope ~scope:2
                in
                let r_1 = scope r ~scope:1 in
                let i = inter values rule.interval ~global in
@@ -488,7 +506,13 @@ module Make (N : Module_types.Number) = struct
                     ~scoped_values:(function
                       | s when s = global_scope -> Values.to_function global
                       | 1 -> Values.to_function values
-                      | 2 -> Values.to_function values
+                      | 2 ->
+                        begin
+                          function
+                          | `with_point `x -> x
+                          | `with_point `y -> y
+                          | _ -> assert false
+                        end
                       | _ -> assert false)
                |> Solver.PolynomialEquation.roots ~eps
                |> List.filter ~f:(fun root -> is_in_interval root i)
@@ -499,7 +523,7 @@ module Make (N : Module_types.Number) = struct
       let first_collision ~eps ~global bodies ~points ~r =
         Sequence.cartesian_product bodies points
         |> Sequence.filter_map ~f:(fun ((id, body), point) ->
-               let distance = distance_bentween_body_and_point ~body ~point in
+               let distance = distance_beetween_body_and_point ~body ~point in
                let radius = Values.get_scalar_exn body.values ~var:`r in
                if N.(radius + eps < distance)
                then (
@@ -507,6 +531,95 @@ module Make (N : Module_types.Number) = struct
                    collision ~rules:body.rules ~point ~r ~values:body.values ~global ~eps
                  in
                  ret, id, point)
+               else None)
+        |> Sequence.min_elt ~compare:(fun (a, _, _) (b, _, _) -> N.compare a b)
+      ;;
+    end
+
+    module WithLine = struct
+      let distance_beetween_body_and_line
+          ~(body : Figure2.t)
+          ~line:LineSegmentRay.{ a; b; c; _ }
+        =
+        let x = Values.get_scalar_exn body.values ~var:`x0 in
+        let y = Values.get_scalar_exn body.values ~var:`y0 in
+        N.(abs ((a * x) + (b * y) + c) / N.sqrt (square a + square b))
+      ;;
+
+      let collision ~rules ~(line : LineSegmentRay.t) ~r ~values ~global ~eps =
+        rules
+        |> Sequence.of_list
+        |> Sequence.filter_map ~f:(fun (rule : Figure2.Rule.t) ->
+               let open Formula.Syntax in
+               let x = scope rule.x ~scope:1 in
+               let y = scope rule.y ~scope:1 in
+               let r = scope r ~scope:1 in
+               let a =
+                 Expr.Syntax.scalar_var (`with_line `a)
+                 |> Formula.singleton_zero
+                 |> scope ~scope:2
+               in
+               let b =
+                 Expr.Syntax.scalar_var (`with_line `b)
+                 |> Formula.singleton_zero
+                 |> scope ~scope:2
+               in
+               let c =
+                 Expr.Syntax.scalar_var (`with_line `c)
+                 |> Formula.singleton_zero
+                 |> scope ~scope:2
+               in
+               let a2b2 =
+                 Expr.Syntax.scalar_var (`with_line `a2b2)
+                 |> Formula.singleton_zero
+                 |> scope ~scope:2
+               in
+               let i = inter values rule.interval ~global in
+               let f1 = (a * x) + (b * y) + c - (r * a2b2) in
+               let f2 = (a * x) + (b * y) + c + (r * a2b2) in
+               let a2b2 = N.(sqrt (square line.a + square line.b)) in
+               let to_polynomial =
+                 Formula.to_polynomial
+                   ~eps
+                   ~values:(Values.to_function global)
+                   ~scoped_values:(function
+                     | s when s = global_scope -> Values.to_function global
+                     | 1 -> Values.to_function values
+                     | 2 ->
+                       begin
+                         function
+                         | `with_line `a -> line.a
+                         | `with_line `b -> line.b
+                         | `with_line `c -> line.c
+                         | `with_line `a2b2 -> a2b2
+                         | _ -> assert false
+                       end
+                     | _ -> assert false)
+               in
+               let abc = (a * x) + (b * y) + c |> to_polynomial in
+               let c f ~cond =
+                 f
+                 |> to_polynomial
+                 |> Solver.PolynomialEquation.roots ~eps
+                 |> List.filter ~f:(fun root ->
+                        is_in_interval root i && cond (Solver.Polynomial.calc abc ~x:root))
+               in
+               c f1 ~cond:N.(fun a -> a >= zero) @ c f2 ~cond:N.(fun a -> a < zero)
+               |> List.min_elt ~compare:N.compare)
+        |> Sequence.hd
+      ;;
+
+      let first_collision ~eps ~global bodies ~lines ~r =
+        Sequence.cartesian_product bodies lines
+        |> Sequence.filter_map ~f:(fun ((id, (body : Figure2.t)), line) ->
+               let distance = distance_beetween_body_and_line ~body ~line in
+               let radius = Values.get_scalar_exn body.values ~var:`r in
+               if N.(radius + eps < distance)
+               then (
+                 let%map.Option ret =
+                   collision ~rules:body.rules ~line ~r ~values:body.values ~global ~eps
+                 in
+                 ret, id, line)
                else None)
         |> Sequence.min_elt ~compare:(fun (a, _, _) (b, _, _) -> N.compare a b)
       ;;
@@ -596,6 +709,18 @@ module Make (N : Module_types.Number) = struct
       let y1 = Values.get_scalar_exn body.values ~var:`y0 in
       fst @@ collision_body ~v1 ~v2:N.(zero, zero) ~m1 ~m2:N.infinity ~x1 ~y1 ~x2 ~y2 ~eps
     ;;
+
+    let calculate_new_v_with_line ~body ~line:LineSegmentRay.{ a; b; c; _ } ~eps =
+      let v1 = Values.get_vector_exn body.Figure2.values ~var_x:`v0_x ~var_y:`v0_y in
+      let m1 = Values.get_scalar_exn body.values ~var:`m in
+      let x1 = Values.get_scalar_exn body.values ~var:`x0 in
+      let y1 = Values.get_scalar_exn body.values ~var:`y0 in
+      let v2 = N.(zero, zero) in
+      let m2 = N.infinity in
+      let x2 = N.(x1 - (a * c / (square a + square b))) in
+      let y2 = N.(y1 - (b * c / (square a + square b))) in
+      fst @@ collision_body ~v1 ~v2 ~m1 ~m2 ~x1 ~y1 ~x2 ~y2 ~eps
+    ;;
   end
 
   module Scene = struct
@@ -617,15 +742,17 @@ module Make (N : Module_types.Number) = struct
             { id : Figure2.Id.t
             ; point : Point.t
             }
+        | CollisionWithLine of
+            { id : Figure2.Id.t
+            ; line : LineSegmentRay.t
+            }
         | VelocityGiven of
             { id : Figure2.Id.t
             ; v : N.t * N.t
             }
         | BodyAdded of { id : Figure2.Id.t }
-        | PointAdded of
-            { x : N.t
-            ; y : N.t
-            }
+        | PointAdded of Point.t
+        | LineAdded of LineSegmentRay.t
         | Empty
       [@@deriving sexp, equal]
     end
@@ -708,10 +835,8 @@ module Make (N : Module_types.Number) = struct
           ; mu : N.t
           ; m : N.t
           }
-      | AddPoint of
-          { x : N.t
-          ; y : N.t
-          }
+      | AddPoint of Point.t
+      | AddLine of LineSegmentRay.t
       | GiveVelocity of
           { id : Figure2.Id.t
           ; v0 : N.t * N.t
@@ -810,6 +935,14 @@ module Make (N : Module_types.Number) = struct
             ~r:(Formula.of_alist_exn Figure2.Rule.Exprs.[ 0, r ])
             (Scene.Figures.to_sequence scene.bodies)
         in
+        let with_line =
+          CollisionDetection.WithLine.first_collision
+            ~eps
+            ~global:scene.global_values
+            ~lines:(Lines.to_sequence scene.lines)
+            ~r:(Formula.of_alist_exn Figure2.Rule.Exprs.[ 0, r ])
+            (Scene.Figures.to_sequence scene.bodies)
+        in
         let coll r t ~id1 ~id2 =
           let q =
             Scene.Figures.calc scene.bodies ~t ~global_values:scene.global_values ~eps
@@ -879,16 +1012,38 @@ module Make (N : Module_types.Number) = struct
             ~points:scene.points
             ~lines:scene.lines
         in
-        let min_t =
-          match with_body, with_point with
-          | Some ((_, t1) as a), Some ((t2, _, _) as b) ->
-            if N.(t1 < t2) then `WithBody a else `WithPoint b
-          | Some a, None -> `WithBody a
-          | None, Some b -> `WithPoint b
-          | None, None -> `None
+        let coll_with_line (t, id, line) =
+          let q =
+            Scene.Figures.calc scene.bodies ~t ~global_values:scene.global_values ~eps
+          in
+          let body = Scene.Figures.get_by_id q ~id in
+          let v' = CollisionHandle.calculate_new_v_with_line ~body ~line ~eps in
+          let q =
+            Scene.Figures.update_by_id
+              q
+              ~id
+              ~body:(Figure2.update_v0 body ~v:v' ~rules:Figure2.Rule.rules1)
+          in
+          let new_time = N.(scene.time + t) in
+          Scene.update
+            scene
+            ~bodies:q
+            ~cause:[ CollisionWithLine { id; line } ]
+            ~time:new_time
+            ~points:scene.points
+            ~lines:scene.lines
         in
-        match min_t, time with
-        | `WithBody (({ id1; id2; _ } as r), t), Some time ->
+        let mt =
+          [ Option.map with_body ~f:(fun a -> snd a, `WithBody a)
+          ; Option.map with_point ~f:(fun ((t, _, _) as a) -> t, `WithPoint a)
+          ; Option.map with_line ~f:(fun ((t, _, _) as a) -> t, `WithLine a)
+          ]
+          |> List.filter_opt
+          |> List.min_elt ~compare:(fun (t1, _) (t2, _) -> N.compare t1 t2)
+          |> Option.map ~f:snd
+        in
+        match mt, time with
+        | Some (`WithBody (({ id1; id2; _ } as r), t)), Some time ->
           let s = coll r t ~id1 ~id2 in
           if N.(s.Scene.time < time)
           then s :: forward_rec s
@@ -906,10 +1061,10 @@ module Make (N : Module_types.Number) = struct
                 ~points:scene.points
                 ~lines:scene.lines
             ]
-        | `WithBody (({ id1; id2; _ } as r), t), None ->
+        | Some (`WithBody (({ id1; id2; _ } as r), t)), None ->
           let s = coll r t ~id1 ~id2 in
           s :: forward_rec s
-        | `WithPoint r, Some time ->
+        | Some (`WithPoint r), Some time ->
           let s = coll_with_point r in
           if N.(s.Scene.time < time)
           then s :: forward_rec s
@@ -927,10 +1082,31 @@ module Make (N : Module_types.Number) = struct
                 ~points:scene.points
                 ~lines:scene.lines
             ]
-        | `WithPoint r, None ->
+        | Some (`WithPoint r), None ->
           let s = coll_with_point r in
           s :: forward_rec s
-        | `None, Some time ->
+        | Some (`WithLine r), Some time ->
+          let s = coll_with_line r in
+          if N.(s.Scene.time < time)
+          then s :: forward_rec s
+          else
+            [ Scene.update
+                scene
+                ~bodies:
+                  (Scene.Figures.calc
+                     scene.bodies
+                     ~t:N.(time - scene.time)
+                     ~global_values:scene.global_values
+                     ~eps)
+                ~cause:[]
+                ~time
+                ~points:scene.points
+                ~lines:scene.lines
+            ]
+        | Some (`WithLine r), None ->
+          let s = coll_with_line r in
+          s :: forward_rec s
+        | None, Some time ->
           let q =
             Scene.Figures.calc
               scene.bodies
@@ -946,7 +1122,7 @@ module Make (N : Module_types.Number) = struct
               ~points:scene.points
               ~lines:scene.lines
           ]
-        | `None, None -> []
+        | None, None -> []
       in
       forward_rec scene |> List.rev
     ;;
@@ -966,14 +1142,22 @@ module Make (N : Module_types.Number) = struct
             ~time
             ~points:s.points
             ~lines:s.lines
-        | AddPoint { x; y } ->
+        | AddPoint point ->
           Scene.update
             s
             ~bodies:s.bodies
-            ~cause:[ PointAdded { x; y } ]
+            ~cause:[ PointAdded point ]
             ~time
-            ~points:(Points.add s.points ~el:Point.{ x; y })
+            ~points:(Points.add s.points ~el:point)
             ~lines:s.lines
+        | AddLine line ->
+          Scene.update
+            s
+            ~bodies:s.bodies
+            ~cause:[ LineAdded line ]
+            ~time
+            ~points:s.points
+            ~lines:(Lines.add s.lines ~el:line)
         | GiveVelocity { id; v0 } ->
           let body = Scene.Figures.get_by_id s.bodies ~id in
           let body = Figure2.update_v0 body ~v:v0 ~rules:Figure2.Rule.rules1 in
