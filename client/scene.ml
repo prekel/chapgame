@@ -50,6 +50,13 @@ let scene_frame ~scene ~on_click ~time =
                  let x = Float.(of_int evt##.clientX - dim##.left) in
                  let y = Float.(of_int evt##.clientY - dim##.top) in
                  on_click id x y r))
+      |> Sequence.append
+           (scene.points
+           |> S.Points.to_sequence
+           |> Sequence.map ~f:(fun S.Point.{ x; y } ->
+                  Svg.Node.circle
+                    ~attr:(Attr.many [ Svg.Attr.cx x; Svg.Attr.cy y; Svg.Attr.r 1. ])
+                    []))
       |> Sequence.to_list))
 ;;
 
@@ -106,6 +113,9 @@ let scene =
                      ; m = 3.
                      }
                }
+             ~eps
+        |> S.Engine.recv
+             ~action:{ time = 0.; action = S.Action.AddPoint { x = 350.; y = 350. } }
              ~eps)
       ~apply_action:(fun ~inject:_ ~schedule_event:_ model action ->
         let ret = S.Engine.recv model ~action ~eps in

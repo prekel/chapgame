@@ -15,6 +15,8 @@ module Make
     val scope : t -> scope:Scope.t -> t
   end
 
+  val singleton_zero : Expr.scalar Expr.t -> t
+
   val to_polynomial
     :  t
     -> values:(Key.t -> N.t)

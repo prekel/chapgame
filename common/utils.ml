@@ -42,6 +42,7 @@ end) : sig
   val of_list : In.t list -> t
   val of_sequence : In.t Sequence.t -> t
   val empty : t
+  val add : t -> el:In.t -> t
 end = struct
   type t = (In.t, In.comparator_witness) Set.t
 
@@ -55,6 +56,7 @@ end = struct
   let of_list = Set.of_list (module In)
   let of_sequence = Set.of_sequence (module In)
   let empty = Set.empty (module In)
+  let add a ~el = Set.add a el
 end
 
 module MakeAdvancedMap (Key : sig

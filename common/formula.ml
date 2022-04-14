@@ -41,6 +41,8 @@ module Make
     let scope m ~scope = Map.map m ~f:(fun v -> Expr.Scope (scope, v))
   end
 
+  let singleton_zero a = Map.singleton (module Int) 0 a
+
   let to_polynomial p ~values ~scoped_values ~eps =
     Map.filter_map p ~f:(fun a ->
         match Expr.calc ~values ~scoped_values (module N) a with
