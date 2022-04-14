@@ -46,6 +46,26 @@ module Make (N : Module_types.Number) = struct
   module Expr = Expr.Make (Vars) (Scope) (N)
   module Formula = Formula.Make (Vars) (Scope) (N) (Expr) (Solver)
 
+  module Vector : sig
+    include module type of Expr.VectorOps
+
+    val dot : t -> t -> N.t
+    val len : t -> N.t
+    val ( *^ ) : t -> N.t -> t
+    val ( ^* ) : N.t -> t -> t
+  end = struct
+    include Expr.VectorOps
+
+    let dot a b =
+      let x, y = a * b in
+      N.(x + y)
+    ;;
+
+    let len (x, y) = N.(sqrt ((x * x) + (y * y)))
+    let ( *^ ) (a, b) c = N.(a * c, b * c)
+    let ( ^* ) c (a, b) = N.(a * c, b * c)
+  end
+
   let global_scope : Scope.t = -1
 
   module Values : sig
@@ -260,9 +280,6 @@ module Make (N : Module_types.Number) = struct
       ; rules
       }
     ;;
-
-    (* let update body ~var ~value = { body with values = body.values |>
-       Values.update_vector ~var ~value } ;; *)
   end
 
   module Point = struct
@@ -286,7 +303,7 @@ module Make (N : Module_types.Number) = struct
         { a : N.t
         ; b : N.t
         ; c : N.t
-        ; kind : [ `Line | `Segment of Point.t * Point.t | `Ray of Point.t ]
+        ; kind : [ `Line | `Segment of Point.t * Point.t | `Ray of Point.t * Point.t ]
         }
       [@@deriving sexp, equal, compare]
     end
@@ -302,7 +319,7 @@ module Make (N : Module_types.Number) = struct
         ; kind =
             (match kind with
             | `Line -> `Line
-            | `Ray -> `Ray p1
+            | `Ray -> `Ray (p1, p2)
             | `Segment -> `Segment (p1, p2))
         }
     ;;
@@ -610,12 +627,28 @@ module Make (N : Module_types.Number) = struct
                      | _ -> assert false)
                in
                let abc = (a * x) + (b * y) + c |> to_polynomial in
+               let is_qwf ~p1 ~p2 ~root =
+                 let x0 = x |> to_polynomial |> Solver.Polynomial.calc ~x:root in
+                 let y0 = y |> to_polynomial |> Solver.Polynomial.calc ~x:root in
+                 let Point.{ x = x1; y = y1 } = p1 in
+                 let Point.{ x = x2; y = y2 } = p2 in
+                 let v1 = N.(x2 - x1, y2 - y1) in
+                 let v2 = N.(x0 - x1, y0 - y1) in
+                 N.(Vector.dot v1 v2 > zero)
+               in
                let c f ~cond =
                  f
                  |> to_polynomial
                  |> Solver.PolynomialEquation.roots ~eps
                  |> List.filter ~f:(fun root ->
-                        is_in_interval root i && cond (Solver.Polynomial.calc abc ~x:root))
+                        is_in_interval root i
+                        && cond (Solver.Polynomial.calc abc ~x:root)
+                        &&
+                        match line.kind with
+                        | `Line -> true
+                        | `Ray (p1, p2) -> is_qwf ~p1 ~p2 ~root
+                        | `Segment (p1, p2) ->
+                          is_qwf ~p1 ~p2 ~root && is_qwf ~p1:p2 ~p2:p1 ~root)
                in
                c f1 ~cond:N.(fun a -> a >= zero) @ c f2 ~cond:N.(fun a -> a < zero)
                |> List.min_elt ~compare:N.compare)
@@ -640,26 +673,6 @@ module Make (N : Module_types.Number) = struct
   end
 
   module CollisionHandle = struct
-    module Vector : sig
-      include module type of Expr.VectorOps
-
-      val dot : t -> t -> N.t
-      val len : t -> N.t
-      val ( *^ ) : t -> N.t -> t
-      val ( ^* ) : N.t -> t -> t
-    end = struct
-      include Expr.VectorOps
-
-      let dot a b =
-        let x, y = a * b in
-        N.(x + y)
-      ;;
-
-      let len (x, y) = N.(sqrt ((x * x) + (y * y)))
-      let ( *^ ) (a, b) c = N.(a * c, b * c)
-      let ( ^* ) c (a, b) = N.(a * c, b * c)
-    end
-
     let collision ~v1 ~v2 ~x1 ~x2 ~m1 ~m2 =
       let module V = Vector in
       let two = N.(one + one) in
