@@ -135,19 +135,45 @@ let scene =
         |> S.Engine.recv
              ~action:
                { time = 0.
-               ; action = S.Action.AddLine { a = 1.; b = -2.; c = -100.; kind = `Line }
+               ; action =
+                   S.Action.AddLine
+                     (S.LineSegmentRay.of_points
+                        ~p1:{ x = 100.; y = 100. }
+                        ~p2:{ x = 200.; y = 400. }
+                        ~kind:`Line)
                }
              ~eps
         |> S.Engine.recv
              ~action:
                { time = 0.
-               ; action = S.Action.AddLine { a = 1.; b = -2.; c = 400.; kind = `Line }
+               ; action =
+                   S.Action.AddLine
+                     (S.LineSegmentRay.of_points
+                        ~p1:{ x = 200.; y = 600. }
+                        ~p2:{ x = 500.; y = 500. }
+                        ~kind:`Line)
                }
              ~eps
         |> S.Engine.recv
              ~action:
                { time = 0.
-               ; action = S.Action.AddLine { a = -1.; b = -2.; c = 400.; kind = `Line }
+               ; action =
+                   S.Action.AddLine
+                     (S.LineSegmentRay.of_points
+                        ~p1:{ x = 500.; y = 300. }
+                        ~p2:{ x = 400.; y = 0. }
+                        ~kind:`Line)
+               }
+             ~eps
+        |> S.Engine.recv
+             ~action:
+               { time = 0.
+               ; action =
+                   S.Action.AddLine
+                     (S.LineSegmentRay.of_points
+                        ~p1:{ x = 400.; y = 0. }
+                        ~p2:{ x = 100.; y = 100. }
+                        ~kind:`Line)
                }
              ~eps)
       ~apply_action:(fun ~inject:_ ~schedule_event:_ model action ->

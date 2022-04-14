@@ -293,6 +293,19 @@ module Make (N : Module_types.Number) = struct
 
     include T
     include Comparable.Make (T)
+
+    let of_points ~p1 ~p2 ~kind =
+      N.
+        { a = p2.Point.y - p1.Point.y
+        ; b = p1.x - p2.x
+        ; c = (p1.y * p2.x) - (p1.x * p2.y)
+        ; kind =
+            (match kind with
+            | `Line -> `Line
+            | `Ray -> `Ray p1
+            | `Segment -> `Segment (p1, p2))
+        }
+    ;;
   end
 
   module Lines = Utils.MakeAdvancedSet (LineSegmentRay)
