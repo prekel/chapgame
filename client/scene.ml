@@ -3,7 +3,7 @@ open Bonsai_web
 open Bonsai.Let_syntax
 open Js_of_ocaml
 module Svg = Virtual_dom_svg
-module S = Chapgame.Scene.Make (Float) ((val Chapgame.Utils.make_consts ~eps:1e-6))
+module S = Chapgame.Scene.Make (Float) ((val Chapgame.Utils.make_consts ~eps:1e-3))
 
 type circle =
   { id : S.Figure2.Id.t
@@ -81,7 +81,13 @@ let scene =
     Bonsai.state_machine0
       [%here]
       (module S.Model)
-      (module S.Action)
+      (module struct
+        type t =
+          [ `Action of S.Action.t
+          | `Replace of S.Model.t
+          ]
+        [@@deriving sexp, equal]
+      end)
       ~default_model:
         (S.Model.init ~g:10.
         |> S.Engine.recv
@@ -90,11 +96,11 @@ let scene =
                ; action =
                    S.Action.AddBody
                      { id = S.Figure2.Id.next ()
-                     ; x0 = 250.
-                     ; y0 = 250.
-                     ; r = 50.
+                     ; x0 = 425.
+                     ; y0 = 275.
+                     ; r = 2.
                      ; mu = 2.
-                     ; m = 0.1
+                     ; m = Float.(pi * 2. * 2.)
                      }
                }
         |> S.Engine.recv
@@ -103,11 +109,24 @@ let scene =
                ; action =
                    S.Action.AddBody
                      { id = S.Figure2.Id.next ()
-                     ; x0 = 500.
-                     ; y0 = 200.
-                     ; r = 75.
+                     ; x0 = 450.
+                     ; y0 = 250.
+                     ; r = 10.
                      ; mu = 2.
-                     ; m = 0.2
+                     ; m = Float.(pi * 10. * 10.)
+                     }
+               }
+        |> S.Engine.recv
+             ~action:
+               { time = 0.
+               ; action =
+                   S.Action.AddBody
+                     { id = S.Figure2.Id.next ()
+                     ; x0 = 600.
+                     ; y0 = 600.
+                     ; r = 50.
+                     ; mu = 2.
+                     ; m = Float.(pi * 50. * 50.)
                      }
                }
         |> S.Engine.recv
@@ -118,27 +137,33 @@ let scene =
                      { id = S.Figure2.Id.next ()
                      ; x0 = 500.
                      ; y0 = 500.
-                     ; r = 100.
+                     ; r = 60.
                      ; mu = 2.
-                     ; m = 0.3
+                     ; m = Float.(pi * 60. * 60.)
                      }
                }
         |> S.Engine.recv
-             ~action:{ time = 0.; action = S.Action.AddPoint { x = 100.; y = 100. } }
+             ~action:{ time = 0.; action = S.Action.AddPoint { x = 400.; y = 200. } }
         |> S.Engine.recv
-             ~action:{ time = 0.; action = S.Action.AddPoint { x = 700.; y = 100. } }
+             ~action:{ time = 0.; action = S.Action.AddPoint { x = 1100.; y = 100. } }
         |> S.Engine.recv
-             ~action:{ time = 0.; action = S.Action.AddPoint { x = 700.; y = 100. } }
+             ~action:{ time = 0.; action = S.Action.AddPoint { x = 100.; y = 700. } }
         |> S.Engine.recv
              ~action:{ time = 0.; action = S.Action.AddPoint { x = 700.; y = 700. } }
+        |> S.Engine.recv
+             ~action:{ time = 0.; action = S.Action.AddPoint { x = 650.; y = 325. } }
+        |> S.Engine.recv
+             ~action:{ time = 0.; action = S.Action.AddPoint { x = 600.; y = 400. } }
+        |> S.Engine.recv
+             ~action:{ time = 0.; action = S.Action.AddPoint { x = 700.; y = 450. } }
         |> S.Engine.recv
              ~action:
                { time = 0.
                ; action =
                    S.Action.AddLine
                      (S.LineSegmentRay.of_points
-                        ~p1:{ x = 100.; y = 100. }
-                        ~p2:{ x = 700.; y = 100. }
+                        ~p1:{ x = 650.; y = 325. }
+                        ~p2:{ x = 600.; y = 400. }
                         ~kind:`Segment)
                }
         |> S.Engine.recv
@@ -147,7 +172,27 @@ let scene =
                ; action =
                    S.Action.AddLine
                      (S.LineSegmentRay.of_points
-                        ~p1:{ x = 700.; y = 100. }
+                        ~p1:{ x = 600.; y = 400. }
+                        ~p2:{ x = 700.; y = 450. }
+                        ~kind:`Segment)
+               }
+        |> S.Engine.recv
+             ~action:
+               { time = 0.
+               ; action =
+                   S.Action.AddLine
+                     (S.LineSegmentRay.of_points
+                        ~p1:{ x = 400.; y = 200. }
+                        ~p2:{ x = 1100.; y = 100. }
+                        ~kind:`Segment)
+               }
+        |> S.Engine.recv
+             ~action:
+               { time = 0.
+               ; action =
+                   S.Action.AddLine
+                     (S.LineSegmentRay.of_points
+                        ~p1:{ x = 1100.; y = 100. }
                         ~p2:{ x = 700.; y = 700. }
                         ~kind:`Segment)
                }
@@ -168,13 +213,13 @@ let scene =
                    S.Action.AddLine
                      (S.LineSegmentRay.of_points
                         ~p1:{ x = 100.; y = 700. }
-                        ~p2:{ x = 100.; y = 100. }
+                        ~p2:{ x = 400.; y = 200. }
                         ~kind:`Segment)
                })
-      ~apply_action:(fun ~inject:_ ~schedule_event:_ model action ->
-        let ret = S.Engine.recv model ~action in
-        (* print_s [%sexp (ret : S.Model.t)]; *)
-        ret)
+      ~apply_action:
+        (fun ~inject:_ ~schedule_event:_ model -> function
+          | `Action action -> S.Engine.recv model ~action
+          | `Replace model -> model)
   in
   let%sub time, update_time = Bonsai.state [%here] (module Float) ~default_model:0. in
   let%sub is_pause, set_is_pause =
@@ -202,15 +247,19 @@ let scene =
     and time = time in
     state |> S.Model.before ~time |> snd
   in
+  let%sub text_state, set_text_state =
+    Bonsai.state [%here] (module String) ~default_model:""
+  in
   let cl =
     dispatch
     >>| (fun a time id x y r ->
           a
-            { time
-            ; action =
-                S.Action.GiveVelocity
-                  { id; v0 = Float.((x - r) / r * -200., (y - r) / r * -200.) }
-            })
+            (`Action
+              { time
+              ; action =
+                  S.Action.GiveVelocity
+                    { id; v0 = Float.((x - r) / r * -200., (y - r) / r * -200.) }
+              }))
     <*> time
   in
   let%sub frame = scene_frame ~scene:last_scene ~time ~on_click:cl in
@@ -221,7 +270,10 @@ let scene =
   and set_is_pause = set_is_pause
   and speed = speed
   and set_speed = set_speed
-  and set_time = update_time in
+  and set_time = update_time
+  and text_state = text_state
+  and set_text_state = set_text_state
+  and state = state in
   Vdom.(
     Node.div
       [ Node.text (Float.to_string time)
@@ -229,49 +281,52 @@ let scene =
       ; Node.button
           ~attr:
             (Attr.on_click (fun _ ->
-                 { time
-                 ; action =
-                     S.Action.AddBody
-                       { id = S.Figure2.Id.next ()
-                       ; x0 = 350.
-                       ; y0 = 350.
-                       ; r = 50.
-                       ; mu = 2.
-                       ; m = 0.1
-                       }
-                 }
+                 `Action
+                   { time
+                   ; action =
+                       S.Action.AddBody
+                         { id = S.Figure2.Id.next ()
+                         ; x0 = 350.
+                         ; y0 = 350.
+                         ; r = 50.
+                         ; mu = 2.
+                         ; m = 1.
+                         }
+                   }
                  |> dispatch))
           [ Node.text "add " ]
       ; Node.button
           ~attr:
             (Attr.on_click (fun _ ->
-                 { time
-                 ; action =
-                     S.Action.AddBody
-                       { id = S.Figure2.Id.next ()
-                       ; x0 = 700.
-                       ; y0 = 500.
-                       ; r = 75.
-                       ; mu = 2.
-                       ; m = 0.2
-                       }
-                 }
+                 `Action
+                   { time
+                   ; action =
+                       S.Action.AddBody
+                         { id = S.Figure2.Id.next ()
+                         ; x0 = 700.
+                         ; y0 = 500.
+                         ; r = 75.
+                         ; mu = 2.
+                         ; m = 2.
+                         }
+                   }
                  |> dispatch))
           [ Node.text "add " ]
       ; Node.button
           ~attr:
             (Attr.on_click (fun _ ->
-                 { time
-                 ; action =
-                     S.Action.AddBody
-                       { id = S.Figure2.Id.next ()
-                       ; x0 = 120.
-                       ; y0 = 500.
-                       ; r = 100.
-                       ; mu = 2.
-                       ; m = 0.3
-                       }
-                 }
+                 `Action
+                   { time
+                   ; action =
+                       S.Action.AddBody
+                         { id = S.Figure2.Id.next ()
+                         ; x0 = 120.
+                         ; y0 = 500.
+                         ; r = 100.
+                         ; mu = 2.
+                         ; m = 3.
+                         }
+                   }
                  |> dispatch))
           [ Node.text "add " ]
       ; Node.button
@@ -321,5 +376,28 @@ let scene =
           []
       ; Node.br ()
       ; frame
+      ; Node.textarea
+          ~attr:
+            (Attr.many
+               [ Attr.value_prop text_state; Attr.on_input (fun _ -> set_text_state) ])
+          []
+      ; Node.button
+          ~attr:
+            (Attr.many
+               [ Attr.on_click (fun _ ->
+                     [%sexp (state : S.Model.t)] |> Sexp.to_string_hum |> set_text_state)
+               ])
+          [ Node.text "to text" ]
+      ; Node.button
+          ~attr:
+            (Attr.many
+               [ Attr.on_click (fun _ ->
+                     text_state
+                     |> Sexp.of_string
+                     |> S.Model.t_of_sexp
+                     |> (fun a -> `Replace a)
+                     |> dispatch)
+               ])
+          [ Node.text "of text" ]
       ])
 ;;

@@ -711,7 +711,11 @@ struct
       let y1 = Values.get_scalar_exn values1 ~var:`y0 in
       let x2 = Values.get_scalar_exn values2 ~var:`x0 in
       let y2 = Values.get_scalar_exn values2 ~var:`y0 in
-      collision_body ~v1 ~v2 ~m1 ~m2 ~x1 ~y1 ~x2 ~y2
+      let v1', v2' = collision_body ~v1 ~v2 ~m1 ~m2 ~x1 ~y1 ~x2 ~y2 in
+      (* TODO: inf m *)
+      let v1' = if N.(m1 = infinity) then v1 else v1' in
+      let v2' = if N.(m2 = infinity) then v2 else v2' in
+      v1', v2'
     ;;
 
     let calculate_new_v_with_point ~body ~point:Point.{ x = x2; y = y2 } =
@@ -921,7 +925,7 @@ struct
 
   module Engine = struct
     let forward ?time (scene : Scene.t) =
-      let rec forward_rec (scene : Scene.t) =
+      let rec forward_rec ~(scene : Scene.t) acc =
         let with_body =
           Scene.Figures.to_sequence scene.bodies
           |> CollisionDetection.WithBody.first_collision
@@ -1039,7 +1043,7 @@ struct
         | Some (`WithBody (t, id1, id2)), Some time ->
           let s = coll t ~id1 ~id2 in
           if N.(s.Scene.time < time)
-          then s :: forward_rec s
+          then forward_rec ~scene:s (s :: acc)
           else
             [ Scene.update
                 scene
@@ -1055,11 +1059,11 @@ struct
             ]
         | Some (`WithBody (t, id1, id2)), None ->
           let s = coll t ~id1 ~id2 in
-          s :: forward_rec s
+          forward_rec ~scene:s (s :: acc)
         | Some (`WithPoint r), Some time ->
           let s = coll_with_point r in
           if N.(s.Scene.time < time)
-          then s :: forward_rec s
+          then forward_rec ~scene:s (s :: acc)
           else
             [ Scene.update
                 scene
@@ -1075,11 +1079,11 @@ struct
             ]
         | Some (`WithPoint r), None ->
           let s = coll_with_point r in
-          s :: forward_rec s
+          forward_rec ~scene:s (s :: acc)
         | Some (`WithLine r), Some time ->
           let s = coll_with_line r in
           if N.(s.Scene.time < time)
-          then s :: forward_rec s
+          then forward_rec ~scene:s (s :: acc)
           else
             [ Scene.update
                 scene
@@ -1095,7 +1099,7 @@ struct
             ]
         | Some (`WithLine r), None ->
           let s = coll_with_line r in
-          s :: forward_rec s
+          forward_rec ~scene:s (s :: acc)
         | None, Some time ->
           let q =
             Scene.Figures.calc
@@ -1111,9 +1115,9 @@ struct
               ~points:scene.points
               ~lines:scene.lines
           ]
-        | None, None -> []
+        | None, None -> acc
       in
-      forward_rec scene |> List.rev
+      forward_rec ~scene [] |> List.rev
     ;;
 
     let recv model ~action:Action.{ time; action } =

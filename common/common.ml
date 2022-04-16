@@ -3,9 +3,9 @@ include Core
 module List = struct
   include List
 
-  let rec windowed2_exn = function
+  let rec windowed2 = function
     | [] | [ _ ] -> []
-    | a :: (b :: _ as d) -> (a, b) :: windowed2_exn d
+    | a :: (b :: _ as d) -> (a, b) :: windowed2 d
   ;;
 end
 
