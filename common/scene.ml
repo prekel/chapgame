@@ -321,29 +321,13 @@ module Make (N : Module_types.Number) = struct
 
   module CollisionDetection : sig
     module WithBody : sig
-      type extra =
-        { id1 : Figure2.Id.t
-        ; id2 : Figure2.Id.t
-        ; p : Solver.Polynomial.t
-        ; f : Formula.t
-        ; roots : N.t list
-        ; roots_filtered : N.t list
-        ; rule1 : Figure2.Rule.t
-        ; rule2 : Figure2.Rule.t
-        ; values1 : Values.t
-        ; values2 : Values.t
-        ; a1 : N.t * N.t
-        ; a2 : N.t * N.t
-        }
-      [@@deriving sexp, equal]
-
-      val collisions_extra
-        :  eps:N.t
-        -> global_values:Values.t
-        -> (Figure2.Id.t * Figure2.t) Sequence.t
+      val first_collision
+        :  (Figure2.Id.t * Figure2.t) Sequence.t
         -> r:Formula.t
+        -> global:Values.t
+        -> eps:N.t
         -> a:Expr.vector Expr.t
-        -> extra Sequence.t
+        -> (N.t * Figure2.Id.t * Figure2.Id.t) option
     end
 
     module WithPoint : sig
@@ -489,6 +473,19 @@ module Make (N : Module_types.Number) = struct
                       ~ac:a)
                else None)
         |> Sequence.concat
+      ;;
+
+      let first_collision bodies ~r ~global ~eps ~a =
+        let extra = collisions_extra ~eps ~global_values:global bodies ~r ~a in
+        let%map.Option { id1; id2; _ }, t =
+          extra
+          |> Sequence.filter_map ~f:(fun a ->
+                 match List.min_elt a.roots_filtered ~compare:N.compare with
+                 | None -> None
+                 | Some r -> Some (a, r))
+          |> Sequence.min_elt ~compare:(fun (_r1, a) (_r2, b) -> N.compare a b)
+        in
+        t, id1, id2
       ;;
     end
 
@@ -729,7 +726,7 @@ module Make (N : Module_types.Number) = struct
     ;;
 
     let calculate_new_v_with_line ~body ~line ~eps =
-      let a, b, c = LineSegmentRay.to_abc line in 
+      let a, b, c = LineSegmentRay.to_abc line in
       let v1 = Values.get_vector_exn body.Figure2.values ~var_x:`v0_x ~var_y:`v0_y in
       let m1 = Values.get_scalar_exn body.values ~var:`m in
       let x1 = Values.get_scalar_exn body.values ~var:`x0 in
@@ -755,7 +752,6 @@ module Make (N : Module_types.Number) = struct
             ; v2_before : N.t * N.t
             ; v1 : N.t * N.t
             ; v2 : N.t * N.t
-            ; extra : CollisionDetection.WithBody.extra
             }
         | CollisionWithPoint of
             { id : Figure2.Id.t
@@ -931,20 +927,11 @@ module Make (N : Module_types.Number) = struct
       let rec forward_rec (scene : Scene.t) =
         let with_body =
           Scene.Figures.to_sequence scene.bodies
-          |> CollisionDetection.WithBody.collisions_extra
+          |> CollisionDetection.WithBody.first_collision
                ~eps
-               ~global_values:scene.global_values
+               ~global:scene.global_values
                ~r:(Formula.of_alist_exn Figure2.Rule.Exprs.[ 0, r ])
                ~a:Figure2.Rule.Exprs.a_vec
-          |> Sequence.filter_map ~f:(fun a ->
-                 match
-                   List.min_elt
-                     a.CollisionDetection.WithBody.roots_filtered
-                     ~compare:N.compare
-                 with
-                 | None -> None
-                 | Some r -> Some (a, r))
-          |> Sequence.min_elt ~compare:(fun (_r1, a) (_r2, b) -> N.compare a b)
         in
         let with_point =
           CollisionDetection.WithPoint.first_collision
@@ -962,7 +949,7 @@ module Make (N : Module_types.Number) = struct
             ~r:(Formula.of_alist_exn Figure2.Rule.Exprs.[ 0, r ])
             (Scene.Figures.to_sequence scene.bodies)
         in
-        let coll r t ~id1 ~id2 =
+        let coll t ~id1 ~id2 =
           let q =
             Scene.Figures.calc scene.bodies ~t ~global_values:scene.global_values ~eps
           in
@@ -1001,7 +988,6 @@ module Make (N : Module_types.Number) = struct
                         Values.get_vector_exn body2.values ~var_x:`v0_x ~var_y:`v0_y
                     ; v1 = v1n
                     ; v2 = v2n
-                    ; extra = r
                     }
                 ]
               ~time:new_time
@@ -1053,7 +1039,7 @@ module Make (N : Module_types.Number) = struct
             ~lines:scene.lines
         in
         let mt =
-          [ Option.map with_body ~f:(fun a -> snd a, `WithBody a)
+          [ Option.map with_body ~f:(fun ((t, _, _) as a) -> t, `WithBody a)
           ; Option.map with_point ~f:(fun ((t, _, _) as a) -> t, `WithPoint a)
           ; Option.map with_line ~f:(fun ((t, _, _) as a) -> t, `WithLine a)
           ]
@@ -1062,8 +1048,8 @@ module Make (N : Module_types.Number) = struct
           |> Option.map ~f:snd
         in
         match mt, time with
-        | Some (`WithBody (({ id1; id2; _ } as r), t)), Some time ->
-          let s = coll r t ~id1 ~id2 in
+        | Some (`WithBody (t, id1, id2)), Some time ->
+          let s = coll t ~id1 ~id2 in
           if N.(s.Scene.time < time)
           then s :: forward_rec s
           else
@@ -1080,8 +1066,8 @@ module Make (N : Module_types.Number) = struct
                 ~points:scene.points
                 ~lines:scene.lines
             ]
-        | Some (`WithBody (({ id1; id2; _ } as r), t)), None ->
-          let s = coll r t ~id1 ~id2 in
+        | Some (`WithBody (t, id1, id2)), None ->
+          let s = coll t ~id1 ~id2 in
           s :: forward_rec s
         | Some (`WithPoint r), Some time ->
           let s = coll_with_point r in
@@ -1146,7 +1132,7 @@ module Make (N : Module_types.Number) = struct
       forward_rec scene |> List.rev
     ;;
 
-    let recv (model : Model.t) ~action:(Action.{ time; action } as _a) ~eps =
+    let recv model ~action:Action.{ time; action } ~eps =
       let before, s = Model.before model ~time in
       let scenes = forward s ~time ~eps in
       let model = Model.merge_with_list before scenes in
