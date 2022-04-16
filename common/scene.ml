@@ -72,7 +72,7 @@ struct
   let global_scope : Scope.t = -1
 
   module Values : sig
-    type t [@@deriving sexp, equal]
+    include module type of Utils.MakeAdvancedMap (Vars) (N)
 
     val get_scalar_exn : t -> var:Vars.t -> N.t
     val get_vector_exn : t -> var_x:Vars.t -> var_y:Vars.t -> N.t * N.t
@@ -82,29 +82,31 @@ struct
     val to_function : t -> Vars.t -> N.t
     val global_to_scoped : t -> Scope.t -> Vars.t -> N.t
   end = struct
-    type t = (Vars.t, N.t, Vars.comparator_witness) Map.t
+    include Utils.MakeAdvancedMap (Vars) (N)
 
-    let equal = Map.equal N.equal
-    let sexp_of_t : t -> _ = Common.Map.sexp_of_t Vars.sexp_of_t N.sexp_of_t
-    let t_of_sexp : _ -> t = Common.Map.t_of_sexp Vars.t_of_sexp N.t_of_sexp (module Vars)
-    let get_scalar_exn values ~var = Map.find_exn values var
+    let get_scalar_exn values ~var = Map.find_exn (to_map values) var
 
     let get_vector_exn values ~var_x ~var_y =
+      let values = to_map values in
       let x = Map.find_exn values var_x in
       let y = Map.find_exn values var_y in
       x, y
     ;;
 
-    let update_scalar values ~var ~value = Map.update values var ~f:(fun _ -> value)
-
-    let update_vector values ~var_x ~var_y ~value =
-      let wx = Map.update values var_x ~f:(fun _ -> fst value) in
-      let wy = Map.update wx var_y ~f:(fun _ -> snd value) in
-      wy
+    let update_scalar values ~var ~value =
+      let values = to_map values in
+      Map.update values var ~f:(fun _ -> value) |> of_map
     ;;
 
-    let of_alist = Map.of_alist_exn (module Vars)
-    let to_function = Map.find_exn
+    let update_vector values ~var_x ~var_y ~value =
+      let values = to_map values in
+      let wx = Map.update values var_x ~f:(fun _ -> fst value) in
+      let wy = Map.update wx var_y ~f:(fun _ -> snd value) in
+      of_map wy
+    ;;
+
+    let of_alist = of_alist_exn
+    let to_function = find_exn
 
     let global_to_scoped g s =
       if Scope.(equal global_scope s) then to_function g else assert false
@@ -868,21 +870,18 @@ struct
   module Model : sig
     type t [@@deriving sexp, equal]
 
-    val empty : g:N.t -> t
+    val init : g:N.t -> t
     val update : t -> time:N.t -> scene:Scene.t -> t
     val before : t -> time:N.t -> t * Scene.t
     val merge_with_list : t -> Scene.t list -> t
-    val last_exn : t -> Scene.t
+    val last_exn : t -> Scene.t 
   end = struct
-    type t = (N.t, Scene.t, N.comparator_witness) Map.t
+    include Utils.MakeAdvancedMap (N) (Scene)
 
-    let equal = Map.equal Scene.equal
-    let sexp_of_t = Common.Map.sexp_of_t N.sexp_of_t Scene.sexp_of_t
-    let t_of_sexp = Common.Map.t_of_sexp N.t_of_sexp Scene.t_of_sexp (module N)
-    let empty ~g = Map.of_alist_exn (module N) [ N.zero, Scene.init ~g ]
+    let init ~g = Map.of_alist_exn (module N) [ N.zero, Scene.init ~g ] |> of_map
 
     let update model ~time ~scene =
-      Map.update model time ~f:(function
+      Map.update (to_map model) time ~f:(function
           | Some s ->
             Scene.update
               s
@@ -892,16 +891,18 @@ struct
               ~lines:scene.lines
               ~time
           | None -> scene)
+      |> of_map
     ;;
 
     let before model ~time =
-      match Map.split model time with
-      | l, Some (k, v), _ -> Map.add_exn l ~key:k ~data:v, v
-      | l, None, _ -> l, snd @@ Map.max_elt_exn l
+      match Map.split (to_map model) time with
+      | l, Some (k, v), _ -> of_map @@ Map.add_exn l ~key:k ~data:v, v
+      | l, None, _ -> of_map l, snd @@ Map.max_elt_exn l
     ;;
 
     let merge_with_list model l =
       (* TODO *)
+      let model = to_map model in
       let l =
         Map.of_alist_reduce
           (module N)
@@ -916,9 +917,10 @@ struct
             ~points:v2.points
             ~lines:v2.lines
             ~time:key)
+      |> of_map
     ;;
 
-    let last_exn = Common.Fn.(Map.max_elt_exn >> snd)
+    let last_exn = Common.Fn.(to_map >> Map.max_elt_exn >> snd)
   end
 
   module Engine = struct

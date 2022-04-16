@@ -47,8 +47,8 @@ end = struct
   type t = (In.t, In.comparator_witness) Set.t
 
   let equal = Set.equal
-  let t_of_sexp a = a |> List.t_of_sexp In.t_of_sexp |> Set.of_list (module In)
-  let sexp_of_t a = a |> Set.to_list |> List.sexp_of_t In.sexp_of_t
+  let t_of_sexp = Set.m__t_of_sexp (module In)
+  let sexp_of_t = Set.sexp_of_m__t (module In)
   let to_set = Fn.id
   let to_list = Set.to_list
   let to_sequence a = Set.to_sequence a
@@ -74,12 +74,14 @@ end) : sig
   val update_by_id : t -> id:Key.t -> body:Value.t -> t
   val to_map : t -> (Key.t, Value.t, Key.comparator_witness) Map.t
   val of_map : (Key.t, Value.t, Key.comparator_witness) Map.t -> t
+  val of_alist_exn : (Key.t * Value.t) list -> t
+  val find_exn : t -> Key.t -> Value.t
 end = struct
   type t = (Key.t, Value.t, Key.comparator_witness) Map.t
 
   let equal = Map.equal Value.equal
-  let sexp_of_t = Common.Map.sexp_of_t Key.sexp_of_t Value.sexp_of_t
-  let t_of_sexp = Common.Map.t_of_sexp Key.t_of_sexp Value.t_of_sexp (module Key)
+  let sexp_of_t = Map.sexp_of_m__t (module Key) Value.sexp_of_t
+  let t_of_sexp = Map.m__t_of_sexp (module Key) Value.t_of_sexp
   let empty = Map.empty (module Key)
   let add t ~id ~body = Map.add_exn t ~key:id ~data:body
   let to_sequence t = Map.to_sequence t
@@ -87,6 +89,8 @@ end = struct
   let update_by_id t ~id ~body = Map.update t id ~f:(fun _ -> body)
   let to_map = Fn.id
   let of_map = Fn.id
+  let of_alist_exn = Map.of_alist_exn (module Key)
+  let find_exn = Map.find_exn 
 end
 
 module type FloatConstants = Module_types.Constants with module N = Float

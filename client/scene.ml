@@ -83,7 +83,7 @@ let scene =
       (module S.Model)
       (module S.Action)
       ~default_model:
-        (S.Model.empty ~g:10.
+        (S.Model.init ~g:10.
         |> S.Engine.recv
              ~action:
                { time = 0.
@@ -173,7 +173,7 @@ let scene =
                })
       ~apply_action:(fun ~inject:_ ~schedule_event:_ model action ->
         let ret = S.Engine.recv model ~action in
-        print_s [%sexp (ret : S.Model.t)];
+        (* print_s [%sexp (ret : S.Model.t)]; *)
         ret)
   in
   let%sub time, update_time = Bonsai.state [%here] (module Float) ~default_model:0. in
