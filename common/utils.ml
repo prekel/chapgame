@@ -33,7 +33,7 @@ module MakeAdvancedSet (In : sig
   include Comparable.S
   include Sexpable.S with type t := t
 end) : sig
-  type t [@@deriving sexp, equal]
+  type t = (In.t, In.comparator_witness) Set.t [@@deriving sexp, equal]
 
   val to_set : t -> (In.t, In.comparator_witness) Set.t
   val to_list : t -> In.t list
@@ -65,7 +65,7 @@ module MakeAdvancedMap (Key : sig
 end) (Value : sig
   type t [@@deriving sexp, equal]
 end) : sig
-  type t [@@deriving sexp, equal]
+  type t = (Key.t, Value.t, Key.comparator_witness) Map.t [@@deriving sexp, equal]
 
   val add : t -> id:Key.t -> body:Value.t -> t
   val empty : t
@@ -90,7 +90,7 @@ end = struct
   let to_map = Fn.id
   let of_map = Fn.id
   let of_alist_exn = Map.of_alist_exn (module Key)
-  let find_exn = Map.find_exn 
+  let find_exn = Map.find_exn
 end
 
 module type FloatConstants = Module_types.Constants with module N = Float

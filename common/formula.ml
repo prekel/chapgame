@@ -7,23 +7,16 @@ module Make
     (Expr : Expr.S with type key = Key.t and type scope = Scope.t and type scalar = N.t)
     (Solver : module type of Solver.MakeSolver (N)) =
     struct
-  type t = (int, Expr.scalar Expr.t, Int.comparator_witness) Map.t
+  include
+    Utils.MakeAdvancedMap
+      (Int)
+      (struct
+        type t = Expr.scalar Expr.t
 
-  let equal : t -> t -> bool = Map.equal Expr.equal
-
-  let sexp_of_t (t : t) =
-    [%sexp
-      (Map.to_alist t |> List.map ~f:(fun (d, v) -> d, Expr.sexp_of_t v)
-        : (int * Sexp.t) list)]
-  ;;
-
-  let t_of_sexp s =
-    Map.of_alist_exn
-      (module Int)
-      (List.Assoc.t_of_sexp Int.t_of_sexp Expr.t_scalar_of_sexp s)
-  ;;
-
-  let of_alist_exn a = Map.of_alist_exn (module Int) a
+        let equal = Expr.equal_t_scalar
+        let t_of_sexp = Expr.t_scalar_of_sexp
+        let sexp_of_t = Expr.sexp_of_t
+      end)
 
   module Syntax = struct
     let ( + ) = Map.merge_skewed ~combine:(fun ~key:_ a b -> Expr.Sum (a, b))

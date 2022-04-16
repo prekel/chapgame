@@ -72,7 +72,7 @@ struct
   let global_scope : Scope.t = -1
 
   module Values : sig
-    include module type of Utils.MakeAdvancedMap (Vars) (N)
+    type t [@@deriving sexp, equal]
 
     val get_scalar_exn : t -> var:Vars.t -> N.t
     val get_vector_exn : t -> var_x:Vars.t -> var_y:Vars.t -> N.t * N.t
@@ -84,25 +84,20 @@ struct
   end = struct
     include Utils.MakeAdvancedMap (Vars) (N)
 
-    let get_scalar_exn values ~var = Map.find_exn (to_map values) var
+    let get_scalar_exn values ~var = Map.find_exn values var
 
     let get_vector_exn values ~var_x ~var_y =
-      let values = to_map values in
       let x = Map.find_exn values var_x in
       let y = Map.find_exn values var_y in
       x, y
     ;;
 
-    let update_scalar values ~var ~value =
-      let values = to_map values in
-      Map.update values var ~f:(fun _ -> value) |> of_map
-    ;;
+    let update_scalar values ~var ~value = Map.update values var ~f:(fun _ -> value)
 
     let update_vector values ~var_x ~var_y ~value =
-      let values = to_map values in
       let wx = Map.update values var_x ~f:(fun _ -> fst value) in
       let wy = Map.update wx var_y ~f:(fun _ -> snd value) in
-      of_map wy
+      wy
     ;;
 
     let of_alist = of_alist_exn
@@ -775,23 +770,27 @@ struct
     end
 
     module Figures : sig
-      include module type of Utils.MakeAdvancedMap (Figure2.Id) (Figure2)
+      type t [@@deriving sexp, equal]
 
       val calc : t -> t:N.t -> global_values:Values.t -> t
+      val add : t -> id:Figure2.Id.t -> body:Figure2.t -> t
+      val empty : t
+      val to_sequence : t -> (Figure2.Id.t * Figure2.t) Sequence.t
+      val get_by_id : t -> id:Figure2.Id.t -> Figure2.t
+      val update_by_id : t -> id:Figure2.Id.t -> body:Figure2.t -> t
     end = struct
       include Utils.MakeAdvancedMap (Figure2.Id) (Figure2)
 
       let calc figures ~t ~global_values =
-        to_map figures
+        figures
         |> Map.map ~f:(fun f ->
                Figure2.calc
-                 ~values:(Values.to_function f.values)
+                 ~values:(Values.to_function f.Figure2.values)
                  ~rules:f.rules
                  ~scoped_values:(Values.global_to_scoped global_values)
                  ~t
                |> Option.map ~f:(fun (xy, rules) -> Figure2.update_x0y0 ~body:f xy ~rules)
                |> Option.value ~default:f)
-        |> of_map
       ;;
     end
 
@@ -874,14 +873,14 @@ struct
     val update : t -> time:N.t -> scene:Scene.t -> t
     val before : t -> time:N.t -> t * Scene.t
     val merge_with_list : t -> Scene.t list -> t
-    val last_exn : t -> Scene.t 
+    val last_exn : t -> Scene.t
   end = struct
     include Utils.MakeAdvancedMap (N) (Scene)
 
-    let init ~g = Map.of_alist_exn (module N) [ N.zero, Scene.init ~g ] |> of_map
+    let init ~g = Map.of_alist_exn (module N) [ N.zero, Scene.init ~g ]
 
     let update model ~time ~scene =
-      Map.update (to_map model) time ~f:(function
+      Map.update model time ~f:(function
           | Some s ->
             Scene.update
               s
@@ -891,18 +890,16 @@ struct
               ~lines:scene.lines
               ~time
           | None -> scene)
-      |> of_map
     ;;
 
     let before model ~time =
-      match Map.split (to_map model) time with
-      | l, Some (k, v), _ -> of_map @@ Map.add_exn l ~key:k ~data:v, v
-      | l, None, _ -> of_map l, snd @@ Map.max_elt_exn l
+      match Map.split model time with
+      | l, Some (k, v), _ -> Map.add_exn l ~key:k ~data:v, v
+      | l, None, _ -> l, snd @@ Map.max_elt_exn l
     ;;
 
     let merge_with_list model l =
       (* TODO *)
-      let model = to_map model in
       let l =
         Map.of_alist_reduce
           (module N)
@@ -917,10 +914,9 @@ struct
             ~points:v2.points
             ~lines:v2.lines
             ~time:key)
-      |> of_map
     ;;
 
-    let last_exn = Common.Fn.(to_map >> Map.max_elt_exn >> snd)
+    let last_exn = Common.Fn.(Map.max_elt_exn >> snd)
   end
 
   module Engine = struct

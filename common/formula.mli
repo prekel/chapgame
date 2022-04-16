@@ -6,8 +6,6 @@ module Make
     (Solver : module type of Solver.MakeSolver (N)) : sig
   type t [@@deriving sexp, equal]
 
-  val of_alist_exn : (int * Expr.scalar Expr.t) list -> t
-
   module Syntax : sig
     val ( + ) : t -> t -> t
     val ( ~- ) : t -> t
@@ -17,6 +15,7 @@ module Make
     val scope : t -> scope:Scope.t -> t
   end
 
+  val of_alist_exn : (int * Expr.scalar Expr.t) list -> t
   val singleton_zero : Expr.scalar Expr.t -> t
 
   val to_polynomial
