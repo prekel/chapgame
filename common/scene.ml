@@ -300,10 +300,9 @@ module Make (N : Module_types.Number) = struct
   module LineSegmentRay = struct
     module T = struct
       type t =
-        { a : N.t
-        ; b : N.t
-        ; c : N.t
-        ; kind : [ `Line | `Segment of Point.t * Point.t | `Ray of Point.t * Point.t ]
+        { p1 : Point.t
+        ; p2 : Point.t
+        ; kind : [ `Line | `Segment | `Ray ]
         }
       [@@deriving sexp, equal, compare]
     end
@@ -311,17 +310,10 @@ module Make (N : Module_types.Number) = struct
     include T
     include Comparable.Make (T)
 
-    let of_points ~p1 ~p2 ~kind =
-      N.
-        { a = p2.Point.y - p1.Point.y
-        ; b = p1.x - p2.x
-        ; c = (p1.y * p2.x) - (p1.x * p2.y)
-        ; kind =
-            (match kind with
-            | `Line -> `Line
-            | `Ray -> `Ray (p1, p2)
-            | `Segment -> `Segment (p1, p2))
-        }
+    let of_points ~p1 ~p2 ~kind = { p1; p2; kind }
+
+    let to_abc { p1; p2; kind = _ } =
+      N.(p2.y - p1.y, p1.x - p2.x, (p1.y * p2.x) - (p1.x * p2.y))
     ;;
   end
 
@@ -567,10 +559,8 @@ module Make (N : Module_types.Number) = struct
     end
 
     module WithLine = struct
-      let distance_beetween_body_and_line
-          ~(body : Figure2.t)
-          ~line:LineSegmentRay.{ a; b; c; _ }
-        =
+      let distance_beetween_body_and_line ~(body : Figure2.t) ~line =
+        let a, b, c = LineSegmentRay.to_abc line in
         let x = Values.get_scalar_exn body.values ~var:`x0 in
         let y = Values.get_scalar_exn body.values ~var:`y0 in
         N.(abs ((a * x) + (b * y) + c) / N.sqrt (square a + square b))
@@ -607,7 +597,8 @@ module Make (N : Module_types.Number) = struct
                let i = inter values rule.interval ~global in
                let f1 = (a * x) + (b * y) + c - (r * a2b2) in
                let f2 = (a * x) + (b * y) + c + (r * a2b2) in
-               let a2b2 = N.(sqrt (square line.a + square line.b)) in
+               let a', b', c' = LineSegmentRay.to_abc line in
+               let a2b2' = N.(sqrt (square a' + square b')) in
                let to_polynomial =
                  Formula.to_polynomial
                    ~eps
@@ -618,10 +609,10 @@ module Make (N : Module_types.Number) = struct
                      | 2 ->
                        begin
                          function
-                         | `with_line `a -> line.a
-                         | `with_line `b -> line.b
-                         | `with_line `c -> line.c
-                         | `with_line `a2b2 -> a2b2
+                         | `with_line `a -> a'
+                         | `with_line `b -> b'
+                         | `with_line `c -> c'
+                         | `with_line `a2b2 -> a2b2'
                          | _ -> assert false
                        end
                      | _ -> assert false)
@@ -646,9 +637,10 @@ module Make (N : Module_types.Number) = struct
                         &&
                         match line.kind with
                         | `Line -> true
-                        | `Ray (p1, p2) -> is_qwf ~p1 ~p2 ~root
-                        | `Segment (p1, p2) ->
-                          is_qwf ~p1 ~p2 ~root && is_qwf ~p1:p2 ~p2:p1 ~root)
+                        | `Ray -> is_qwf ~p1:line.p1 ~p2:line.p2 ~root
+                        | `Segment ->
+                          is_qwf ~p1:line.p1 ~p2:line.p2 ~root
+                          && is_qwf ~p1:line.p2 ~p2:line.p1 ~root)
                in
                c f1 ~cond:N.(fun a -> a >= zero) @ c f2 ~cond:N.(fun a -> a < zero)
                |> List.min_elt ~compare:N.compare)
@@ -679,11 +671,11 @@ module Make (N : Module_types.Number) = struct
       let q1 = v1 in
       let q2 =
         N.(
-          if m2 = infinity
-          then two
-          else if m1 = infinity
-          then zero
-          else two * m2 / (m1 + m2))
+          match m1 = infinity, m2 = infinity with
+          | true, true -> one
+          | true, false -> zero
+          | false, true -> two
+          | false, false -> two * m2 / (m1 + m2))
       in
       let q3 = N.(V.(dot (v1 - v2) (x1 - x2)) / square V.(len (x2 - x1))) in
       let q4 = V.(x1 - x2) in
@@ -736,7 +728,8 @@ module Make (N : Module_types.Number) = struct
       fst @@ collision_body ~v1 ~v2:N.(zero, zero) ~m1 ~m2:N.infinity ~x1 ~y1 ~x2 ~y2 ~eps
     ;;
 
-    let calculate_new_v_with_line ~body ~line:LineSegmentRay.{ a; b; c; _ } ~eps =
+    let calculate_new_v_with_line ~body ~line ~eps =
+      let a, b, c = LineSegmentRay.to_abc line in 
       let v1 = Values.get_vector_exn body.Figure2.values ~var_x:`v0_x ~var_y:`v0_y in
       let m1 = Values.get_scalar_exn body.values ~var:`m in
       let x1 = Values.get_scalar_exn body.values ~var:`x0 in
@@ -874,7 +867,7 @@ module Make (N : Module_types.Number) = struct
       { time : N.t
       ; action : a
       }
-    [@@deriving sexp]
+    [@@deriving sexp, equal]
   end
 
   module Model : sig

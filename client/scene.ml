@@ -60,29 +60,16 @@ let scene_frame ~scene ~on_click ~time =
       |> Sequence.append
            (scene.lines
            |> S.Lines.to_sequence
-           |> Sequence.map ~f:(fun { a; b; c; kind } ->
+           |> Sequence.map ~f:(fun { p1; p2; kind = _ } ->
                   Svg.Node.line
                     ~attr:
                       (Attr.many
-                         Float.
-                           [ Svg.Attr.x1
-                               (match kind with
-                               | `Line -> 0.
-                               | `Ray ({ x; _ }, _) | `Segment ({ x; _ }, _) -> x)
-                           ; Svg.Attr.y1
-                               (match kind with
-                               | `Line -> -c / b
-                               | `Ray ({ y; _ }, _) | `Segment ({ y; _ }, _) -> y)
-                           ; Svg.Attr.x2
-                               (match kind with
-                               | `Line -> 1280.
-                               | `Ray (_, { x; _ }) | `Segment (_, { x; _ }) -> x)
-                           ; Svg.Attr.y2
-                               (match kind with
-                               | `Line -> -(c + (1280. * a)) / b
-                               | `Ray (_, { y; _ }) | `Segment (_, { y; _ }) -> y)
-                           ; Svg.Attr.stroke (`Name "black")
-                           ])
+                         [ Svg.Attr.x1 p1.x
+                         ; Svg.Attr.y1 p1.y
+                         ; Svg.Attr.x2 p2.x
+                         ; Svg.Attr.y2 p2.y
+                         ; Svg.Attr.stroke (`Name "black")
+                         ])
                     []))
       |> Sequence.to_list))
 ;;
@@ -109,7 +96,7 @@ let scene =
                      ; y0 = 250.
                      ; r = 50.
                      ; mu = 2.
-                     ; m = 1.
+                     ; m = 0.1
                      }
                }
              ~eps
@@ -123,7 +110,7 @@ let scene =
                      ; y0 = 200.
                      ; r = 75.
                      ; mu = 2.
-                     ; m = 2.
+                     ; m = 0.2
                      }
                }
              ~eps
@@ -137,27 +124,21 @@ let scene =
                      ; y0 = 500.
                      ; r = 100.
                      ; mu = 2.
-                     ; m = 3.
+                     ; m = 0.3
                      }
                }
-             ~eps
-        |> S.Engine.recv
-             ~action:{ time = 0.; action = S.Action.AddPoint { x = 500.; y = 300. } }
-             ~eps
-        |> S.Engine.recv
-             ~action:{ time = 0.; action = S.Action.AddPoint { x = 500.; y = 500. } }
-             ~eps
-        |> S.Engine.recv
-             ~action:{ time = 0.; action = S.Action.AddPoint { x = 200.; y = 400. } }
-             ~eps
-        |> S.Engine.recv
-             ~action:{ time = 0.; action = S.Action.AddPoint { x = 200.; y = 600. } }
              ~eps
         |> S.Engine.recv
              ~action:{ time = 0.; action = S.Action.AddPoint { x = 100.; y = 100. } }
              ~eps
         |> S.Engine.recv
-             ~action:{ time = 0.; action = S.Action.AddPoint { x = 400.; y = 0. } }
+             ~action:{ time = 0.; action = S.Action.AddPoint { x = 700.; y = 100. } }
+             ~eps
+        |> S.Engine.recv
+             ~action:{ time = 0.; action = S.Action.AddPoint { x = 700.; y = 100. } }
+             ~eps
+        |> S.Engine.recv
+             ~action:{ time = 0.; action = S.Action.AddPoint { x = 700.; y = 700. } }
              ~eps
         |> S.Engine.recv
              ~action:
@@ -166,7 +147,7 @@ let scene =
                    S.Action.AddLine
                      (S.LineSegmentRay.of_points
                         ~p1:{ x = 100.; y = 100. }
-                        ~p2:{ x = 200.; y = 400. }
+                        ~p2:{ x = 700.; y = 100. }
                         ~kind:`Segment)
                }
              ~eps
@@ -176,8 +157,8 @@ let scene =
                ; action =
                    S.Action.AddLine
                      (S.LineSegmentRay.of_points
-                        ~p1:{ x = 200.; y = 600. }
-                        ~p2:{ x = 500.; y = 500. }
+                        ~p1:{ x = 700.; y = 100. }
+                        ~p2:{ x = 700.; y = 700. }
                         ~kind:`Segment)
                }
              ~eps
@@ -187,8 +168,8 @@ let scene =
                ; action =
                    S.Action.AddLine
                      (S.LineSegmentRay.of_points
-                        ~p1:{ x = 500.; y = 300. }
-                        ~p2:{ x = 400.; y = 0. }
+                        ~p1:{ x = 700.; y = 700. }
+                        ~p2:{ x = 100.; y = 700. }
                         ~kind:`Segment)
                }
              ~eps
@@ -198,19 +179,8 @@ let scene =
                ; action =
                    S.Action.AddLine
                      (S.LineSegmentRay.of_points
-                        ~p1:{ x = 400.; y = 0. }
+                        ~p1:{ x = 100.; y = 700. }
                         ~p2:{ x = 100.; y = 100. }
-                        ~kind:`Segment)
-               }
-             ~eps
-        |> S.Engine.recv
-             ~action:
-               { time = 0.
-               ; action =
-                   S.Action.AddLine
-                     (S.LineSegmentRay.of_points
-                        ~p1:{ x = 200.; y = 400. }
-                        ~p2:{ x = 500.; y = 300. }
                         ~kind:`Segment)
                }
              ~eps)
@@ -280,7 +250,7 @@ let scene =
                        ; y0 = 350.
                        ; r = 50.
                        ; mu = 2.
-                       ; m = 1.
+                       ; m = 0.1
                        }
                  }
                  |> dispatch))
@@ -296,7 +266,7 @@ let scene =
                        ; y0 = 500.
                        ; r = 75.
                        ; mu = 2.
-                       ; m = 2.
+                       ; m = 0.2
                        }
                  }
                  |> dispatch))
@@ -312,7 +282,7 @@ let scene =
                        ; y0 = 500.
                        ; r = 100.
                        ; mu = 2.
-                       ; m = 3.
+                       ; m = 0.3
                        }
                  }
                  |> dispatch))
