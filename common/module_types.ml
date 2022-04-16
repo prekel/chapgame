@@ -49,3 +49,9 @@ end
 module type Scope = sig
   type t [@@deriving sexp, equal]
 end
+
+module type Constants = sig
+  module N : Number
+
+  val eps : N.t
+end

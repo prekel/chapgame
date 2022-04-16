@@ -3,9 +3,7 @@ open Bonsai_web
 open Bonsai.Let_syntax
 open Js_of_ocaml
 module Svg = Virtual_dom_svg
-module S = Chapgame.Scene.Make (Float)
-
-let eps = 1e-6
+module S = Chapgame.Scene.Make (Float) ((val Chapgame.Utils.make_consts ~eps:1e-6))
 
 type circle =
   { id : S.Figure2.Id.t
@@ -33,7 +31,7 @@ let scene_frame ~scene ~on_click ~time =
     Svg.Node.svg
       ~attr:(Attr.many [ Svg.Attr.width 1280.; Svg.Attr.height 720. ])
       (scene.bodies
-      |> S.Scene.Figures.calc ~t ~global_values:scene.global_values ~eps
+      |> S.Scene.Figures.calc ~t ~global_values:scene.global_values
       |> S.Scene.Figures.to_sequence
       |> Sequence.map ~f:(fun (id, figure) ->
              circle
@@ -99,7 +97,6 @@ let scene =
                      ; m = 0.1
                      }
                }
-             ~eps
         |> S.Engine.recv
              ~action:
                { time = 0.
@@ -113,7 +110,6 @@ let scene =
                      ; m = 0.2
                      }
                }
-             ~eps
         |> S.Engine.recv
              ~action:
                { time = 0.
@@ -127,19 +123,14 @@ let scene =
                      ; m = 0.3
                      }
                }
-             ~eps
         |> S.Engine.recv
              ~action:{ time = 0.; action = S.Action.AddPoint { x = 100.; y = 100. } }
-             ~eps
         |> S.Engine.recv
              ~action:{ time = 0.; action = S.Action.AddPoint { x = 700.; y = 100. } }
-             ~eps
         |> S.Engine.recv
              ~action:{ time = 0.; action = S.Action.AddPoint { x = 700.; y = 100. } }
-             ~eps
         |> S.Engine.recv
              ~action:{ time = 0.; action = S.Action.AddPoint { x = 700.; y = 700. } }
-             ~eps
         |> S.Engine.recv
              ~action:
                { time = 0.
@@ -150,7 +141,6 @@ let scene =
                         ~p2:{ x = 700.; y = 100. }
                         ~kind:`Segment)
                }
-             ~eps
         |> S.Engine.recv
              ~action:
                { time = 0.
@@ -161,7 +151,6 @@ let scene =
                         ~p2:{ x = 700.; y = 700. }
                         ~kind:`Segment)
                }
-             ~eps
         |> S.Engine.recv
              ~action:
                { time = 0.
@@ -172,7 +161,6 @@ let scene =
                         ~p2:{ x = 100.; y = 700. }
                         ~kind:`Segment)
                }
-             ~eps
         |> S.Engine.recv
              ~action:
                { time = 0.
@@ -182,10 +170,9 @@ let scene =
                         ~p1:{ x = 100.; y = 700. }
                         ~p2:{ x = 100.; y = 100. }
                         ~kind:`Segment)
-               }
-             ~eps)
+               })
       ~apply_action:(fun ~inject:_ ~schedule_event:_ model action ->
-        let ret = S.Engine.recv model ~action ~eps in
+        let ret = S.Engine.recv model ~action in
         print_s [%sexp (ret : S.Model.t)];
         ret)
   in

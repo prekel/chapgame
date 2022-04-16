@@ -88,3 +88,13 @@ end = struct
   let to_map = Fn.id
   let of_map = Fn.id
 end
+
+module type FloatConstants = Module_types.Constants with module N = Float
+
+let make_consts ~eps =
+  (module struct
+    module N = Float
+
+    let eps = eps
+  end : FloatConstants)
+;;

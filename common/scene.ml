@@ -1,6 +1,7 @@
 open Core
 
-module Make (N : Module_types.Number) = struct
+module Make (N : Module_types.Number) (C : Module_types.Constants with module N = N) =
+struct
   module Vars :
     Identifiable.S
       with type t =
@@ -45,6 +46,8 @@ module Make (N : Module_types.Number) = struct
   module Solver = Solver.MakeSolver (N)
   module Expr = Expr.Make (Vars) (Scope) (N)
   module Formula = Formula.Make (Vars) (Scope) (N) (Expr) (Solver)
+
+  let eps = C.eps
 
   module Vector : sig
     include module type of Expr.VectorOps
@@ -249,7 +252,7 @@ module Make (N : Module_types.Number) = struct
       }
     [@@deriving sexp, equal]
 
-    let calc ~values ~rules ~scoped_values ~t ~eps =
+    let calc ~values ~rules ~scoped_values ~t =
       let c = Expr.calc ~values ~scoped_values (module N) in
       let calc_xy f =
         Formula.to_polynomial f ~values ~scoped_values ~eps |> Solver.Polynomial.calc ~x:t
@@ -325,15 +328,13 @@ module Make (N : Module_types.Number) = struct
         :  (Figure2.Id.t * Figure2.t) Sequence.t
         -> r:Formula.t
         -> global:Values.t
-        -> eps:N.t
         -> a:Expr.vector Expr.t
         -> (N.t * Figure2.Id.t * Figure2.Id.t) option
     end
 
     module WithPoint : sig
       val first_collision
-        :  eps:N.t
-        -> global:Values.t
+        :  global:Values.t
         -> (Figure2.Id.t * Figure2.t) Sequence.t
         -> points:Point.t Sequence.t
         -> r:Formula.t
@@ -342,8 +343,7 @@ module Make (N : Module_types.Number) = struct
 
     module WithLine : sig
       val first_collision
-        :  eps:N.t
-        -> global:Values.t
+        :  global:Values.t
         -> (Figure2.Id.t * Figure2.t) Sequence.t
         -> lines:LineSegmentRay.t Sequence.t
         -> r:Formula.t
@@ -475,7 +475,7 @@ module Make (N : Module_types.Number) = struct
         |> Sequence.concat
       ;;
 
-      let first_collision bodies ~r ~global ~eps ~a =
+      let first_collision bodies ~r ~global ~a =
         let extra = collisions_extra ~eps ~global_values:global bodies ~r ~a in
         let%map.Option { id1; id2; _ }, t =
           extra
@@ -539,7 +539,7 @@ module Make (N : Module_types.Number) = struct
         |> Sequence.hd
       ;;
 
-      let first_collision ~eps ~global bodies ~points ~r =
+      let first_collision ~global bodies ~points ~r =
         Sequence.cartesian_product bodies points
         |> Sequence.filter_map ~f:(fun ((id, body), point) ->
                let distance = distance_beetween_body_and_point ~body ~point in
@@ -644,7 +644,7 @@ module Make (N : Module_types.Number) = struct
         |> Sequence.hd
       ;;
 
-      let first_collision ~eps ~global bodies ~lines ~r =
+      let first_collision ~global bodies ~lines ~r =
         Sequence.cartesian_product bodies lines
         |> Sequence.filter_map ~f:(fun ((id, (body : Figure2.t)), line) ->
                let distance = distance_beetween_body_and_line ~body ~line in
@@ -679,7 +679,7 @@ module Make (N : Module_types.Number) = struct
       V.(q1 - (N.(q2 * q3) ^* q4))
     ;;
 
-    let collision_body ~v1 ~v2 ~m1 ~m2 ~x1 ~y1 ~x2 ~y2 ~eps =
+    let collision_body ~v1 ~v2 ~m1 ~m2 ~x1 ~y1 ~x2 ~y2 =
       let v1' = collision ~v1 ~v2 ~x1:(x1, y1) ~x2:(x2, y2) ~m1 ~m2 in
       let v2' = collision ~v1:v2 ~v2:v1 ~x1:(x2, y2) ~x2:(x1, y1) ~m1:m2 ~m2:m1 in
       if N.(is_finite m1 && is_finite m2)
@@ -705,7 +705,7 @@ module Make (N : Module_types.Number) = struct
       else v1', v2'
     ;;
 
-    let calculate_new_v values1 values2 ~eps =
+    let calculate_new_v values1 values2 =
       let v1 = Values.get_vector_exn values1 ~var_x:`v0_x ~var_y:`v0_y in
       let v2 = Values.get_vector_exn values2 ~var_x:`v0_x ~var_y:`v0_y in
       let m1 = Values.get_scalar_exn values1 ~var:`m in
@@ -714,18 +714,18 @@ module Make (N : Module_types.Number) = struct
       let y1 = Values.get_scalar_exn values1 ~var:`y0 in
       let x2 = Values.get_scalar_exn values2 ~var:`x0 in
       let y2 = Values.get_scalar_exn values2 ~var:`y0 in
-      collision_body ~v1 ~v2 ~m1 ~m2 ~x1 ~y1 ~x2 ~y2 ~eps
+      collision_body ~v1 ~v2 ~m1 ~m2 ~x1 ~y1 ~x2 ~y2
     ;;
 
-    let calculate_new_v_with_point ~body ~point:Point.{ x = x2; y = y2 } ~eps =
+    let calculate_new_v_with_point ~body ~point:Point.{ x = x2; y = y2 } =
       let v1 = Values.get_vector_exn body.Figure2.values ~var_x:`v0_x ~var_y:`v0_y in
       let m1 = Values.get_scalar_exn body.values ~var:`m in
       let x1 = Values.get_scalar_exn body.values ~var:`x0 in
       let y1 = Values.get_scalar_exn body.values ~var:`y0 in
-      fst @@ collision_body ~v1 ~v2:N.(zero, zero) ~m1 ~m2:N.infinity ~x1 ~y1 ~x2 ~y2 ~eps
+      fst @@ collision_body ~v1 ~v2:N.(zero, zero) ~m1 ~m2:N.infinity ~x1 ~y1 ~x2 ~y2
     ;;
 
-    let calculate_new_v_with_line ~body ~line ~eps =
+    let calculate_new_v_with_line ~body ~line =
       let a, b, c = LineSegmentRay.to_abc line in
       let v1 = Values.get_vector_exn body.Figure2.values ~var_x:`v0_x ~var_y:`v0_y in
       let m1 = Values.get_scalar_exn body.values ~var:`m in
@@ -735,7 +735,7 @@ module Make (N : Module_types.Number) = struct
       let m2 = N.infinity in
       let x2 = N.(x1 - (a * c / (square a + square b))) in
       let y2 = N.(y1 - (b * c / (square a + square b))) in
-      fst @@ collision_body ~v1 ~v2 ~m1 ~m2 ~x1 ~y1 ~x2 ~y2 ~eps
+      fst @@ collision_body ~v1 ~v2 ~m1 ~m2 ~x1 ~y1 ~x2 ~y2
     ;;
   end
 
@@ -775,11 +775,11 @@ module Make (N : Module_types.Number) = struct
     module Figures : sig
       include module type of Utils.MakeAdvancedMap (Figure2.Id) (Figure2)
 
-      val calc : t -> t:N.t -> global_values:Values.t -> eps:N.t -> t
+      val calc : t -> t:N.t -> global_values:Values.t -> t
     end = struct
       include Utils.MakeAdvancedMap (Figure2.Id) (Figure2)
 
-      let calc figures ~t ~global_values ~eps =
+      let calc figures ~t ~global_values =
         to_map figures
         |> Map.map ~f:(fun f ->
                Figure2.calc
@@ -787,7 +787,6 @@ module Make (N : Module_types.Number) = struct
                  ~rules:f.rules
                  ~scoped_values:(Values.global_to_scoped global_values)
                  ~t
-                 ~eps
                |> Option.map ~f:(fun (xy, rules) -> Figure2.update_x0y0 ~body:f xy ~rules)
                |> Option.value ~default:f)
         |> of_map
@@ -923,19 +922,17 @@ module Make (N : Module_types.Number) = struct
   end
 
   module Engine = struct
-    let forward ?time (scene : Scene.t) ~eps =
+    let forward ?time (scene : Scene.t) =
       let rec forward_rec (scene : Scene.t) =
         let with_body =
           Scene.Figures.to_sequence scene.bodies
           |> CollisionDetection.WithBody.first_collision
-               ~eps
                ~global:scene.global_values
                ~r:(Formula.of_alist_exn Figure2.Rule.Exprs.[ 0, r ])
                ~a:Figure2.Rule.Exprs.a_vec
         in
         let with_point =
           CollisionDetection.WithPoint.first_collision
-            ~eps
             ~global:scene.global_values
             ~points:(Points.to_sequence scene.points)
             ~r:(Formula.of_alist_exn Figure2.Rule.Exprs.[ 0, r ])
@@ -943,19 +940,16 @@ module Make (N : Module_types.Number) = struct
         in
         let with_line =
           CollisionDetection.WithLine.first_collision
-            ~eps
             ~global:scene.global_values
             ~lines:(Lines.to_sequence scene.lines)
             ~r:(Formula.of_alist_exn Figure2.Rule.Exprs.[ 0, r ])
             (Scene.Figures.to_sequence scene.bodies)
         in
         let coll t ~id1 ~id2 =
-          let q =
-            Scene.Figures.calc scene.bodies ~t ~global_values:scene.global_values ~eps
-          in
+          let q = Scene.Figures.calc scene.bodies ~t ~global_values:scene.global_values in
           let body1 = Scene.Figures.get_by_id q ~id:id1 in
           let body2 = Scene.Figures.get_by_id q ~id:id2 in
-          let v1n, v2n = CollisionHandle.calculate_new_v body1.values body2.values ~eps in
+          let v1n, v2n = CollisionHandle.calculate_new_v body1.values body2.values in
           let q =
             Scene.Figures.update_by_id
               q
@@ -997,11 +991,9 @@ module Make (N : Module_types.Number) = struct
           s
         in
         let coll_with_point (t, id, point) =
-          let q =
-            Scene.Figures.calc scene.bodies ~t ~global_values:scene.global_values ~eps
-          in
+          let q = Scene.Figures.calc scene.bodies ~t ~global_values:scene.global_values in
           let body = Scene.Figures.get_by_id q ~id in
-          let v' = CollisionHandle.calculate_new_v_with_point ~body ~point ~eps in
+          let v' = CollisionHandle.calculate_new_v_with_point ~body ~point in
           let q =
             Scene.Figures.update_by_id
               q
@@ -1018,11 +1010,9 @@ module Make (N : Module_types.Number) = struct
             ~lines:scene.lines
         in
         let coll_with_line (t, id, line) =
-          let q =
-            Scene.Figures.calc scene.bodies ~t ~global_values:scene.global_values ~eps
-          in
+          let q = Scene.Figures.calc scene.bodies ~t ~global_values:scene.global_values in
           let body = Scene.Figures.get_by_id q ~id in
-          let v' = CollisionHandle.calculate_new_v_with_line ~body ~line ~eps in
+          let v' = CollisionHandle.calculate_new_v_with_line ~body ~line in
           let q =
             Scene.Figures.update_by_id
               q
@@ -1059,8 +1049,7 @@ module Make (N : Module_types.Number) = struct
                   (Scene.Figures.calc
                      scene.bodies
                      ~t:N.(time - scene.time)
-                     ~global_values:scene.global_values
-                     ~eps)
+                     ~global_values:scene.global_values)
                 ~cause:[]
                 ~time
                 ~points:scene.points
@@ -1080,8 +1069,7 @@ module Make (N : Module_types.Number) = struct
                   (Scene.Figures.calc
                      scene.bodies
                      ~t:N.(time - scene.time)
-                     ~global_values:scene.global_values
-                     ~eps)
+                     ~global_values:scene.global_values)
                 ~cause:[]
                 ~time
                 ~points:scene.points
@@ -1101,8 +1089,7 @@ module Make (N : Module_types.Number) = struct
                   (Scene.Figures.calc
                      scene.bodies
                      ~t:N.(time - scene.time)
-                     ~global_values:scene.global_values
-                     ~eps)
+                     ~global_values:scene.global_values)
                 ~cause:[]
                 ~time
                 ~points:scene.points
@@ -1117,7 +1104,6 @@ module Make (N : Module_types.Number) = struct
               scene.bodies
               ~t:N.(time - scene.time)
               ~global_values:scene.global_values
-              ~eps
           in
           [ Scene.update
               scene
@@ -1132,9 +1118,9 @@ module Make (N : Module_types.Number) = struct
       forward_rec scene |> List.rev
     ;;
 
-    let recv model ~action:Action.{ time; action } ~eps =
+    let recv model ~action:Action.{ time; action } =
       let before, s = Model.before model ~time in
-      let scenes = forward s ~time ~eps in
+      let scenes = forward s ~time in
       let model = Model.merge_with_list before scenes in
       let before, s = Model.before model ~time in
       let r =
@@ -1176,7 +1162,7 @@ module Make (N : Module_types.Number) = struct
         | Empty -> s
       in
       let m = before |> Model.update ~time:r.time ~scene:r in
-      let f = forward (Model.last_exn m) ~eps in
+      let f = forward (Model.last_exn m) in
       Model.merge_with_list m f
     ;;
   end
