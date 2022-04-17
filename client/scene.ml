@@ -58,14 +58,27 @@ let scene_frame ~scene ~on_click ~time =
       |> Sequence.append
            (scene.lines
            |> S.Lines.to_sequence
-           |> Sequence.map ~f:(fun { p1; p2; kind = _ } ->
+           |> Sequence.map ~f:(fun { p1; p2; kind } ->
+                  let open Float in
+                  let x1, y1, x2, y2 = p1.x, p1.y, p2.x, p2.y in
+                  let dx, dy = x2 - x1, y2 - y1 in
+                  let x1, y1, x2, y2 =
+                    match kind with
+                    | `Line ->
+                      ( x1 - (dx * 100.)
+                      , y1 - (dy * 100.)
+                      , x2 + (dx * 100.)
+                      , y2 + (dy * 100.) )
+                    | `Segment -> x1, y1, x2, y2
+                    | `Ray -> x1, y1, x2 + (dx * 100.), y2 + (dy * 100.)
+                  in
                   Svg.Node.line
                     ~attr:
                       (Attr.many
-                         [ Svg.Attr.x1 p1.x
-                         ; Svg.Attr.y1 p1.y
-                         ; Svg.Attr.x2 p2.x
-                         ; Svg.Attr.y2 p2.y
+                         [ Svg.Attr.x1 x1
+                         ; Svg.Attr.y1 y1
+                         ; Svg.Attr.x2 x2
+                         ; Svg.Attr.y2 y2
                          ; Svg.Attr.stroke (`Name "black")
                          ])
                     []))
@@ -99,7 +112,7 @@ let scene =
                      ; x0 = 425.
                      ; y0 = 275.
                      ; r = 2.
-                     ; mu = 2.
+                     ; mu = 5.
                      ; m = Float.(pi * 2. * 2.)
                      }
                ; timeout = None
@@ -113,7 +126,7 @@ let scene =
                      ; x0 = 450.
                      ; y0 = 250.
                      ; r = 10.
-                     ; mu = 2.
+                     ; mu = 1.
                      ; m = Float.(pi * 10. * 10.)
                      }
                ; timeout = None
@@ -127,7 +140,7 @@ let scene =
                      ; x0 = 600.
                      ; y0 = 600.
                      ; r = 50.
-                     ; mu = 0.
+                     ; mu = 2.
                      ; m = Float.(pi * 50. * 50.)
                      }
                ; timeout = None
@@ -141,7 +154,7 @@ let scene =
                      ; x0 = 500.
                      ; y0 = 500.
                      ; r = 60.
-                     ; mu = 0.
+                     ; mu = 3.
                      ; m = Float.(pi * 60. * 60.)
                      }
                ; timeout = None
@@ -229,7 +242,7 @@ let scene =
                      (S.LineSegmentRay.of_points
                         ~p1:{ x = 1100.; y = 100. }
                         ~p2:{ x = 700.; y = 700. }
-                        ~kind:`Segment)
+                        ~kind:`Line)
                ; timeout = None
                }
         |> S.Engine.recv
@@ -240,7 +253,7 @@ let scene =
                      (S.LineSegmentRay.of_points
                         ~p1:{ x = 700.; y = 700. }
                         ~p2:{ x = 100.; y = 700. }
-                        ~kind:`Segment)
+                        ~kind:`Ray)
                ; timeout = None
                }
         |> S.Engine.recv
@@ -262,15 +275,24 @@ let scene =
     Bonsai.state [%here] (module Bool) ~default_model:false
   in
   let%sub speed, set_speed = Bonsai.state [%here] (module Float) ~default_model:1. in
+  let%sub timeoutd, set_timeoutd =
+    Bonsai.state [%here] (module Float) ~default_model:10.
+  in
   let%sub a =
     let%arr is_pause = is_pause
-    and speed = speed in
+    and speed = speed
+    and state = state in
     fun t ->
       let open Float in
-      match t + (frame_time60 * speed), is_pause with
-      | _, true -> t
-      | nt, _ when nt < 0. -> 0.
-      | nt, false -> nt
+      let p =
+        match t + (frame_time60 * speed), is_pause with
+        | _, true -> t
+        | nt, _ when nt < 0. -> 0.
+        | nt, false -> nt
+      in
+      match state.timeout with
+      | Some timeout -> min timeout p
+      | None -> p
   in
   let%sub () =
     Bonsai.Clock.every
@@ -288,15 +310,16 @@ let scene =
   in
   let cl =
     dispatch
-    >>| (fun a time id x y r ->
+    >>| (fun a timeoutd time id x y r ->
           a
             (`Action
               { time
               ; action =
                   S.Action.GiveVelocity
                     { id; v0 = Float.((x - r) / r * -200., (y - r) / r * -200.) }
-              ; timeout = None
+              ; timeout = Some Float.(time + timeoutd)
               }))
+    <*> timeoutd
     <*> time
   in
   let%sub frame = scene_frame ~scene:last_scene ~time ~on_click:cl in
@@ -310,7 +333,9 @@ let scene =
   and set_time = update_time
   and text_state = text_state
   and set_text_state = set_text_state
-  and state = state in
+  and state = state
+  and timeoutd = timeoutd
+  and set_timeoutd = set_timeoutd in
   Vdom.(
     Node.div
       [ Node.text (Float.to_string time)
@@ -329,7 +354,7 @@ let scene =
                          ; mu = 2.
                          ; m = 1.
                          }
-                   ; timeout = None
+                   ; timeout = Some Float.(time + timeoutd)
                    }
                  |> dispatch))
           [ Node.text "add " ]
@@ -341,13 +366,13 @@ let scene =
                    ; action =
                        S.Action.AddBody
                          { id = S.Figure2.Id.next ()
-                         ; x0 = 700.
+                         ; x0 = 800.
                          ; y0 = 500.
                          ; r = 75.
                          ; mu = 2.
                          ; m = 2.
                          }
-                   ; timeout = None
+                   ; timeout = Some Float.(time + timeoutd)
                    }
                  |> dispatch))
           [ Node.text "add " ]
@@ -365,7 +390,7 @@ let scene =
                          ; mu = 2.
                          ; m = 3.
                          }
-                   ; timeout = None
+                   ; timeout = Some Float.(time + timeoutd)
                    }
                  |> dispatch))
           [ Node.text "add " ]
@@ -402,7 +427,7 @@ let scene =
                ; Attr.on_change (fun _ a ->
                      try a |> Float.of_string |> of_prec |> set_time with
                      | _ -> Effect.Ignore)
-               ; Attr.value_prop (Float.to_string time)
+               ; Attr.value_prop (Float.to_string (to_prec time))
                ])
           []
       ; Node.input
@@ -414,6 +439,42 @@ let scene =
                ; Attr.value (Float.to_string time)
                ])
           []
+      ; Node.input
+          ~attr:
+            (Attr.many
+               [ Attr.type_ "range"
+               ; Attr.min (to_prec 0.)
+               ; Attr.max (to_prec 100.)
+               ; Attr.on_input (fun _ a ->
+                     try a |> Float.of_string |> of_prec |> set_timeoutd with
+                     | _ -> Effect.Ignore)
+               ; Attr.value (Float.to_string (to_prec timeoutd))
+               ])
+          []
+      ; Node.input
+          ~attr:
+            (Attr.many
+               [ Attr.on_change (fun _ a ->
+                     try a |> Float.of_string |> set_timeoutd with
+                     | _ -> Effect.Ignore)
+               ; Attr.value (Float.to_string timeoutd)
+               ])
+          []
+      ; Node.button
+          ~attr:
+            (Attr.on_click (fun _ ->
+                 `Action
+                   { time
+                   ; action = S.Action.Empty
+                   ; timeout = Some Float.(time + timeoutd)
+                   }
+                 |> dispatch))
+          [ Node.text "timeout" ]
+      ; Node.button
+          ~attr:
+            (Attr.on_click (fun _ ->
+                 `Action { time; action = S.Action.Empty; timeout = None } |> dispatch))
+          [ Node.text "no timeout" ]
       ; Node.br ()
       ; frame
       ; Node.textarea

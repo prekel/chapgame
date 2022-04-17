@@ -262,7 +262,7 @@ module MakeSolver (N : Module_types.Number) = struct
              : N.t) ~f:(f xl : N.t) ~poly:(poly : Polynomial.t) ~eps:(eps : N.t)]; *)
           let xm = N.((xl + xr) / two) in
           let ym = f xm in
-          if N.(abs ym < eps)
+          if N.(abs ym < eps || (Int.(cnt > 40000) && xr - xl < eps))
           then Some xm
           else if N.(ym < zero)
           then search_rec (cnt + 1) ~f (xm, xr)
@@ -329,5 +329,11 @@ module MakeSolver (N : Module_types.Number) = struct
         |> List.filter_map ~f:(BinarySearch.search ~f:calc ~eps ~poly)
         |> List.sort ~compare:N.ascending
     ;;
+
+    (* let roots ~eps poly =
+      let ret = roots ~eps poly in
+      List.iter ret ~f:(fun root -> assert (N.(abs (Polynomial.calc poly ~x:root) < eps)));
+      ret
+    ;; *)
   end
 end
