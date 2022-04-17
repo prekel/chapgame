@@ -244,7 +244,18 @@ module MakeSolver (N : Module_types.Number) = struct
       let rec search_rec cnt ~f (xl, xr) =
         assert (N.(f xl < f xr));
         if cnt > 50000
-        then Some N.((xl + xr) / two)
+        then begin
+          print_s
+            [%message
+              "search_rec"
+                ~cnt:(cnt : int)
+                ~xl:(xl : N.t)
+                ~xr:(xr : N.t)
+                ~f:(f xl : N.t)
+                ~poly:(poly : Polynomial.t)
+                ~eps:(eps : N.t)];
+          Some N.((xl + xr) / two)
+        end
         else (
           (* TODO *)
           (* Error.raise_s [%message "search_rec" ~cnt:(cnt : int) ~xl:(xl : N.t) ~xr:(xr

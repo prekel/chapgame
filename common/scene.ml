@@ -175,44 +175,44 @@ struct
         let pi = scalar_const N.pi
       end
 
-      open Expr.Syntax
-
       let rec rules1 =
-        [ { interval = `Interval Exprs.(zero, vector_length v0_vec / vector_length a_vec)
-          ; x = Formula.of_alist_exn Exprs.[ 0, x0; 1, v0_x; 2, a_x / two ]
-          ; y = Formula.of_alist_exn Exprs.[ 0, y0; 1, v0_y; 2, a_y / two ]
-          ; v_x = Formula.of_alist_exn Exprs.[ 0, v0_x; 1, a_x ]
-          ; v_y = Formula.of_alist_exn Exprs.[ 0, v0_y; 1, a_y ]
-          ; after = rules1
-          ; name = "rules1 - 0"
-          }
-        ; { interval = `PosInfinity Exprs.(vector_length v0_vec / vector_length a_vec)
-          ; x =
-              Formula.of_alist_exn
-                Exprs.
-                  [ ( 0
-                    , x0
-                      + (v0_x * vector_length v0_vec / vector_length a_vec)
-                      + (a_x
-                        * sqr (vector_length v0_vec)
-                        / (two * sqr (vector_length a_vec))) )
-                  ]
-          ; y =
-              Formula.of_alist_exn
-                Exprs.
-                  [ ( 0
-                    , y0
-                      + (v0_y * vector_length v0_vec / vector_length a_vec)
-                      + (a_y
-                        * sqr (vector_length v0_vec)
-                        / (two * sqr (vector_length a_vec))) )
-                  ]
-          ; v_x = Formula.of_alist_exn Exprs.[ 0, zero ]
-          ; v_y = Formula.of_alist_exn Exprs.[ 0, zero ]
-          ; after = rules0
-          ; name = "rules1 - 1"
-          }
-        ]
+        Expr.Syntax.
+          [ { interval =
+                `Interval Exprs.(zero, vector_length v0_vec / vector_length a_vec)
+            ; x = Formula.of_alist_exn Exprs.[ 0, x0; 1, v0_x; 2, a_x / two ]
+            ; y = Formula.of_alist_exn Exprs.[ 0, y0; 1, v0_y; 2, a_y / two ]
+            ; v_x = Formula.of_alist_exn Exprs.[ 0, v0_x; 1, a_x ]
+            ; v_y = Formula.of_alist_exn Exprs.[ 0, v0_y; 1, a_y ]
+            ; after = rules1
+            ; name = "rules1 - 0"
+            }
+          ; { interval = `PosInfinity Exprs.(vector_length v0_vec / vector_length a_vec)
+            ; x =
+                Formula.of_alist_exn
+                  Exprs.
+                    [ ( 0
+                      , x0
+                        + (v0_x * vector_length v0_vec / vector_length a_vec)
+                        + (a_x
+                          * sqr (vector_length v0_vec)
+                          / (two * sqr (vector_length a_vec))) )
+                    ]
+            ; y =
+                Formula.of_alist_exn
+                  Exprs.
+                    [ ( 0
+                      , y0
+                        + (v0_y * vector_length v0_vec / vector_length a_vec)
+                        + (a_y
+                          * sqr (vector_length v0_vec)
+                          / (two * sqr (vector_length a_vec))) )
+                    ]
+            ; v_x = Formula.of_alist_exn Exprs.[ 0, zero ]
+            ; v_y = Formula.of_alist_exn Exprs.[ 0, zero ]
+            ; after = rules0
+            ; name = "rules1 - 1"
+            }
+          ]
 
       and rules0 =
         [ { interval = `PosInfinity Exprs.zero
@@ -747,12 +747,6 @@ struct
         | Collision of
             { id1 : Figure2.Id.t
             ; id2 : Figure2.Id.t
-            ; xy1 : N.t * N.t
-            ; xy2 : N.t * N.t
-            ; v1_before : N.t * N.t
-            ; v2_before : N.t * N.t
-            ; v1 : N.t * N.t
-            ; v2 : N.t * N.t
             }
         | CollisionWithPoint of
             { id : Figure2.Id.t
@@ -866,61 +860,84 @@ struct
     type t =
       { time : N.t
       ; action : a
+      ; timeout : N.t option
       }
     [@@deriving sexp, equal]
   end
 
   module Model : sig
-    type t [@@deriving sexp, equal]
+    module Scenes : sig
+      type t [@@deriving sexp, equal]
+
+      val before : t -> time:N.t -> t * Scene.t
+      val merge_with_list : t -> Scene.t list -> t
+      val last_exn : t -> Scene.t
+    end
+
+    type t =
+      { scenes : Scenes.t
+      ; timeout : N.t option
+      }
+    [@@deriving sexp, equal]
 
     val init : g:N.t -> t
-    val update : t -> time:N.t -> scene:Scene.t -> t
-    val before : t -> time:N.t -> t * Scene.t
-    val merge_with_list : t -> Scene.t list -> t
-    val last_exn : t -> Scene.t
+    val of_scenes : Scenes.t -> time:N.t -> scene:Scene.t -> timeout:N.t option -> t
   end = struct
-    include Utils.MakeAdvancedMap (N) (Scene)
+    module Scenes = struct
+      include Utils.MakeAdvancedMap (N) (Scene)
 
-    let init ~g = Map.of_alist_exn (module N) [ N.zero, Scene.init ~g ]
+      let before scenes ~time =
+        match Map.split scenes time with
+        | l, Some (k, v), _ -> Map.add_exn l ~key:k ~data:v, v
+        | l, None, _ -> l, snd @@ Map.max_elt_exn l
+      ;;
 
-    let update model ~time ~scene =
-      Map.update model time ~f:(function
-          | Some s ->
+      let merge_with_list scenes l =
+        (* TODO *)
+        let l =
+          Map.of_alist_reduce
+            (module N)
+            (List.map l ~f:(fun scene -> scene.Scene.time, scene))
+            ~f:(fun _a b -> b)
+        in
+        Map.merge_skewed scenes l ~combine:(fun ~key v1 v2 ->
             Scene.update
-              s
-              ~bodies:scene.Scene.bodies
-              ~cause:(scene.cause @ s.cause)
-              ~points:scene.points
-              ~lines:scene.lines
-              ~time
-          | None -> scene)
+              v2
+              ~bodies:v2.bodies
+              ~cause:(v2.cause @ v1.cause)
+              ~points:v2.points
+              ~lines:v2.lines
+              ~time:key)
+      ;;
+
+      let last_exn = Common.Fn.(Map.max_elt_exn >> snd)
+    end
+
+    type t =
+      { scenes : Scenes.t
+      ; timeout : N.t option
+      }
+    [@@deriving sexp, equal]
+
+    let init ~g =
+      { scenes = Map.of_alist_exn (module N) [ N.zero, Scene.init ~g ]; timeout = None }
     ;;
 
-    let before model ~time =
-      match Map.split model time with
-      | l, Some (k, v), _ -> Map.add_exn l ~key:k ~data:v, v
-      | l, None, _ -> l, snd @@ Map.max_elt_exn l
+    let of_scenes scenes ~time ~scene ~timeout =
+      { scenes =
+          Map.update scenes time ~f:(function
+              | Some s ->
+                Scene.update
+                  s
+                  ~bodies:scene.Scene.bodies
+                  ~cause:(scene.cause @ s.cause)
+                  ~points:scene.points
+                  ~lines:scene.lines
+                  ~time
+              | None -> scene)
+      ; timeout
+      }
     ;;
-
-    let merge_with_list model l =
-      (* TODO *)
-      let l =
-        Map.of_alist_reduce
-          (module N)
-          (List.map l ~f:(fun scene -> scene.Scene.time, scene))
-          ~f:(fun _a b -> b)
-      in
-      Map.merge_skewed model l ~combine:(fun ~key v1 v2 ->
-          Scene.update
-            v2
-            ~bodies:v2.bodies
-            ~cause:(v2.cause @ v1.cause)
-            ~points:v2.points
-            ~lines:v2.lines
-            ~time:key)
-    ;;
-
-    let last_exn = Common.Fn.(Map.max_elt_exn >> snd)
   end
 
   module Engine = struct
@@ -952,45 +969,20 @@ struct
           let body1 = Scene.Figures.get_by_id q ~id:id1 in
           let body2 = Scene.Figures.get_by_id q ~id:id2 in
           let v1n, v2n = CollisionHandle.calculate_new_v body1.values body2.values in
-          let q =
-            Scene.Figures.update_by_id
-              q
-              ~id:id1
-              ~body:(Figure2.update_v0 body1 ~v:v1n ~rules:Figure2.Rule.rules1)
-            |> Scene.Figures.update_by_id
-                 ~id:id2
-                 ~body:(Figure2.update_v0 body2 ~v:v2n ~rules:Figure2.Rule.rules1)
-          in
-          let new_time = N.(scene.time + t) in
-          let s =
-            let body1 = Scene.Figures.get_by_id scene.bodies ~id:id1 in
-            let body2 = Scene.Figures.get_by_id scene.bodies ~id:id2 in
-            Scene.update
-              scene
-              ~bodies:q
-              ~cause:
-                [ Collision
-                    { id1
-                    ; id2
-                    ; xy1 =
-                        ( Values.get_scalar_exn body1.values ~var:`x0
-                        , Values.get_scalar_exn body1.values ~var:`y0 )
-                    ; xy2 =
-                        ( Values.get_scalar_exn body2.values ~var:`x0
-                        , Values.get_scalar_exn body2.values ~var:`y0 )
-                    ; v1_before =
-                        Values.get_vector_exn body1.values ~var_x:`v0_x ~var_y:`v0_y
-                    ; v2_before =
-                        Values.get_vector_exn body2.values ~var_x:`v0_x ~var_y:`v0_y
-                    ; v1 = v1n
-                    ; v2 = v2n
-                    }
-                ]
-              ~time:new_time
-              ~points:scene.points
-              ~lines:scene.lines
-          in
-          s
+          Scene.update
+            scene
+            ~bodies:
+              (q
+              |> Scene.Figures.update_by_id
+                   ~id:id1
+                   ~body:(Figure2.update_v0 body1 ~v:v1n ~rules:Figure2.Rule.rules1)
+              |> Scene.Figures.update_by_id
+                   ~id:id2
+                   ~body:(Figure2.update_v0 body2 ~v:v2n ~rules:Figure2.Rule.rules1))
+            ~cause:[ Collision { id1; id2 } ]
+            ~time:N.(scene.time + t)
+            ~points:scene.points
+            ~lines:scene.lines
         in
         let coll_with_point (t, id, point) =
           let q = Scene.Figures.calc scene.bodies ~t ~global_values:scene.global_values in
@@ -1120,11 +1112,11 @@ struct
       forward_rec ~scene [] |> List.rev
     ;;
 
-    let recv model ~action:Action.{ time; action } =
-      let before, s = Model.before model ~time in
+    let recv model ~action:Action.{ time; action; timeout } =
+      let before, s = Model.Scenes.before model.Model.scenes ~time in
       let scenes = forward s ~time in
-      let model = Model.merge_with_list before scenes in
-      let before, s = Model.before model ~time in
+      let scenes = Model.Scenes.merge_with_list before scenes in
+      let before, s = Model.Scenes.before scenes ~time in
       let r =
         match action with
         | Action.AddBody { id; x0; y0; r; mu; m } ->
@@ -1163,9 +1155,15 @@ struct
             ~lines:s.lines
         | Empty -> s
       in
-      let m = before |> Model.update ~time:r.time ~scene:r in
-      let f = forward (Model.last_exn m) in
-      Model.merge_with_list m f
+      let m = before |> Model.of_scenes ~time:r.time ~scene:r ~timeout in
+      let f = forward (Model.Scenes.last_exn m.scenes) in
+      { m with scenes = Model.Scenes.merge_with_list m.scenes f }
+    ;;
+
+    let update model ~action =
+      match action with
+      | `Action a -> recv model ~action:a
+      | `Replace m -> m
     ;;
   end
 end

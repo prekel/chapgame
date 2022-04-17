@@ -3,7 +3,7 @@ open Bonsai_web
 open Bonsai.Let_syntax
 open Js_of_ocaml
 module Svg = Virtual_dom_svg
-module S = Chapgame.Scene.Make (Float) ((val Chapgame.Utils.make_consts ~eps:1e-3))
+module S = Chapgame.Scene.Make (Float) ((val Chapgame.Utils.make_consts ~eps:1e-6))
 
 type circle =
   { id : S.Figure2.Id.t
@@ -102,6 +102,7 @@ let scene =
                      ; mu = 2.
                      ; m = Float.(pi * 2. * 2.)
                      }
+               ; timeout = None
                }
         |> S.Engine.recv
              ~action:
@@ -115,6 +116,7 @@ let scene =
                      ; mu = 2.
                      ; m = Float.(pi * 10. * 10.)
                      }
+               ; timeout = None
                }
         |> S.Engine.recv
              ~action:
@@ -125,9 +127,10 @@ let scene =
                      ; x0 = 600.
                      ; y0 = 600.
                      ; r = 50.
-                     ; mu = 2.
+                     ; mu = 0.
                      ; m = Float.(pi * 50. * 50.)
                      }
+               ; timeout = None
                }
         |> S.Engine.recv
              ~action:
@@ -138,24 +141,53 @@ let scene =
                      ; x0 = 500.
                      ; y0 = 500.
                      ; r = 60.
-                     ; mu = 2.
+                     ; mu = 0.
                      ; m = Float.(pi * 60. * 60.)
                      }
+               ; timeout = None
                }
         |> S.Engine.recv
-             ~action:{ time = 0.; action = S.Action.AddPoint { x = 400.; y = 200. } }
+             ~action:
+               { time = 0.
+               ; action = S.Action.AddPoint { x = 400.; y = 200. }
+               ; timeout = None
+               }
         |> S.Engine.recv
-             ~action:{ time = 0.; action = S.Action.AddPoint { x = 1100.; y = 100. } }
+             ~action:
+               { time = 0.
+               ; action = S.Action.AddPoint { x = 1100.; y = 100. }
+               ; timeout = None
+               }
         |> S.Engine.recv
-             ~action:{ time = 0.; action = S.Action.AddPoint { x = 100.; y = 700. } }
+             ~action:
+               { time = 0.
+               ; action = S.Action.AddPoint { x = 100.; y = 700. }
+               ; timeout = None
+               }
         |> S.Engine.recv
-             ~action:{ time = 0.; action = S.Action.AddPoint { x = 700.; y = 700. } }
+             ~action:
+               { time = 0.
+               ; action = S.Action.AddPoint { x = 700.; y = 700. }
+               ; timeout = None
+               }
         |> S.Engine.recv
-             ~action:{ time = 0.; action = S.Action.AddPoint { x = 650.; y = 325. } }
+             ~action:
+               { time = 0.
+               ; action = S.Action.AddPoint { x = 650.; y = 325. }
+               ; timeout = None
+               }
         |> S.Engine.recv
-             ~action:{ time = 0.; action = S.Action.AddPoint { x = 600.; y = 400. } }
+             ~action:
+               { time = 0.
+               ; action = S.Action.AddPoint { x = 600.; y = 400. }
+               ; timeout = None
+               }
         |> S.Engine.recv
-             ~action:{ time = 0.; action = S.Action.AddPoint { x = 700.; y = 450. } }
+             ~action:
+               { time = 0.
+               ; action = S.Action.AddPoint { x = 700.; y = 450. }
+               ; timeout = None
+               }
         |> S.Engine.recv
              ~action:
                { time = 0.
@@ -165,6 +197,7 @@ let scene =
                         ~p1:{ x = 650.; y = 325. }
                         ~p2:{ x = 600.; y = 400. }
                         ~kind:`Segment)
+               ; timeout = None
                }
         |> S.Engine.recv
              ~action:
@@ -175,6 +208,7 @@ let scene =
                         ~p1:{ x = 600.; y = 400. }
                         ~p2:{ x = 700.; y = 450. }
                         ~kind:`Segment)
+               ; timeout = None
                }
         |> S.Engine.recv
              ~action:
@@ -185,6 +219,7 @@ let scene =
                         ~p1:{ x = 400.; y = 200. }
                         ~p2:{ x = 1100.; y = 100. }
                         ~kind:`Segment)
+               ; timeout = None
                }
         |> S.Engine.recv
              ~action:
@@ -195,6 +230,7 @@ let scene =
                         ~p1:{ x = 1100.; y = 100. }
                         ~p2:{ x = 700.; y = 700. }
                         ~kind:`Segment)
+               ; timeout = None
                }
         |> S.Engine.recv
              ~action:
@@ -205,6 +241,7 @@ let scene =
                         ~p1:{ x = 700.; y = 700. }
                         ~p2:{ x = 100.; y = 700. }
                         ~kind:`Segment)
+               ; timeout = None
                }
         |> S.Engine.recv
              ~action:
@@ -215,11 +252,10 @@ let scene =
                         ~p1:{ x = 100.; y = 700. }
                         ~p2:{ x = 400.; y = 200. }
                         ~kind:`Segment)
+               ; timeout = None
                })
-      ~apply_action:
-        (fun ~inject:_ ~schedule_event:_ model -> function
-          | `Action action -> S.Engine.recv model ~action
-          | `Replace model -> model)
+      ~apply_action:(fun ~inject:_ ~schedule_event:_ model action ->
+        S.Engine.update model ~action)
   in
   let%sub time, update_time = Bonsai.state [%here] (module Float) ~default_model:0. in
   let%sub is_pause, set_is_pause =
@@ -245,7 +281,7 @@ let scene =
   let%sub last_scene =
     let%arr state = state
     and time = time in
-    state |> S.Model.before ~time |> snd
+    state.scenes |> S.Model.Scenes.before ~time |> snd
   in
   let%sub text_state, set_text_state =
     Bonsai.state [%here] (module String) ~default_model:""
@@ -259,6 +295,7 @@ let scene =
               ; action =
                   S.Action.GiveVelocity
                     { id; v0 = Float.((x - r) / r * -200., (y - r) / r * -200.) }
+              ; timeout = None
               }))
     <*> time
   in
@@ -292,6 +329,7 @@ let scene =
                          ; mu = 2.
                          ; m = 1.
                          }
+                   ; timeout = None
                    }
                  |> dispatch))
           [ Node.text "add " ]
@@ -309,6 +347,7 @@ let scene =
                          ; mu = 2.
                          ; m = 2.
                          }
+                   ; timeout = None
                    }
                  |> dispatch))
           [ Node.text "add " ]
@@ -326,6 +365,7 @@ let scene =
                          ; mu = 2.
                          ; m = 3.
                          }
+                   ; timeout = None
                    }
                  |> dispatch))
           [ Node.text "add " ]

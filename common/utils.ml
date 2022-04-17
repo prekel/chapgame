@@ -43,6 +43,18 @@ end) : sig
   val of_sequence : In.t Sequence.t -> t
   val empty : t
   val add : t -> el:In.t -> t
+
+  module Diff : sig
+    type diff =
+      { added : In.t list
+      ; removed : In.t list
+      }
+    [@@deriving sexp, equal]
+
+    val empty : diff
+    val diff : old:t -> t -> diff
+    val apply_diff : diff:diff -> t -> t
+  end
 end = struct
   type t = (In.t, In.comparator_witness) Set.t
 
@@ -57,6 +69,29 @@ end = struct
   let of_sequence = Set.of_sequence (module In)
   let empty = Set.empty (module In)
   let add a ~el = Set.add a el
+
+  module Diff = struct
+    type diff =
+      { added : In.t list
+      ; removed : In.t list
+      }
+    [@@deriving sexp, equal]
+
+    let empty = { added = []; removed = [] }
+
+    let diff ~old curr =
+      Set.symmetric_diff old curr
+      |> Sequence.fold ~init:empty ~f:(fun acc -> function
+           | First l -> { acc with removed = l :: acc.removed }
+           | Second r -> { acc with added = r :: acc.added })
+    ;;
+
+    let apply_diff ~diff set =
+      let removed = List.fold diff.removed ~init:set ~f:Set.remove in
+      let added = List.fold diff.added ~init:removed ~f:Set.add in
+      added
+    ;;
+  end
 end
 
 module MakeAdvancedMap (Key : sig
@@ -76,6 +111,19 @@ end) : sig
   val of_map : (Key.t, Value.t, Key.comparator_witness) Map.t -> t
   val of_alist_exn : (Key.t * Value.t) list -> t
   val find_exn : t -> Key.t -> Value.t
+
+  module Diff : sig
+    type diff =
+      { added : (Key.t * Value.t) list
+      ; changed : (Key.t * Value.t) list
+      ; removed : Key.t list
+      }
+    [@@deriving sexp, equal]
+
+    val empty : diff
+    val diff : old:t -> t -> diff
+    val apply_diff : diff:diff -> t -> t
+  end
 end = struct
   type t = (Key.t, Value.t, Key.comparator_witness) Map.t
 
@@ -91,6 +139,43 @@ end = struct
   let of_map = Fn.id
   let of_alist_exn = Map.of_alist_exn (module Key)
   let find_exn = Map.find_exn
+
+  module Diff = struct
+    type diff =
+      { added : (Key.t * Value.t) list
+      ; changed : (Key.t * Value.t) list
+      ; removed : Key.t list
+      }
+    [@@deriving sexp, equal]
+
+    let empty = { added = []; changed = []; removed = [] }
+
+    let diff ~old curr =
+      Map.fold_symmetric_diff
+        old
+        curr
+        ~data_equal:Value.equal
+        ~init:empty
+        ~f:(fun acc (key, v) ->
+          match v with
+          | `Left _ -> { acc with removed = key :: acc.removed }
+          | `Right r -> { acc with added = (key, r) :: acc.added }
+          | `Unequal (_, r) -> { acc with changed = (key, r) :: acc.changed })
+    ;;
+
+    let apply_diff ~diff map =
+      let removed = List.fold diff.removed ~init:map ~f:Map.remove in
+      let added =
+        List.fold diff.added ~init:removed ~f:(fun acc (key, data) ->
+            Map.add_exn acc ~key ~data)
+      in
+      let changed =
+        List.fold diff.added ~init:added ~f:(fun acc (key, data) ->
+            Map.update acc key ~f:(fun _ -> data))
+      in
+      changed
+    ;;
+  end
 end
 
 module type FloatConstants = Module_types.Constants with module N = Float
