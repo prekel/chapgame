@@ -1,6 +1,6 @@
 (executable
  (name main)
  (modes js)
- (libraries core bonsai.web virtual_dom.svg chapgame)
+ (libraries core bonsai.web virtual_dom.svg chapgame lwt)
  (preprocess
   (pps js_of_ocaml-ppx ppx_jane)))

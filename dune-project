@@ -28,6 +28,7 @@
     (>= v0.15~)
     (< v0.16)))
   uuidm
+  dream
   (ppx_jane :build)
   (bisect_ppx :with-test)
   (ocaml-lsp-server :with-test)

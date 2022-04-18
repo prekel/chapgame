@@ -1,4 +1,6 @@
 (executable
  (public_name chapgame)
  (name main)
- (libraries chapgame))
+ (libraries chapgame dream yojson)
+ (preprocess
+  (pps lwt_ppx)))
