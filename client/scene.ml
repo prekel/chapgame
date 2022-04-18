@@ -268,7 +268,12 @@ let scene =
                ; timeout = None
                })
       ~apply_action:(fun ~inject:_ ~schedule_event:_ model action ->
-        S.Engine.update model ~action)
+        match action with
+        | `Replace _ -> S.Engine.update model ~action
+        | `Action _ as action ->
+          let _ret, diff = S.Engine.recv_with_diff model ~action in
+          print_s [%sexp (diff : S.Model.Diff.diff)];
+          S.Engine.update model ~action:(`Diff diff))
   in
   let%sub time, update_time = Bonsai.state [%here] (module Float) ~default_model:0. in
   let%sub is_pause, set_is_pause =

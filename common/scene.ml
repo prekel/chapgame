@@ -83,6 +83,9 @@ struct
     val of_alist : (Vars.t * N.t) list -> t
     val to_function : t -> Vars.t -> N.t
     val global_to_scoped : t -> Scope.t -> Vars.t -> N.t
+
+    module Diff :
+      Utils.AdvancedMapDiff with type t = t and type key = Vars.t and type value = N.t
   end = struct
     include Utils.MakeAdvancedMap (Vars) (N)
 
@@ -784,6 +787,12 @@ struct
       val to_sequence : t -> (Figure2.Id.t * Figure2.t) Sequence.t
       val get_by_id : t -> id:Figure2.Id.t -> Figure2.t
       val update_by_id : t -> id:Figure2.Id.t -> body:Figure2.t -> t
+
+      module Diff :
+        Utils.AdvancedMapDiff
+          with type t = t
+           and type key = Figure2.Id.t
+           and type value = Figure2.t
     end = struct
       include Utils.MakeAdvancedMap (Figure2.Id) (Figure2)
 
@@ -844,6 +853,41 @@ struct
       ; cause = [ Init ]
       }
     ;;
+
+    module Diff = struct
+      type diff =
+        { new_time : N.t
+        ; bodies_diff : Figures.Diff.diff
+        ; points_diff : Points.Diff.diff
+        ; lines_diff : Lines.Diff.diff
+        ; global_values_diff : Values.Diff.diff
+        ; new_cause : Cause.t list
+        }
+      [@@deriving sexp, equal]
+
+      let diff ~old curr =
+        let new_time = curr.time in
+        let bodies_diff = Figures.Diff.diff ~old:old.bodies curr.bodies in
+        let points_diff = Points.Diff.diff ~old:old.points curr.points in
+        let lines_diff = Lines.Diff.diff ~old:old.lines curr.lines in
+        let global_values_diff =
+          Values.Diff.diff ~old:old.global_values curr.global_values
+        in
+        let new_cause = curr.cause in
+        { new_time; bodies_diff; points_diff; lines_diff; global_values_diff; new_cause }
+      ;;
+
+      let apply_diff ~diff old =
+        { time = diff.new_time
+        ; bodies = Figures.Diff.apply_diff ~diff:diff.bodies_diff old.bodies
+        ; points = Points.Diff.apply_diff ~diff:diff.points_diff old.points
+        ; lines = Lines.Diff.apply_diff ~diff:diff.lines_diff old.lines
+        ; global_values =
+            Values.Diff.apply_diff ~diff:diff.global_values_diff old.global_values
+        ; cause = diff.new_cause
+        }
+      ;;
+    end
   end
 
   module Action = struct
@@ -890,6 +934,16 @@ struct
 
     val init : g:N.t -> t
     val of_scenes : Scenes.t -> time:N.t -> scene:Scene.t -> timeout:N.t option -> t
+
+    module Diff : sig
+      type diff =
+        { init : [ `Init of Scene.t | `Since of N.t ]
+        ; scene_diffs : Scene.Diff.diff list
+        ; new_timeout : N.t option
+        }
+
+      include Utils.Diff with type t := t and type diff := diff
+    end
   end = struct
     module Scenes = struct
       include Utils.MakeAdvancedMap (N) (Scene)
@@ -948,6 +1002,67 @@ struct
       ; timeout
       }
     ;;
+
+    module Diff = struct
+      type diff =
+        { init : [ `Init of Scene.t | `Since of N.t ]
+        ; scene_diffs : Scene.Diff.diff list
+        ; new_timeout : N.t option
+        }
+      [@@deriving sexp, equal]
+
+      let diff ~old curr =
+        let old_keys = Map.keys (Scenes.to_map old.scenes) |> Sequence.of_list in
+        let new_keys = Map.keys (Scenes.to_map curr.scenes) |> Sequence.of_list in
+        let zipped = Sequence.zip_full old_keys new_keys in
+        let init =
+          Sequence.fold_until
+            zipped
+            ~init:None
+            ~f:
+              (fun acc -> function
+                | `Both (a, b) when N.(a = b) -> Continue (Some a)
+                | _ -> Stop acc)
+            ~finish:(fun acc -> acc)
+          |> Option.map ~f:(fun since -> `Since since)
+          |> Option.value
+               ~default:(`Init (Scenes.of_map curr.scenes |> Map.min_elt_exn |> snd))
+        in
+        let init_time, init_scene =
+          match init with
+          | `Init scene -> scene.time, scene
+          | `Since since -> since, Map.find_exn (Scenes.to_map curr.scenes) since
+        in
+        let scene_diffs =
+          Scenes.to_map curr.scenes
+          |> Map.filter_keys ~f:N.(fun k -> k > init_time)
+          |> Map.to_sequence
+          |> Sequence.folding_map ~init:init_scene ~f:(fun prev (_, curr) ->
+                 curr, Scene.Diff.diff ~old:prev curr)
+          |> Sequence.to_list
+        in
+        { init; scene_diffs; new_timeout = curr.timeout }
+      ;;
+
+      let apply_diff ~diff old =
+        let common_scenes, init_scene =
+          match diff.init with
+          | `Init init -> Map.singleton (module N) init.time init, init
+          | `Since since -> Scenes.before (Scenes.to_map old.scenes) ~time:since
+        in
+        let scenes =
+          diff.scene_diffs
+          |> Sequence.of_list
+          |> Sequence.folding_map ~init:init_scene ~f:(fun prev diff ->
+                 let ret = Scene.Diff.apply_diff ~diff prev in
+                 ret, (ret.time, ret))
+          |> Map.of_sequence_exn (module N)
+          |> Map.merge_skewed common_scenes ~combine:(fun ~key:_ l _ -> l)
+          |> Scenes.of_map
+        in
+        { scenes; timeout = diff.new_timeout }
+      ;;
+    end
   end
 
   module Engine = struct
@@ -1192,6 +1307,14 @@ struct
       match action with
       | `Action a -> recv model ~action:a
       | `Replace m -> m
+      | `Diff diff -> Model.Diff.apply_diff model ~diff
+    ;;
+
+    let recv_with_diff model ~action =
+      match action with
+      | `Action a ->
+        let updated = recv model ~action:a in
+        updated, Model.Diff.diff ~old:model updated
     ;;
   end
 end

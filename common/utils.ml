@@ -29,6 +29,27 @@ end = struct
   ;;
 end
 
+module type Diff = sig
+  type t
+  type diff [@@deriving sexp, equal]
+
+  val diff : old:t -> t -> diff
+  val apply_diff : diff:diff -> t -> t
+end
+
+module type AdvancedSetDiff = sig
+  type value
+  type t
+
+  type diff =
+    { added : value list
+    ; removed : value list
+    }
+  [@@deriving sexp, equal]
+
+  include Diff with type t := t and type diff := diff
+end
+
 module MakeAdvancedSet (In : sig
   include Comparable.S
   include Sexpable.S with type t := t
@@ -44,17 +65,7 @@ end) : sig
   val empty : t
   val add : t -> el:In.t -> t
 
-  module Diff : sig
-    type diff =
-      { added : In.t list
-      ; removed : In.t list
-      }
-    [@@deriving sexp, equal]
-
-    val empty : diff
-    val diff : old:t -> t -> diff
-    val apply_diff : diff:diff -> t -> t
-  end
+  module Diff : AdvancedSetDiff with type t = t and type value = In.t
 end = struct
   type t = (In.t, In.comparator_witness) Set.t
 
@@ -71,6 +82,9 @@ end = struct
   let add a ~el = Set.add a el
 
   module Diff = struct
+    type nonrec t = t
+    type value = In.t
+
     type diff =
       { added : In.t list
       ; removed : In.t list
@@ -94,6 +108,21 @@ end = struct
   end
 end
 
+module type AdvancedMapDiff = sig
+  type key
+  type value
+  type t
+
+  type diff =
+    { added : (key * value) list
+    ; changed : (key * value) list
+    ; removed : key list
+    }
+  [@@deriving sexp, equal]
+
+  include Diff with type t := t and type diff := diff
+end
+
 module MakeAdvancedMap (Key : sig
   include Comparable.S
   include Sexpable.S with type t := t
@@ -112,18 +141,8 @@ end) : sig
   val of_alist_exn : (Key.t * Value.t) list -> t
   val find_exn : t -> Key.t -> Value.t
 
-  module Diff : sig
-    type diff =
-      { added : (Key.t * Value.t) list
-      ; changed : (Key.t * Value.t) list
-      ; removed : Key.t list
-      }
-    [@@deriving sexp, equal]
-
-    val empty : diff
-    val diff : old:t -> t -> diff
-    val apply_diff : diff:diff -> t -> t
-  end
+  module Diff :
+    AdvancedMapDiff with type t = t and type key = Key.t and type value = Value.t
 end = struct
   type t = (Key.t, Value.t, Key.comparator_witness) Map.t
 
@@ -141,6 +160,10 @@ end = struct
   let find_exn = Map.find_exn
 
   module Diff = struct
+    type key = Key.t
+    type value = Value.t
+    type nonrec t = t
+
     type diff =
       { added : (Key.t * Value.t) list
       ; changed : (Key.t * Value.t) list
@@ -170,7 +193,7 @@ end = struct
             Map.add_exn acc ~key ~data)
       in
       let changed =
-        List.fold diff.added ~init:added ~f:(fun acc (key, data) ->
+        List.fold diff.changed ~init:added ~f:(fun acc (key, data) ->
             Map.update acc key ~f:(fun _ -> data))
       in
       changed
