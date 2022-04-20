@@ -7,15 +7,15 @@ let connect url ~var =
   | exception Js.Error exn -> failwith (Js.to_string exn##.message)
   | exception exn -> raise exn
   | websocket ->
-    let onclose (_close_event : _ WebSockets.closeEvent Js.t) = Js._false in
+    (* let onclose (_close_event : _ WebSockets.closeEvent Js.t) = Js._false in *)
     let onmessage (event : _ WebSockets.messageEvent Js.t) =
       let data = Js.to_string event##.data in
-      Bonsai.Var.update var ~f:(fun _ -> data);
+      Bonsai.Var.update var ~f:(fun prev -> data :: prev);
       Js._false
     in
-    websocket##.onerror := Dom.handler (fun (_ : _ Dom.event Js.t) -> Js._false);
+    (* websocket##.onerror := Dom.handler (fun (_ : _ Dom.event Js.t) -> Js._false); *)
     websocket##.onmessage := Dom.handler onmessage;
-    websocket##.onclose := Dom.handler onclose;
+    (* websocket##.onclose := Dom.handler onclose; *)
     websocket
 ;;
 

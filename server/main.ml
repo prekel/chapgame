@@ -71,5 +71,19 @@ let () =
   @@ Dream.router
        [ Dream.get "/" (fun _ -> Dream.html home)
        ; Dream.get "/websocket" (fun _ -> Dream.websocket handle_client)
+       ; Dream.get "/room/:room_id/ws" (fun request ->
+             let _room_id = Dream.param request "room_id" in
+             Dream.websocket (fun client ->
+                 let client_id = track client in
+                 let rec loop () =
+                   match%lwt Dream.receive client with
+                   | Some message ->
+                     let%lwt () = send message in
+                     loop ()
+                   | None ->
+                     forget client_id;
+                     Dream.close_websocket client
+                 in
+                 loop ()))
        ]
 ;;
