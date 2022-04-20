@@ -1,6 +1,9 @@
 @host = localhost:8080
 
 POST http://{{host}}/room/create
+###
+
+POST http://{{host}}/room/create1
 
 ###
 GET http://{{host}}/room/0

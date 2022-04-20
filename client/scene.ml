@@ -4,7 +4,7 @@ open Bonsai.Let_syntax
 open Js_of_ocaml
 module Svg = Virtual_dom_svg
 module P = Chapgame.Protocol.Make (Float) ((val Chapgame.Utils.make_consts ~eps:1e-6))
-module S = P.SC
+module S = P.S
 
 type circle =
   { id : S.Figure2.Id.t
@@ -325,41 +325,6 @@ let scene ~(state : S.Model.t Value.t) ~dispatch =
       ])
 ;;
 
-(* let online ~init = let%sub state, dispatch = Bonsai_extra.state_machine0_dynamic_model
-   [%here] (module S.Model) (module struct type t = [ `Diff of S.Model.Diff.diff ]
-   [@@deriving sexp, equal] end) ~model:(`Given init) ~apply_action:(fun ~inject:_
-   ~schedule_event:_ model action -> match action with | `Diff _ as action ->
-   S.Engine.update model ~action) in let%sub w, s = Bonsai.state_machine1 [%here] (module
-   struct type t = Websocket.t option [@@deriving sexp, equal] end) (module struct type t
-   = [ `Init | `Send of P.Request.t ] [@@deriving sexp, equal] end) ~default_model:None
-   dispatch ~apply_action:(fun ~inject:_ ~schedule_event dispatch model action -> match
-   model, action with | None, `Init -> Some (Websocket.connect (Uri.of_string ("ws://" ^
-   "localhost:8080" ^ "/room/0/ws")) ~on_message:(fun msg -> let (Diff diff) = msg |>
-   Sexp.of_string |> [%of_sexp: P.Response.t] in `Diff diff |> dispatch |>
-   schedule_event)) | Some w, `Send s -> Websocket.send w (Sexp.to_string_hum [%sexp (s :
-   P.Request.t)]); model | _ -> raise_s [%message (model : Websocket.t option) (action : [
-   `Init | `Send of P.Request.t ])]) in let%sub dispatch = let%arr s = s and w = w in
-   function | `Action a -> begin match w with | None -> let%bind.Effect _ = `Init |> s in
-   `Send (P.Request.Action a) |> s | Some _ -> `Send (P.Request.Action a) |> s end |
-   `Replace _ -> assert false in scene ~state ~dispatch ;;
-
-   let onlineinit ~room_id = let%sub init, set_init = Bonsai.state_machine1 [%here]
-   (module struct type t = S.Model.t option [@@deriving sexp, equal] end) (module struct
-   type t = [ `Init ] [@@deriving sexp, equal] end) room_id ~default_model:None
-   ~apply_action:(fun ~inject:_ ~schedule_event room_id model action -> match model,
-   action with | None, `Init -> (* Effect_lwt.of_lwt_fun (fun () ->
-   Cohttp_lwt_jsoo.Client.get (Uri.of_string ("http://" ^ "localhost:8080" ^ "/room/" ^
-   Int.to_string room_id))) () |> schedule_event; *) assert false | _ -> assert false) in
-   match%sub init with | Some init -> online ~init | None -> let%arr set_init = set_init
-   in Vdom.(Node.button ~attr:Attr.(many [ on_click (fun _ -> set_init `Init) ]) []) ;; *)
-(* Bonsai. let%sub q = let mp = Bonsai.Value.map init ~f:(fun a -> Option.value_exn a) in
-   online ~init:mp in Bonsai.Computation.read q *)
-
-(* let%sub online = match init with | Some init -> let%sub o = online
-   ~init:(Bonsai.Value.return init) in let%arr o = o in o | None -> Vdom.(Node.button
-   ~attr:Attr.(many [ on_click (fun _ -> set_init `Init) ]) []) in let%arr online = online
-   in online *)
-
 let connect ~var ~room_id =
   Websocket.connect
     (Uri.of_string
@@ -368,17 +333,6 @@ let connect ~var ~room_id =
       let (Diff diff) = msg |> Sexp.of_string |> [%of_sexp: P.Response.t] in
       Bonsai.Var.update var ~f:(fun prev -> S.Engine.update prev ~action:(`Diff diff)))
 ;;
-
-(* let online ~state_var ~room_id = let%sub ws = Bonsai_extra.thunk (fun () -> connect
-   ~var:state_var ~room_id) in let%sub dispatch = let%arr ws = ws in Effect.of_sync_fun
-   (function | `Action a -> let r = P.Request.Action a in Websocket.send ws
-   (Sexp.to_string_hum [%sexp (r : P.Request.t)]) | `Replace _ -> assert false) in scene
-   ~state:(Bonsai.Var.value state_var) ~dispatch ;; *)
-
-(* let onlineinit ~room_id = let%sub init, set_init = Bonsai.state_opt [%here] (module
-   S.Model) in match%sub init with | Some init -> let state_var = Bonsai.Var.create init
-   in (* online ~state_var ~room_id *) assert false | None -> let%arr set_init = set_init
-   in Vdom.(Node.button ~attr:Attr.(many [ on_click (fun _ -> set_init None) ]) []) ;; *)
 
 let online123 ~state_var ~room_id =
   let%sub ws, set_ws = Bonsai.state_opt [%here] (module Websocket) in
@@ -400,7 +354,8 @@ let online123 ~state_var ~room_id =
   let%arr room_id = room_id
   and set_ws = set_ws
   and ws = ws
-  and scene = scene in
+  and scene = scene
+  and state = state in
   Vdom.(
     Node.div
       [ Node.button
@@ -415,6 +370,22 @@ let online123 ~state_var ~room_id =
                       | Some _ -> Effect.Ignore)
                 ])
           [ Node.text "connect" ]
+      ; Node.button
+          ~attr:
+            Attr.(
+              many
+                [ on_click (fun _ ->
+                      match ws with
+                      | None -> Effect.Ignore
+                      | Some ws ->
+                        Effect.of_sync_fun
+                          (fun () ->
+                            Websocket.send
+                              ws
+                              (Sexp.to_string_hum [%sexp (Start state : P.Request.t)]))
+                          ())
+                ])
+          [ Node.text "start" ]
       ; Node.button
           ~attr:
             Attr.(
