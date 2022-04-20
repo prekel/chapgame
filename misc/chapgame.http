@@ -1,0 +1,11 @@
+@host = localhost:8080
+
+POST http://{{host}}/room/create
+
+###
+GET http://{{host}}/room/0
+
+###
+POST http://{{host}}/room/0/action
+
+((time 14) (action (AddBody (id 4) (x0 120) (y0 100) (r 100) (mu 2) (m 10))) (timeout ()))
