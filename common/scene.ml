@@ -1021,7 +1021,10 @@ struct
             ~init:None
             ~f:
               (fun acc -> function
-                | `Both (a, b) when N.(a = b) -> Continue (Some a)
+                | `Both (a, b) when N.(a = b) ->
+                  let av = Scenes.get_by_id ~id:a old.scenes in
+                  let bv = Scenes.get_by_id ~id:b curr.scenes in
+                  if Scene.equal av bv then Continue (Some a) else Stop acc
                 | _ -> Stop acc)
             ~finish:(fun acc -> acc)
           |> Option.map ~f:(fun since -> `Since since)

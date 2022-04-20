@@ -1,7 +1,6 @@
 open! Core
 open! Async_kernel
 open! Bonsai_web
-include Bonsai_web.Effect
 
 module Lwt_fun_arg = struct
   module Action = struct

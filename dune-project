@@ -29,6 +29,7 @@
     (< v0.16)))
   uuidm
   dream
+  cohttp-lwt-jsoo
   (ppx_jane :build)
   (bisect_ppx :with-test)
   (ocaml-lsp-server :with-test)

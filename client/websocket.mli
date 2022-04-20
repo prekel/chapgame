@@ -1,4 +1,5 @@
-type t
+type t [@@deriving sexp, equal]
 
-val connect : Uri.t -> var:string list Bonsai.Var.t -> t
+val connect : Uri.t -> on_message:(string -> unit) -> t
 val send : t -> string -> unit
+val close : t -> unit

@@ -4,3 +4,9 @@
  (libraries chapgame dream core)
  (preprocess
   (pps ppx_jane)))
+
+(rule
+ (targets embedded_files.ml embedded_files.mli)
+ (deps ../client/main.bc.js ../client/index.html)
+ (action
+  (bash "%{bin:ocaml-embed-file} %{deps} -output embedded_files")))

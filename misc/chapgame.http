@@ -8,4 +8,4 @@ GET http://{{host}}/room/0
 ###
 POST http://{{host}}/room/0/action
 
-((time 14) (action (AddBody (id 4) (x0 120) (y0 100) (r 100) (mu 2) (m 10))) (timeout ()))
+((time 1) (action (AddBody (id 0) (x0 600) (y0 100) (r 100) (mu 2) (m 10))) (timeout ()))

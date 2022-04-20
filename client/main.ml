@@ -202,13 +202,8 @@ module WebSocketTest = struct
 end
 
 let (_ : _ Start.Handle.t) =
-  let var = Bonsai.Var.create [] in
-  let ws =
-    Websocket.connect (Uri.of_string ("ws://" ^ "localhost:8080" ^ "/websocket")) ~var
-  in
-  let msgs = Bonsai.Var.value var in
   Start.start
     Start.Result_spec.just_the_view
     ~bind_to_element_with_id:"app"
-    (WebSocketTest.component ~ws ~msgs)
+    (Scene.online ~room_id:(Value.return 0))
 ;;
