@@ -168,6 +168,47 @@ let component =
 
 let component1 = Scene.scene
 
-let (_ : _ Start.Handle.t) = 
-  Start.start Start.Result_spec.just_the_view ~bind_to_element_with_id:"app" component1
+module WebSocketTest = struct
+  let component ~ws ~msg =
+    let%sub inputtext, set_inputtext =
+      Bonsai.state [%here] (module String) ~default_model:""
+    in
+    let%arr msg = msg
+    and inputtext = inputtext
+    and set_inputtext = set_inputtext in
+    Vdom.(
+      Node.div
+        [ Node.div
+            [ Node.input
+                ~attr:
+                  Attr.(
+                    many
+                      [ type_ "submit"
+                      ; value "Send"
+                      ; on_click (fun _ ->
+                            Effect.of_sync_fun (fun () -> Websocket.send ws inputtext) ())
+                      ])
+                []
+            ; Node.input
+                ~attr:
+                  Attr.(
+                    many
+                      [ type_ "text"; value inputtext; on_input (fun _ -> set_inputtext) ])
+                []
+            ]
+        ; Node.div [ Node.text msg ]
+        ])
+  ;;
+end
+
+let (_ : _ Start.Handle.t) =
+  let var = Bonsai.Var.create "" in
+  let ws =
+    Websocket.connect (Uri.of_string ("ws://" ^ "localhost:8080" ^ "/websocket")) ~var
+  in
+  let msg = Bonsai.Var.value var in
+  Start.start
+    Start.Result_spec.just_the_view
+    ~bind_to_element_with_id:"app"
+    (WebSocketTest.component ~ws ~msg)
 ;;
