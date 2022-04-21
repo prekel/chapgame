@@ -30,6 +30,7 @@
   uuidm
   dream
   cohttp-lwt-jsoo
+  (ocaml-embed-file :build)
   (ppx_jane :build)
   (bisect_ppx :with-test)
   (ocaml-lsp-server :with-test)
