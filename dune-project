@@ -23,10 +23,7 @@
   core
   lwt
   js_of_ocaml
-  (bonsai
-   (and
-    (>= v0.15~)
-    (< v0.16)))
+  bonsai
   uuidm
   dream
   cohttp-lwt-jsoo
