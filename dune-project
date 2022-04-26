@@ -27,6 +27,7 @@
   uuidm
   dream
   cohttp-lwt-jsoo
+  dream-encoding
   (ocaml-embed-file :build)
   (ppx_jane :build)
   (bisect_ppx :with-test)

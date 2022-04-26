@@ -251,12 +251,16 @@ let update_room ~(rooms : Rooms.t) ~(room : Room.t) ~room_id action =
 ;;
 
 let () =
-  Dream.run
+  Dream.run ~interface:"0.0.0.0"
   @@ Dream.logger
   @@ Dream.router
-       [ Dream.get "/" (fun _ -> Dream.html Embedded_files.index_dot_html)
-       ; Dream.get "/main.bc.js" (fun _ ->
-             Dream.respond Embedded_files.main_dot_bc_dot_js)
+       [ Dream.scope
+           ""
+           [ Dream_encoding.compress ]
+           [ Dream.get "/" (fun _ -> Dream.html Embedded_files.index_dot_html)
+           ; Dream.get "/main.bc.js" (fun _ ->
+                 Dream.respond Embedded_files.main_dot_bc_dot_js)
+           ]
        ; Dream.scope
            "/room"
            [ rooms_middleware ]

@@ -1,6 +1,6 @@
 open Core
 
-module Make (N : Module_types.Number) (C : Module_types.Constants with module N = N) =
+module Make (N : Module_types.NUMBER) (C : Module_types.CONSTS with module N = N) =
 struct
   module Vars :
     Identifiable.S

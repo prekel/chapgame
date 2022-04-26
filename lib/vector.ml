@@ -1,4 +1,4 @@
-module Make (N : Module_types.Number) = struct
+module Make (N : Module_types.NUMBER) = struct
   type t = N.t * N.t [@@deriving equal]
 
   let zero = N.zero, N.zero

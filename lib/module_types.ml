@@ -1,6 +1,6 @@
 open Core
 
-module type BasicOps = sig
+module type BASIC_OPS = sig
   type t [@@deriving equal]
 
   val zero : t
@@ -11,10 +11,10 @@ module type BasicOps = sig
   val ( ~- ) : t -> t
 end
 
-module type Number = sig
+module type NUMBER = sig
   type t [@@deriving sexp, compare]
 
-  include BasicOps with type t := t
+  include BASIC_OPS with type t := t
   include Comparable.S with type t := t
 
   val ( ** ) : t -> t -> t
@@ -42,16 +42,16 @@ module type Number = sig
     -> string
 end
 
-module type Key = sig
+module type KEY = sig
   type t [@@deriving sexp, equal]
 end
 
-module type Scope = sig
+module type SCOPE = sig
   type t [@@deriving sexp, equal]
 end
 
-module type Constants = sig
-  module N : Number
+module type CONSTS = sig
+  module N : NUMBER
 
   val eps : N.t
 end

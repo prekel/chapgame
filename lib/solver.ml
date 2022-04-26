@@ -1,6 +1,6 @@
 open Core
 
-module MakeSolver (N : Module_types.Number) = struct
+module MakeSolver (N : Module_types.NUMBER) = struct
   module Interval : sig
     type t =
       | Interval of

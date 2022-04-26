@@ -37,7 +37,7 @@ module type S = sig
   val calc
     :  values:(key -> scalar)
     -> scoped_values:(scope -> key -> scalar)
-    -> (module Module_types.BasicOps with type t = 'result)
+    -> (module Module_types.BASIC_OPS with type t = 'result)
     -> 'result t
     -> 'result
 
@@ -65,7 +65,7 @@ module type S = sig
 end
 
 module Make
-    (Key : Module_types.Key)
-    (Scope : Module_types.Scope)
-    (N : Module_types.Number) :
+    (Key : Module_types.KEY)
+    (Scope : Module_types.SCOPE)
+    (N : Module_types.NUMBER) :
   S with type key = Key.t and type scope = Scope.t and type scalar = N.t

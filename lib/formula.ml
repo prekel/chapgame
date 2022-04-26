@@ -1,9 +1,9 @@
 open Core
 
 module Make
-    (Key : Module_types.Key)
-    (Scope : Module_types.Scope)
-    (N : Module_types.Number)
+    (Key : Module_types.KEY)
+    (Scope : Module_types.SCOPE)
+    (N : Module_types.NUMBER)
     (Expr : Expr.S with type key = Key.t and type scope = Scope.t and type scalar = N.t)
     (Solver : module type of Solver.MakeSolver (N)) =
     struct
