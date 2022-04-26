@@ -1,6 +1,5 @@
 (library
- (name chapgame)
- (public_name chapgame)
+ (name common)
  (libraries core)
  (preprocess
   (pps ppx_jane)))

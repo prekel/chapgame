@@ -65,7 +65,7 @@ module MakeSolver (N : Module_types.Number) = struct
       | [] -> [ infinity ]
       | [ a ] -> [ neg_infinity ~right:a; pos_infinity ~left:a ]
       | a :: _ as roots ->
-        (neg_infinity ~right:a :: (Common.List.windowed2 roots |> List.map ~f:of_tuple))
+        (neg_infinity ~right:a :: (List.windowed2 roots |> List.map ~f:of_tuple))
         @ [ pos_infinity ~left:(List.last_exn roots) ]
     ;;
 
@@ -330,10 +330,7 @@ module MakeSolver (N : Module_types.Number) = struct
         |> List.sort ~compare:N.ascending
     ;;
 
-    (* let roots ~eps poly =
-      let ret = roots ~eps poly in
-      List.iter ret ~f:(fun root -> assert (N.(abs (Polynomial.calc poly ~x:root) < eps)));
-      ret
-    ;; *)
+    (* let roots ~eps poly = let ret = roots ~eps poly in List.iter ret ~f:(fun root ->
+       assert (N.(abs (Polynomial.calc poly ~x:root) < eps))); ret ;; *)
   end
 end

@@ -954,7 +954,7 @@ struct
               ~time:key)
       ;;
 
-      let last_exn = Common.Fn.(Map.max_elt_exn >> snd)
+      let last_exn = Map.max_elt_exn >> snd
     end
 
     type t =
