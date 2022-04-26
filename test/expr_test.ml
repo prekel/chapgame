@@ -3,6 +3,8 @@ open Chapgame
 
 let%test_module "" =
   (module struct
+    module Vector = Vector.Make (Float)
+
     let%expect_test "scalar x y" =
       let module Expr =
         Expr.Make
@@ -84,7 +86,7 @@ let%test_module "" =
                | `Y_x -> 2.
                | `Y_y -> -2.)
              ~scoped_values:never_returns
-             (module Expr.VectorOps)
+             (module Vector)
              xy
             : float * float)];
       [%expect {|
@@ -98,7 +100,7 @@ let%test_module "" =
                | `Y_x -> -12.
                | `Y_y -> 1.)
              ~scoped_values:never_returns
-             (module Expr.VectorOps)
+             (module Vector)
              xy
             : float * float)];
       [%expect {|

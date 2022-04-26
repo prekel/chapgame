@@ -41,8 +41,6 @@ module type S = sig
     -> 'result t
     -> 'result
 
-  module VectorOps : Module_types.BasicOps with type t = vector
-
   module Syntax : sig
     val scalar_var : key -> scalar t
     val vector_var : key -> key -> vector t

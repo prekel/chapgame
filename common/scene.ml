@@ -49,27 +49,7 @@ struct
 
   let eps = C.eps
 
-  module Vector : sig
-    include module type of Expr.VectorOps
-
-    val dot : t -> t -> N.t
-    val len_sqr : t -> N.t
-    val len : t -> N.t
-    val ( *^ ) : t -> N.t -> t
-    val ( ^* ) : N.t -> t -> t
-  end = struct
-    include Expr.VectorOps
-
-    let dot a b =
-      let x, y = a * b in
-      N.(x + y)
-    ;;
-
-    let len_sqr (x, y) = N.((x * x) + (y * y))
-    let len a = N.(sqrt (len_sqr a))
-    let ( *^ ) (a, b) c = N.(a * c, b * c)
-    let ( ^* ) c (a, b) = N.(a * c, b * c)
-  end
+  module Vector = Vector.Make (N)
 
   let global_scope : Scope.t = -1
 
@@ -433,13 +413,13 @@ struct
                    Expr.calc
                      ~values:(Values.to_function values1)
                      ~scoped_values:(Values.global_to_scoped global)
-                     (module Expr.VectorOps)
+                     (module Vector)
                      ac
                ; a2 =
                    Expr.calc
                      ~values:(Values.to_function values2)
                      ~scoped_values:(Values.global_to_scoped global)
-                     (module Expr.VectorOps)
+                     (module Vector)
                      ac
                })
       ;;

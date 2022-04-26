@@ -43,8 +43,6 @@ module type S = sig
     -> 'result t
     -> 'result
 
-  module VectorOps : Module_types.BasicOps with type t = vector
-
   module Syntax : sig
     val scalar_var : key -> scalar t
     val vector_var : key -> key -> vector t
@@ -77,6 +75,8 @@ struct
   type scalar = N.t [@@deriving sexp, equal]
   type vector = N.t * N.t [@@deriving sexp, equal]
   type scope = Scope.t [@@deriving sexp, equal]
+
+  module VectorOps = Vector.Make (N)
 
   type 'result t =
     | ScalarConst : scalar -> scalar t
@@ -203,24 +203,6 @@ struct
 
   let sexp_of_t_scalar : t_scalar -> Sexp.t = sexp_of_t
   let sexp_of_t_vector : t_vector -> Sexp.t = sexp_of_t
-
-  module VectorOps : Module_types.BasicOps with type t = vector = struct
-    type t = vector [@@deriving equal]
-
-    let zero = N.zero, N.zero
-
-    open N
-
-    let ( + ) (x1, y1) (x2, y2) = x1 + x2, y1 + y2
-    let ( - ) (x1, y1) (x2, y2) = x1 - x2, y1 - y2
-    let ( * ) (x1, y1) (x2, y2) = x1 * x2, y1 * y2
-    let ( / ) (x1, y1) (x2, y2) = x1 / x2, y1 / y2
-    let ( ~- ) (x, y) = -x, -y
-
-    let sin, cos, atan2 =
-      (fun _ -> assert false), (fun _ -> assert false), fun _ -> assert false
-    ;;
-  end
 
   let rec calc
       : type result.
