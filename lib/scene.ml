@@ -808,8 +808,14 @@ struct
       }
     [@@deriving sexp, equal]
 
-    let update { global_values; _ } ~bodies ~points ~lines ~cause ~time =
-      { time; bodies; points; lines; global_values; cause }
+    let update ?bodies ?points ?lines ?cause ?time s =
+      { s with
+        time = Option.value time ~default:s.time
+      ; bodies = Option.value bodies ~default:s.bodies
+      ; points = Option.value points ~default:s.points
+      ; lines = Option.value lines ~default:s.lines
+      ; cause = Option.value cause ~default:s.cause
+      }
     ;;
 
     let add_figure figures ~id ~x0 ~y0 ~r ~mu ~m =
@@ -985,7 +991,7 @@ struct
                 Scene.update
                   s
                   ~bodies:scene.Scene.bodies
-                  ~cause:(scene.cause @ s.cause)
+                  ~cause:(scene.cause @ s.Scene.cause)
                   ~points:scene.points
                   ~lines:scene.lines
                   ~time
@@ -1188,28 +1194,25 @@ struct
       |> Sequence.to_list
     ;;
 
-    let apply_action s = function
+    let apply_action s ~time = function
       | Action.AddBody { id; x0; y0; r; mu; m } ->
         Scene.update
           s
-          ~bodies:(Scene.add_figure s.bodies ~id ~x0 ~y0 ~r ~mu ~m)
+          ~bodies:(Scene.add_figure s.Scene.bodies ~id ~x0 ~y0 ~r ~mu ~m)
           ~cause:[ BodyAdded { id } ]
-          ~points:s.points
-          ~lines:s.lines
+          ~time
       | AddPoint point ->
         Scene.update
           s
-          ~bodies:s.bodies
           ~cause:[ PointAdded point ]
           ~points:(Points.add s.points ~el:point)
-          ~lines:s.lines
+          ~time
       | AddLine line ->
         Scene.update
           s
-          ~bodies:s.bodies
           ~cause:[ LineAdded line ]
-          ~points:s.points
           ~lines:(Lines.add s.lines ~el:line)
+          ~time
       | GiveVelocity { id; v0 } ->
         let body = Scene.Figures.get_by_id s.bodies ~id in
         let body = Figure2.update_v0 body ~v:v0 ~rules:Figure2.Rule.rules1 in
@@ -1217,10 +1220,8 @@ struct
           s
           ~bodies:(Scene.Figures.update_by_id s.bodies ~id:body.id ~body)
           ~cause:[ VelocityGiven { id; v = v0 } ]
-          ~points:s.points
-          ~lines:s.lines
-      | Empty ->
-        Scene.update s ~bodies:s.bodies ~cause:[ Empty ] ~points:s.points ~lines:s.lines
+          ~time
+      | Empty -> Scene.update s ~cause:[ Empty ] ~time
     ;;
 
     let recv Model.{ scenes; _ } ~action:Action.{ time; action; timeout } =
