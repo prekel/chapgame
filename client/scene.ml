@@ -43,12 +43,14 @@ let scene_frame ~scene ~on_click ~time =
                  ; r = S.Values.get_scalar_exn figure.values ~var:`r
                  }
                ~on_click:(fun id evt ->
-                 let e = (evt##.target |> Js.Opt.get) (fun _ -> assert false) in
-                 let dim = e##getBoundingClientRect in
-                 let r = S.Values.get_scalar_exn figure.values ~var:`r in
-                 let x = Float.(of_int evt##.clientX - dim##.left) in
-                 let y = Float.(of_int evt##.clientY - dim##.top) in
-                 on_click id x y r))
+                 match Js.Opt.to_option evt##.target with
+                 | Some e ->
+                   let dim = e##getBoundingClientRect in
+                   let r = S.Values.get_scalar_exn figure.values ~var:`r in
+                   let x = Float.(of_int evt##.clientX - dim##.left) in
+                   let y = Float.(of_int evt##.clientY - dim##.top) in
+                   on_click id x y r
+                 | None -> assert false))
       |> Sequence.append
            (scene.points
            |> S.Points.to_sequence
