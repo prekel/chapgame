@@ -1,24 +1,22 @@
-FROM ocaml/opam:alpine as build
+FROM ocaml/opam:alpine-ocaml-4.13 as build
 
 # Install system dependencies
-RUN sudo apk add --update libev-dev openssl-dev
-
 WORKDIR /home/opam
 
 # Install dependencies
 ADD chapgame.opam chapgame.opam
-RUN opam install . --deps-only
+RUN opam-dev install --deps-only . -y
 
 # Build project
 ADD . .
-RUN opam exec -- dune build ./server
+RUN opam-dev exec -- dune build --release ./server/main.exe
 
 
-
-FROM alpine:3.12 as run
+FROM alpine as run
 
 RUN apk add --update libev
 
 COPY --from=build /home/opam/_build/default/server/main.exe /bin/app
 
+EXPOSE 8080
 ENTRYPOINT /bin/app
