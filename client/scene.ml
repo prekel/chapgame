@@ -332,7 +332,11 @@ module Make (C : Chapgame.Module_types.CONSTS with module N = Float) = struct
   let connect ~var ~room_id =
     Websocket.connect
       (Uri.of_string
-         ("ws://" ^ "localhost:8080" ^ "/room/" ^ Int.to_string room_id ^ "/ws"))
+         ("ws://"
+         ^ (Js.to_string Dom_html.window##.location##.host)
+         ^ "/room/"
+         ^ Int.to_string room_id
+         ^ "/ws"))
       ~on_message:(fun msg ->
         let (Diff diff) = msg |> Sexp.of_string |> [%of_sexp: P.Response.t] in
         Bonsai.Var.update var ~f:(fun prev -> S.Engine.update prev ~action:(`Diff diff)))
@@ -400,7 +404,8 @@ module Make (C : Chapgame.Module_types.CONSTS with module N = Float) = struct
                           let%map.Effect str =
                             Effect_lwt.of_lwt_unit (fun () ->
                                 let%bind.Lwt _response, body =
-                                  Cohttp_lwt_jsoo.Client.post (Uri.of_string "/room/create1")
+                                  Cohttp_lwt_jsoo.Client.post
+                                    (Uri.of_string "/room/create1")
                                 in
                                 Cohttp_lwt.Body.to_string body)
                           in
