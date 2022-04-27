@@ -30,24 +30,24 @@ end = struct
 end
 
 module type Diff = sig
-  type t
-  type diff [@@deriving sexp, equal]
+  type tt
+  type t [@@deriving sexp, equal]
 
-  val diff : old:t -> t -> diff
-  val apply_diff : diff:diff -> t -> t
+  val diff : old:tt -> tt -> t
+  val apply_diff : diff:t -> tt -> tt
 end
 
 module type AdvancedSetDiff = sig
   type value
-  type t
+  type tt
 
-  type diff =
+  type t =
     { added : value list
     ; removed : value list
     }
   [@@deriving sexp, equal]
 
-  include Diff with type t := t and type diff := diff
+  include Diff with type tt := tt and type t := t
 end
 
 module MakeAdvancedSet (In : sig
@@ -65,7 +65,7 @@ end) : sig
   val empty : t
   val add : t -> el:In.t -> t
 
-  module Diff : AdvancedSetDiff with type t = t and type value = In.t
+  module Diff : AdvancedSetDiff with type tt = t and type value = In.t
 end = struct
   type t = (In.t, In.comparator_witness) Set.t
 
@@ -82,10 +82,10 @@ end = struct
   let add a ~el = Set.add a el
 
   module Diff = struct
-    type nonrec t = t
+    type tt = t
     type value = In.t
 
-    type diff =
+    type t =
       { added : In.t list
       ; removed : In.t list
       }
@@ -111,16 +111,16 @@ end
 module type AdvancedMapDiff = sig
   type key
   type value
-  type t
+  type tt
 
-  type diff =
+  type t =
     { added : (key * value) list
     ; changed : (key * value) list
     ; removed : key list
     }
   [@@deriving sexp, equal]
 
-  include Diff with type t := t and type diff := diff
+  include Diff with type tt := tt and type t := t
 end
 
 module MakeAdvancedMap (Key : sig
@@ -142,7 +142,7 @@ end) : sig
   val find_exn : t -> Key.t -> Value.t
 
   module Diff :
-    AdvancedMapDiff with type t = t and type key = Key.t and type value = Value.t
+    AdvancedMapDiff with type tt = t and type key = Key.t and type value = Value.t
 end = struct
   type t = (Key.t, Value.t, Key.comparator_witness) Map.t
 
@@ -162,9 +162,9 @@ end = struct
   module Diff = struct
     type key = Key.t
     type value = Value.t
-    type nonrec t = t
+    type tt = t
 
-    type diff =
+    type t =
       { added : (Key.t * Value.t) list
       ; changed : (Key.t * Value.t) list
       ; removed : Key.t list

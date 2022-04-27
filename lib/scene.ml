@@ -1,7 +1,6 @@
 open Core
 
-module Make (N : Module_types.NUMBER) (C : Module_types.CONSTS with module N = N) =
-struct
+module Make (N : Module_types.NUMBER) (C : Module_types.CONSTS with module N = N) = struct
   module Vars :
     Identifiable.S
       with type t =
@@ -65,7 +64,7 @@ struct
     val global_to_scoped : t -> Scope.t -> Vars.t -> N.t
 
     module Diff :
-      Utils.AdvancedMapDiff with type t = t and type key = Vars.t and type value = N.t
+      Utils.AdvancedMapDiff with type tt = t and type key = Vars.t and type value = N.t
   end = struct
     include Utils.MakeAdvancedMap (Vars) (N)
 
@@ -770,7 +769,7 @@ struct
 
       module Diff :
         Utils.AdvancedMapDiff
-          with type t = t
+          with type tt = t
            and type key = Figure2.Id.t
            and type value = Figure2.t
     end = struct
@@ -835,12 +834,12 @@ struct
     ;;
 
     module Diff = struct
-      type diff =
+      type t =
         { new_time : N.t
-        ; bodies_diff : Figures.Diff.diff
-        ; points_diff : Points.Diff.diff
-        ; lines_diff : Lines.Diff.diff
-        ; global_values_diff : Values.Diff.diff
+        ; bodies_diff : Figures.Diff.t
+        ; points_diff : Points.Diff.t
+        ; lines_diff : Lines.Diff.t
+        ; global_values_diff : Values.Diff.t
         ; new_cause : Cause.t list
         }
       [@@deriving sexp, equal]
@@ -916,13 +915,15 @@ struct
     val of_scenes : Scenes.t -> time:N.t -> scene:Scene.t -> timeout:N.t option -> t
 
     module Diff : sig
-      type diff =
+      type tt = t
+
+      type t =
         { init : [ `Init of Scene.t | `Since of N.t ]
-        ; scene_diffs : Scene.Diff.diff list
+        ; scene_diffs : Scene.Diff.t list
         ; new_timeout : N.t option
         }
 
-      include Utils.Diff with type t := t and type diff := diff
+      include Utils.Diff with type tt := tt and type t := t
     end
   end = struct
     module Scenes = struct
@@ -984,9 +985,11 @@ struct
     ;;
 
     module Diff = struct
-      type diff =
+      type tt = t
+
+      type t =
         { init : [ `Init of Scene.t | `Since of N.t ]
-        ; scene_diffs : Scene.Diff.diff list
+        ; scene_diffs : Scene.Diff.t list
         ; new_timeout : N.t option
         }
       [@@deriving sexp, equal]

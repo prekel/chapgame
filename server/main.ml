@@ -255,7 +255,7 @@ let () =
   @@ Dream.logger
   @@ Dream.router
        [ Dream.scope
-           ""
+           "/"
            [ Dream_encoding.compress ]
            [ Dream.get "/" (fun _ -> Dream.html Embedded_files.index_dot_html)
            ; Dream.get "/main.bc.js" (fun _ ->
@@ -282,7 +282,7 @@ let () =
                  let%bind body = Dream.body request in
                  let action = body |> Sexp.of_string |> [%of_sexp: S.Action.t] in
                  let%bind diff = update_room action ~room ~rooms ~room_id in
-                 DreamExt.sexp [%sexp (diff : S.Model.Diff.diff)])
+                 DreamExt.sexp [%sexp (diff : S.Model.Diff.t)])
            ; Dream.get "/:room_id/ws" (fun request ->
                  Dream.websocket (fun client ->
                      let client_id = Client.Id.next () in
