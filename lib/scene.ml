@@ -615,7 +615,7 @@ struct
                let is_qwf ~p1 ~p2 ~root =
                  let x0 = x |> to_polynomial |> Solver.Polynomial.calc ~x:root in
                  let y0 = y |> to_polynomial |> Solver.Polynomial.calc ~x:root in
-                 let Point.{ x = x1; y = y1 } = p1 in 
+                 let Point.{ x = x1; y = y1 } = p1 in
                  let Point.{ x = x2; y = y2 } = p2 in
                  let v1 = N.(x2 - x1, y2 - y1) in
                  let v2 = N.(x0 - x1, y0 - y1) in
@@ -1063,184 +1063,120 @@ struct
 
   module Engine = struct
     let forward_seq ?time (scene : Scene.t) =
-      Sequence.unfold_step ~init:(Some scene) ~f:(function
-          | None -> Sequence.Step.Done
+      Sequence.unfold ~init:(Some scene) ~f:(function
+          | None -> None
           | Some scene ->
-            let with_body =
-              Scene.Figures.to_sequence scene.bodies
-              |> CollisionDetection.WithBody.first_collision
-                   ~global:scene.global_values
-                   ~r:(Formula.of_alist_exn Figure2.Rule.Exprs.[ 0, r ])
-                   ~a:Figure2.Rule.Exprs.a_vec
-            in
-            let with_point =
-              CollisionDetection.WithPoint.first_collision
-                ~global:scene.global_values
-                ~points:(Points.to_sequence scene.points)
-                ~r:(Formula.of_alist_exn Figure2.Rule.Exprs.[ 0, r ])
-                (Scene.Figures.to_sequence scene.bodies)
-            in
-            let with_line =
-              CollisionDetection.WithLine.first_collision
-                ~global:scene.global_values
-                ~lines:(Lines.to_sequence scene.lines)
-                ~r:(Formula.of_alist_exn Figure2.Rule.Exprs.[ 0, r ])
-                (Scene.Figures.to_sequence scene.bodies)
-            in
-            let coll t ~id1 ~id2 =
-              let q =
-                Scene.Figures.calc scene.bodies ~t ~global_values:scene.global_values
-              in
-              let body1 = Scene.Figures.get_by_id q ~id:id1 in
-              let body2 = Scene.Figures.get_by_id q ~id:id2 in
-              let v1n, v2n = CollisionHandle.calculate_new_v body1.values body2.values in
-              Scene.update
-                scene
-                ~bodies:
-                  (q
-                  |> Scene.Figures.update_by_id
-                       ~id:id1
-                       ~body:(Figure2.update_v0 body1 ~v:v1n ~rules:Figure2.Rule.rules1)
-                  |> Scene.Figures.update_by_id
-                       ~id:id2
-                       ~body:(Figure2.update_v0 body2 ~v:v2n ~rules:Figure2.Rule.rules1))
-                ~cause:[ Collision { id1; id2 } ]
-                ~time:N.(scene.time + t)
-                ~points:scene.points
-                ~lines:scene.lines
-            in
-            let coll_with_point (t, id, point) =
-              let q =
-                Scene.Figures.calc scene.bodies ~t ~global_values:scene.global_values
-              in
-              let body = Scene.Figures.get_by_id q ~id in
-              let v' = CollisionHandle.calculate_new_v_with_point ~body ~point in
-              let q =
-                Scene.Figures.update_by_id
-                  q
-                  ~id
-                  ~body:(Figure2.update_v0 body ~v:v' ~rules:Figure2.Rule.rules1)
-              in
-              let new_time = N.(scene.time + t) in
-              Scene.update
-                scene
-                ~bodies:q
-                ~cause:[ CollisionWithPoint { id; point } ]
-                ~time:new_time
-                ~points:scene.points
-                ~lines:scene.lines
-            in
-            let coll_with_line (t, id, line) =
-              let q =
-                Scene.Figures.calc scene.bodies ~t ~global_values:scene.global_values
-              in
-              let body = Scene.Figures.get_by_id q ~id in
-              let v' = CollisionHandle.calculate_new_v_with_line ~body ~line in
-              let q =
-                Scene.Figures.update_by_id
-                  q
-                  ~id
-                  ~body:(Figure2.update_v0 body ~v:v' ~rules:Figure2.Rule.rules1)
-              in
-              let new_time = N.(scene.time + t) in
-              Scene.update
-                scene
-                ~bodies:q
-                ~cause:[ CollisionWithLine { id; line } ]
-                ~time:new_time
-                ~points:scene.points
-                ~lines:scene.lines
-            in
             let mt =
-              [ Option.map with_body ~f:(fun ((t, _, _) as a) -> t, `WithBody a)
-              ; Option.map with_point ~f:(fun ((t, _, _) as a) -> t, `WithPoint a)
-              ; Option.map with_line ~f:(fun ((t, _, _) as a) -> t, `WithLine a)
+              [ Scene.Figures.to_sequence scene.bodies
+                |> CollisionDetection.WithBody.first_collision
+                     ~global:scene.global_values
+                     ~r:(Formula.of_alist_exn Figure2.Rule.Exprs.[ 0, r ])
+                     ~a:Figure2.Rule.Exprs.a_vec
+                |> Option.map ~f:(fun ((t, _, _) as a) -> t, `WithBody a)
+              ; CollisionDetection.WithPoint.first_collision
+                  ~global:scene.global_values
+                  ~points:(Points.to_sequence scene.points)
+                  ~r:(Formula.of_alist_exn Figure2.Rule.Exprs.[ 0, r ])
+                  (Scene.Figures.to_sequence scene.bodies)
+                |> Option.map ~f:(fun ((t, _, _) as a) -> t, `WithPoint a)
+              ; CollisionDetection.WithLine.first_collision
+                  ~global:scene.global_values
+                  ~lines:(Lines.to_sequence scene.lines)
+                  ~r:(Formula.of_alist_exn Figure2.Rule.Exprs.[ 0, r ])
+                  (Scene.Figures.to_sequence scene.bodies)
+                |> Option.map ~f:(fun ((t, _, _) as a) -> t, `WithLine a)
               ]
               |> List.filter_opt
               |> List.min_elt ~compare:(fun (t1, _) (t2, _) -> N.compare t1 t2)
               |> Option.map ~f:snd
             in
-            (match mt, time with
-            | Some (`WithBody (t, id1, id2)), Some time ->
-              let s = coll t ~id1 ~id2 in
-              if N.(s.Scene.time < time)
-              then Sequence.Step.Yield (s, Some s)
-              else
-                Sequence.Step.Yield
-                  ( Scene.update
-                      scene
-                      ~bodies:
-                        (Scene.Figures.calc
-                           scene.bodies
-                           ~t:N.(time - scene.time)
-                           ~global_values:scene.global_values)
-                      ~cause:[]
-                      ~time
-                      ~points:scene.points
-                      ~lines:scene.lines
-                  , None )
-            | Some (`WithBody (t, id1, id2)), None ->
-              let s = coll t ~id1 ~id2 in
-              Sequence.Step.Yield (s, Some s)
-            | Some (`WithPoint r), Some time ->
-              let s = coll_with_point r in
-              if N.(s.Scene.time < time)
-              then Sequence.Step.Yield (s, Some s)
-              else
-                Sequence.Step.Yield
-                  ( Scene.update
-                      scene
-                      ~bodies:
-                        (Scene.Figures.calc
-                           scene.bodies
-                           ~t:N.(time - scene.time)
-                           ~global_values:scene.global_values)
-                      ~cause:[]
-                      ~time
-                      ~points:scene.points
-                      ~lines:scene.lines
-                  , None )
-            | Some (`WithPoint r), None ->
-              let s = coll_with_point r in
-              Sequence.Step.Yield (s, Some s)
-            | Some (`WithLine r), Some time ->
-              let s = coll_with_line r in
-              if N.(s.Scene.time < time)
-              then Sequence.Step.Yield (s, Some s)
-              else
-                Sequence.Step.Yield
-                  ( Scene.update
-                      scene
-                      ~bodies:
-                        (Scene.Figures.calc
-                           scene.bodies
-                           ~t:N.(time - scene.time)
-                           ~global_values:scene.global_values)
-                      ~cause:[]
-                      ~time
-                      ~points:scene.points
-                      ~lines:scene.lines
-                  , None )
-            | Some (`WithLine r), None ->
-              let s = coll_with_line r in
-              Sequence.Step.Yield (s, Some s)
-            | None, Some time ->
-              let q =
-                Scene.Figures.calc
-                  scene.bodies
-                  ~t:N.(time - scene.time)
-                  ~global_values:scene.global_values
+            let time_lt_scene_time =
+              let open Option.Let_syntax in
+              let%bind s =
+                match%map mt with
+                | `WithBody (t, id1, id2) ->
+                  let q =
+                    Scene.Figures.calc scene.bodies ~t ~global_values:scene.global_values
+                  in
+                  let body1 = Scene.Figures.get_by_id q ~id:id1 in
+                  let body2 = Scene.Figures.get_by_id q ~id:id2 in
+                  let v1n, v2n =
+                    CollisionHandle.calculate_new_v body1.values body2.values
+                  in
+                  Scene.update
+                    scene
+                    ~bodies:
+                      (q
+                      |> Scene.Figures.update_by_id
+                           ~id:id1
+                           ~body:
+                             (Figure2.update_v0 body1 ~v:v1n ~rules:Figure2.Rule.rules1)
+                      |> Scene.Figures.update_by_id
+                           ~id:id2
+                           ~body:
+                             (Figure2.update_v0 body2 ~v:v2n ~rules:Figure2.Rule.rules1))
+                    ~cause:[ Collision { id1; id2 } ]
+                    ~time:N.(scene.time + t)
+                    ~points:scene.points
+                    ~lines:scene.lines
+                | `WithPoint (t, id, point) ->
+                  let q =
+                    Scene.Figures.calc scene.bodies ~t ~global_values:scene.global_values
+                  in
+                  let body = Scene.Figures.get_by_id q ~id in
+                  let v' = CollisionHandle.calculate_new_v_with_point ~body ~point in
+                  let new_time = N.(scene.time + t) in
+                  Scene.update
+                    scene
+                    ~bodies:
+                      (Scene.Figures.update_by_id
+                         q
+                         ~id
+                         ~body:(Figure2.update_v0 body ~v:v' ~rules:Figure2.Rule.rules1))
+                    ~cause:[ CollisionWithPoint { id; point } ]
+                    ~time:new_time
+                    ~points:scene.points
+                    ~lines:scene.lines
+                | `WithLine (t, id, line) ->
+                  let q =
+                    Scene.Figures.calc scene.bodies ~t ~global_values:scene.global_values
+                  in
+                  let body = Scene.Figures.get_by_id q ~id in
+                  let v' = CollisionHandle.calculate_new_v_with_line ~body ~line in
+                  let new_time = N.(scene.time + t) in
+                  Scene.update
+                    scene
+                    ~bodies:
+                      (Scene.Figures.update_by_id
+                         q
+                         ~id
+                         ~body:(Figure2.update_v0 body ~v:v' ~rules:Figure2.Rule.rules1))
+                    ~cause:[ CollisionWithLine { id; line } ]
+                    ~time:new_time
+                    ~points:scene.points
+                    ~lines:scene.lines
               in
-              Sequence.Step.Yield
+              match time with
+              | Some time when N.(s.Scene.time > time) -> Some (s, Some time)
+              | Some _ | None -> Some (s, None)
+            in
+            (match time_lt_scene_time, time with
+            | Some (s, None), _ -> Some (s, Some s)
+            | Some (_, Some time), _ | None, Some time ->
+              Some
                 ( Scene.update
                     scene
-                    ~bodies:q
+                    ~bodies:
+                      (Scene.Figures.calc
+                         scene.bodies
+                         ~t:N.(time - scene.time)
+                         ~global_values:scene.global_values)
                     ~cause:[]
                     ~time
                     ~points:scene.points
                     ~lines:scene.lines
                 , None )
-            | None, None -> Sequence.Step.Done))
+            | None, None -> None))
     ;;
 
     let forward ?time (scene : Scene.t) ~timeout =
