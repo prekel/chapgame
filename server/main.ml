@@ -251,7 +251,7 @@ let update_room ~(rooms : Rooms.t) ~(room : Room.t) ~room_id action =
 ;;
 
 let () =
-  Dream.run ~interface:"0.0.0.0"
+  Dream.run
   @@ Dream.logger
   @@ Dream.router
        [ Dream.scope
