@@ -1188,56 +1188,47 @@ struct
       |> Sequence.to_list
     ;;
 
-    let recv model ~action:Action.{ time; action; timeout } =
-      let before, s = Model.Scenes.before model.Model.scenes ~time in
+    let apply_action s = function
+      | Action.AddBody { id; x0; y0; r; mu; m } ->
+        Scene.update
+          s
+          ~bodies:(Scene.add_figure s.bodies ~id ~x0 ~y0 ~r ~mu ~m)
+          ~cause:[ BodyAdded { id } ]
+          ~points:s.points
+          ~lines:s.lines
+      | AddPoint point ->
+        Scene.update
+          s
+          ~bodies:s.bodies
+          ~cause:[ PointAdded point ]
+          ~points:(Points.add s.points ~el:point)
+          ~lines:s.lines
+      | AddLine line ->
+        Scene.update
+          s
+          ~bodies:s.bodies
+          ~cause:[ LineAdded line ]
+          ~points:s.points
+          ~lines:(Lines.add s.lines ~el:line)
+      | GiveVelocity { id; v0 } ->
+        let body = Scene.Figures.get_by_id s.bodies ~id in
+        let body = Figure2.update_v0 body ~v:v0 ~rules:Figure2.Rule.rules1 in
+        Scene.update
+          s
+          ~bodies:(Scene.Figures.update_by_id s.bodies ~id:body.id ~body)
+          ~cause:[ VelocityGiven { id; v = v0 } ]
+          ~points:s.points
+          ~lines:s.lines
+      | Empty ->
+        Scene.update s ~bodies:s.bodies ~cause:[ Empty ] ~points:s.points ~lines:s.lines
+    ;;
+
+    let recv Model.{ scenes; _ } ~action:Action.{ time; action; timeout } =
+      let before, s = Model.Scenes.before scenes ~time in
       let scenes = forward s ~time ~timeout in
       let scenes = Model.Scenes.merge_with_list before scenes in
       let before, s = Model.Scenes.before scenes ~time in
-      let r =
-        match action with
-        | Action.AddBody { id; x0; y0; r; mu; m } ->
-          Scene.update
-            s
-            ~bodies:(Scene.add_figure s.bodies ~id ~x0 ~y0 ~r ~mu ~m)
-            ~cause:[ BodyAdded { id } ]
-            ~time
-            ~points:s.points
-            ~lines:s.lines
-        | AddPoint point ->
-          Scene.update
-            s
-            ~bodies:s.bodies
-            ~cause:[ PointAdded point ]
-            ~time
-            ~points:(Points.add s.points ~el:point)
-            ~lines:s.lines
-        | AddLine line ->
-          Scene.update
-            s
-            ~bodies:s.bodies
-            ~cause:[ LineAdded line ]
-            ~time
-            ~points:s.points
-            ~lines:(Lines.add s.lines ~el:line)
-        | GiveVelocity { id; v0 } ->
-          let body = Scene.Figures.get_by_id s.bodies ~id in
-          let body = Figure2.update_v0 body ~v:v0 ~rules:Figure2.Rule.rules1 in
-          Scene.update
-            s
-            ~bodies:(Scene.Figures.update_by_id s.bodies ~id:body.id ~body)
-            ~cause:[ VelocityGiven { id; v = v0 } ]
-            ~time
-            ~points:s.points
-            ~lines:s.lines
-        | Empty ->
-          Scene.update
-            s
-            ~bodies:s.bodies
-            ~cause:[ Empty ]
-            ~time
-            ~points:s.points
-            ~lines:s.lines
-      in
+      let r = apply_action ~time s action in
       let m = before |> Model.of_scenes ~time:r.time ~scene:r ~timeout in
       let f = forward (Model.Scenes.last_exn m.scenes) ~timeout in
       { m with scenes = Model.Scenes.merge_with_list m.scenes f }

@@ -398,20 +398,17 @@ module Make (C : Chapgame.Module_types.CONSTS with module N = Float) = struct
                         match ws with
                         | None ->
                           let%map.Effect str =
-                            Effect_lwt.of_lwt_fun
-                              (fun () ->
+                            Effect_lwt.of_lwt_unit (fun () ->
                                 let%bind.Lwt _response, body =
-                                  Cohttp_lwt_jsoo.Client.get
-                                    (Uri.of_string ("/room/" ^ Int.to_string room_id))
+                                  Cohttp_lwt_jsoo.Client.post (Uri.of_string "/room/create1")
                                 in
                                 Cohttp_lwt.Body.to_string body)
-                              ()
                           in
                           let model = str |> Sexp.of_string |> [%of_sexp: S.Model.t] in
                           Bonsai.Var.set state_var model
                         | Some _ -> Effect.Ignore)
                   ])
-            [ Node.text "init" ]
+            [ Node.text "create1" ]
         ; scene
         ])
   ;;
