@@ -166,6 +166,8 @@ let component =
       ])
 ;;
 
+module Scene = Scene.Make ((val Chapgame.Utils.make_consts ~eps:1e-6))
+
 let component1 = Scene.scene
 
 module WebSocketTest = struct

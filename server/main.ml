@@ -1,6 +1,6 @@
 open Core
 open Lwt.Let_syntax
-module P = Chapgame.Protocol.Make (Float) ((val Chapgame.Utils.make_consts ~eps:1e-6))
+module P = Chapgame.Protocol.Make ((val Chapgame.Utils.make_consts ~eps:1e-6))
 module S = P.S
 
 module Client = struct

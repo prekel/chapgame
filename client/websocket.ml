@@ -7,7 +7,7 @@ type t =
   }
 [@@deriving sexp]
 
-let equal = Poly.equal
+let equal = phys_equal
 
 let connect url ~on_message =
   let url = Uri.to_string url in
