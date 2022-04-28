@@ -240,7 +240,7 @@ let update_room ~(rooms : Rooms.t) ~(room : Room.t) ~room_id action =
       | Some prev -> { prev with model }
       | _ -> assert false);
   let%map _ =
-    Lwt_list.iter_p
+    Lwt_list.iter_s
       (fun (_id, Client.{ websocket = client }) ->
         Dream.send
           client
