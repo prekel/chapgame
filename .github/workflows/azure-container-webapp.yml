@@ -83,8 +83,8 @@ jobs:
         with:
           push: true
           tags: ghcr.io/${{ env.REPO }}:${{ github.sha }}
-          context: build
-          file: ./Dockerfile
+          context: ./build
+          file: ./build/Dockerfile
 
   deploy:
     runs-on: ubuntu-latest
