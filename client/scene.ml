@@ -331,12 +331,21 @@ module Make (C : Chapgame.Module_types.CONSTS with module N = Float) = struct
 
   let connect ~var ~room_id =
     Websocket.connect
-      (Uri.of_string
-         ("ws://"
-         ^ (Js.to_string Dom_html.window##.location##.host)
-         ^ "/room/"
-         ^ Int.to_string room_id
-         ^ "/ws"))
+      (let wp =
+         Uri.make
+           ~scheme:
+             (if String.(Js.to_string Dom_html.window##.location##.protocol = "https")
+             then "wss"
+             else "ws")
+           ~host:(Js.to_string Dom_html.window##.location##.hostname)
+           ~path:("/room/" ^ Int.to_string room_id ^ "/ws")
+           ()
+       in
+       Uri.with_port
+         wp
+         (match Js.to_string Dom_html.window##.location##.port with
+         | "" -> None
+         | port -> Some (Int.of_string port)))
       ~on_message:(fun msg ->
         let (Diff diff) = msg |> Sexp.of_string |> [%of_sexp: P.Response.t] in
         Bonsai.Var.update var ~f:(fun prev -> S.Engine.update prev ~action:(`Diff diff)))
