@@ -1,12 +1,16 @@
 (executable
  (public_name chapgame)
+ (package chapgame)
  (name main)
  (libraries chapgame dream core dream-encoding)
  (preprocess
   (pps ppx_jane)))
 
 (rule
- (targets embedded_files.ml embedded_files.mli)
- (deps ../client/main.bc.js ../client/index.html)
+ (target assets.ml)
+ (deps
+  (source_tree assets))
  (action
-  (bash "%{bin:ocaml-embed-file} %{deps} -output embedded_files")))
+  (with-stdout-to
+   %{null}
+   (run ocaml-crunch -m plain assets -o %{target}))))

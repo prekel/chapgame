@@ -13,6 +13,19 @@
 (generate_opam_files true)
 
 (package
+ (name bonsai)
+ (synopsis "Bonsai")
+ (description "(vendored)")
+ (depends
+  (ocaml
+   (>= 4.08.0))
+  core
+  virtual_dom
+  incr_dom
+  incr_map
+  async_kernel))
+
+(package
  (name chapgame)
  (synopsis "A short, but powerful statement about your project")
  (description "A short, but powerful statement about your project")
@@ -23,12 +36,11 @@
   core
   lwt
   js_of_ocaml
-  bonsai
   uuidm
   dream
   cohttp-lwt-jsoo
   dream-encoding
-  (ocaml-embed-file :build)
+  (crunch :build)
   (ppx_jane :build)
   (bisect_ppx :with-test)
   (ocaml-lsp-server :with-test)

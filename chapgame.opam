@@ -12,12 +12,11 @@ depends: [
   "core"
   "lwt"
   "js_of_ocaml"
-  "bonsai"
   "uuidm"
   "dream"
   "cohttp-lwt-jsoo"
   "dream-encoding"
-  "ocaml-embed-file" {build}
+  "crunch" {build}
   "ppx_jane" {build}
   "bisect_ppx" {with-test}
   "ocaml-lsp-server" {with-test}

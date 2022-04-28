@@ -37,10 +37,33 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+        ocaml-compiler:
+          - 4.13.x
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v3
+
+      - name: Use OCaml ${{ matrix.ocaml-compiler }}
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+          dune-cache: true
+      
+      - run: opam install --deps-only . -y
+      - run: opam exec -- dune build --release ./server/main.exe
+      - run: cp ./_build/default/server/main.exe ./main.exe
+
+      - name: Artifact bundle
+        uses: actions/upload-artifact@v2
+        with:
+          name: main.exe
+          path: main.exe
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
@@ -60,7 +83,7 @@ jobs:
         with:
           push: true
           tags: ghcr.io/${{ env.REPO }}:${{ github.sha }}
-          file: ./Dockerfile
+          file: ./Dockerfile-pre
 
   deploy:
     runs-on: ubuntu-latest

@@ -223,7 +223,7 @@ module DreamExt = struct
       | _ -> Sexp.to_string_hum sexp
     in
     let response = Dream.response ?status ?code ?headers body in
-    Dream.set_header response "Content-Type" "text/plain";
+    Dream.set_header response "Content-Type" "text/plain; charset=utf-8";
     Lwt.return response
   ;;
 end
@@ -250,6 +250,12 @@ let update_room ~(rooms : Rooms.t) ~(room : Room.t) ~room_id action =
   diff
 ;;
 
+let loader path =
+  match Assets.read path with
+  | None -> Dream.empty `Not_Found
+  | Some asset -> Dream.respond asset
+;;
+
 let () =
   Dream.run ~interface:"0.0.0.0"
   @@ Dream.logger
@@ -257,9 +263,8 @@ let () =
        [ Dream.scope
            "/"
            [ Dream_encoding.compress ]
-           [ Dream.get "/" (fun _ -> Dream.html Embedded_files.index_dot_html)
-           ; Dream.get "/main.bc.js" (fun _ ->
-                 Dream.respond Embedded_files.main_dot_bc_dot_js)
+           [ Dream.get "/" (fun _ -> loader "index.html")
+           ; Dream.get "/main.bc.js" (fun _ -> loader "main.bc.js")
            ]
        ; Dream.scope
            "/room"
