@@ -3,10 +3,6 @@
 ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 $(eval $(ARGS):;@:)
 
-.PHONY: all
-all:
-	opam exec -- dune build --root . @install
-
 .PHONY: lock
 lock: ## Generate a lock file
 	opam lock -y .
@@ -79,3 +75,11 @@ coverage: ## Run coverage
 	find . -name '*.coverage' | xargs rm -f
 	opam exec -- dune runtest --instrument-with bisect_ppx --force
 	bisect-ppx-report html
+
+.PHONY: all
+all:
+	opam exec -- dune build --release ./server/main.exe
+
+.PHONY: cp_to_build
+cp_to_build:
+	cp ./_build/default/server/main.exe ./build/main.exe -f
