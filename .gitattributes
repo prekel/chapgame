@@ -1,1 +1,4 @@
-vendor/** linguist-vendored
+*.ml linguist-language=OCaml
+*.mli linguist-language=OCaml
+
+**/vendor/** linguist-vendored
