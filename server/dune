@@ -8,8 +8,7 @@
 
 (rule
  (target assets.ml)
- (deps
-  (source_tree assets))
+ (deps assets/index.html assets/main.bc.js)
  (action
   (with-stdout-to
    %{null}
