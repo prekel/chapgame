@@ -334,7 +334,7 @@ module Make (C : Chapgame.Module_types.CONSTS with module N = Float) = struct
       (let wp =
          Uri.make
            ~scheme:
-             (if String.starts_with
+             (if String.is_prefix
                    (Js.to_string Dom_html.window##.location##.protocol)
                    ~prefix:"https"
              then "wss"
