@@ -250,10 +250,18 @@ let update_room ~(rooms : Rooms.t) ~(room : Room.t) ~room_id action =
   diff
 ;;
 
-let loader path =
+let loader path ~content_type =
   match Assets.read path with
   | None -> Dream.empty `Not_Found
-  | Some asset -> Dream.respond asset
+  | Some asset ->
+    Dream.respond
+      asset
+      ~headers:
+        [ ( "Content-Type"
+          , match content_type with
+            | `text_html -> "text/html; charset=utf-8"
+            | `application_javascript -> "application/javascript; charset=utf-8" )
+        ]
 ;;
 
 let () =
@@ -263,8 +271,9 @@ let () =
        [ Dream.scope
            "/"
            [ Dream_encoding.compress ]
-           [ Dream.get "/" (fun _ -> loader "index.html")
-           ; Dream.get "/main.bc.js" (fun _ -> loader "main.bc.js")
+           [ Dream.get "/" (fun _ -> loader "index.html" ~content_type:`text_html)
+           ; Dream.get "/main.bc.js" (fun _ ->
+                 loader "main.bc.js" ~content_type:`application_javascript)
            ]
        ; Dream.scope
            "/room"
