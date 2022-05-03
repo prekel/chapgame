@@ -7,8 +7,8 @@ maintainer: ["Vladislav Prekel"]
 authors: ["Vladislav Prekel"]
 license: "MIT"
 depends: [
-  "dune" {>= "2.7"}
   "ocaml" {>= "4.08.0"}
+  "dune" {>= "2.7"}
   "core"
   "virtual_dom"
   "incr_dom"

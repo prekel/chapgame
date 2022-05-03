@@ -19,6 +19,7 @@
  (depends
   (ocaml
    (>= 4.08.0))
+  dune
   core
   virtual_dom
   incr_dom
