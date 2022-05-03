@@ -201,6 +201,39 @@ module Room = struct
   ;;
 end
 
+let model_pi m2 =
+  let id1 = S.Figure2.Id.next () in
+  let id2 = S.Figure2.Id.next () in
+  S.Model.init ~g:10.
+  |> S.Engine.recv
+       ~action:
+         { time = 0.
+         ; action = AddBody { id = id1; x0 = 5.; y0 = 2.; r = 1.; mu = 0.; m = 1. }
+         ; timeout = Some 0.
+         }
+  |> S.Engine.recv
+       ~action:
+         { time = 0.
+         ; action = AddBody { id = id2; x0 = 10.; y0 = 2.; r = 1.; mu = 0.; m = m2 }
+         ; timeout = Some 0.
+         }
+  |> S.Engine.recv
+       ~action:{ time = 0.; action = AddPoint { x = 0.; y = 2. }; timeout = Some 0. }
+  |> S.Engine.recv
+       ~action:
+         { time = 0.
+         ; action = GiveVelocity { id = id1; v0 = -1., 0. }
+         ; timeout = Some 0.
+         }
+  |> S.Engine.recv
+       ~action:
+         { time = 0.
+         ; action = GiveVelocity { id = id2; v0 = -1., 0. }
+         ; timeout = Some 0.
+         }
+  |> S.Engine.recv ~action:{ time = 0.; action = Empty; timeout = None }
+;;
+
 module Rooms = struct
   type t = (Room.Id.t, Room.t) Hashtbl.t
 
@@ -235,19 +268,35 @@ let room_of_request request =
 ;;
 
 let update_room ~(rooms : Rooms.t) ~(room : Room.t) ~room_id action =
-  let model, diff = S.Engine.recv_with_diff room.model ~action:(`Action action) in
-  Hashtbl.update rooms room_id ~f:(function
-      | Some prev -> { prev with model }
-      | _ -> assert false);
-  let%map _ =
-    Lwt_list.iter_s
-      (fun (_id, Client.{ websocket = client }) ->
-        Dream.send
-          client
-          ([%sexp (P.Response.Diff diff : P.Response.t)] |> Sexp.to_string_hum))
-      (room.clients |> Hashtbl.to_alist)
-  in
-  diff
+  match action with
+  | `Action _ as action ->
+    let model, diff = S.Engine.recv_with_diff room.model ~action in
+    Hashtbl.update rooms room_id ~f:(function
+        | Some prev -> { prev with model }
+        | _ -> assert false);
+    let%map _ =
+      Lwt_list.iter_s
+        (fun (_id, Client.{ websocket = client }) ->
+          Dream.send
+            client
+            ([%sexp (P.Response.Diff diff : P.Response.t)] |> Sexp.to_string_hum))
+        (room.clients |> Hashtbl.to_alist)
+    in
+    ()
+  | `Replace _ as action ->
+    let model = S.Engine.update room.model ~action in
+    Hashtbl.update rooms room_id ~f:(function
+        | Some prev -> { prev with model }
+        | _ -> assert false);
+    let%map _ =
+      Lwt_list.iter_s
+        (fun (_id, Client.{ websocket = client }) ->
+          Dream.send
+            client
+            ([%sexp (P.Response.Replace model : P.Response.t)] |> Sexp.to_string_hum))
+        (room.clients |> Hashtbl.to_alist)
+    in
+    ()
 ;;
 
 let loader path ~content_type =
@@ -288,15 +337,23 @@ let () =
                  let id = Room.Id.next () in
                  Hashtbl.add_exn rooms ~key:id ~data:(Room.init1 ());
                  DreamExt.sexp [%sexp (id : Room.Id.t)])
+           ; Dream.get "/create2/:m" (fun request ->
+                 let m = Dream.param request "m" |> Float.of_string in
+                 let rooms = Dream.field request rooms_field |> Option.value_exn in
+                 let id = Room.Id.next () in
+                 Hashtbl.add_exn
+                   rooms
+                   ~key:id
+                   ~data:{ (Room.init ()) with model = model_pi (10. ** m) };
+                 DreamExt.sexp [%sexp (id : Room.Id.t)])
            ; Dream.get "/:room_id" (fun request ->
                  let _, room, _ = room_of_request request in
                  DreamExt.sexp [%sexp (room.model : S.Model.t)])
-           ; Dream.post "/:room_id/action" (fun request ->
-                 let rooms, room, room_id = room_of_request request in
-                 let%bind body = Dream.body request in
-                 let action = body |> Sexp.of_string |> [%of_sexp: S.Action.t] in
-                 let%bind diff = update_room action ~room ~rooms ~room_id in
-                 DreamExt.sexp [%sexp (diff : S.Model.Diff.t)])
+             (* ; Dream.post "/:room_id/action" (fun request -> let rooms, room, room_id =
+                room_of_request request in let%bind body = Dream.body request in let
+                action = body |> Sexp.of_string |> [%of_sexp: S.Action.t] in let%bind diff
+                = update_room action ~room ~rooms ~room_id in DreamExt.sexp [%sexp (diff :
+                S.Model.Diff.t)]) *)
            ; Dream.get "/:room_id/ws" (fun request ->
                  Dream.websocket (fun client ->
                      let client_id = Client.Id.next () in
@@ -305,6 +362,7 @@ let () =
                        let rooms, room, room_id = room_of_request request in
                        match msg with
                        | Some message ->
+                         Dream.log "%s" message;
                          begin
                            match message |> Sexp.of_string |> [%of_sexp: P.Request.t] with
                            | Start client_model ->
@@ -322,8 +380,15 @@ let () =
                                  |> Sexp.to_string_hum)
                              in
                              loop ()
-                           | Action action ->
-                             let%bind _diff = update_room action ~room ~rooms ~room_id in
+                           | Action a ->
+                             let%bind () =
+                               update_room (`Action a) ~room ~rooms ~room_id
+                             in
+                             loop ()
+                           | Replace m ->
+                             let%bind () =
+                               update_room (`Replace m) ~room ~rooms ~room_id
+                             in
                              loop ()
                          end
                        | None ->

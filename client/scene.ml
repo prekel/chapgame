@@ -356,9 +356,13 @@ module Scene = struct
     Lwt.async (fun () ->
         Lwt_stream.iter_s
           (fun msg ->
-            let (Diff diff) = msg |> Sexp.of_string |> [%of_sexp: P.Response.t] in
             Bonsai.Var.update var ~f:(fun prev ->
-                S.Engine.update prev ~action:(`Diff diff));
+                S.Engine.update
+                  prev
+                  ~action:
+                    (match msg |> Sexp.of_string |> [%of_sexp: P.Response.t] with
+                    | Diff diff -> `Diff diff
+                    | Replace m -> `Replace m));
             Lwt.return_unit)
           (Websocket.stream ws));
     ws
@@ -378,7 +382,14 @@ module Scene = struct
                 Websocket.send ws ~msg:(Sexp.to_string_hum [%sexp (r : P.Request.t)])
               | None -> ()
             end
-          | `Replace _ -> assert false)
+          | `Replace m ->
+            begin
+              match ws with
+              | Some ws ->
+                let r = P.Request.Replace m in
+                Websocket.send ws ~msg:(Sexp.to_string_hum [%sexp (r : P.Request.t)])
+              | None -> ()
+            end)
     in
     let%sub scene = scene ~state ~dispatch in
     let%arr room_id = room_id
@@ -412,7 +423,8 @@ module Scene = struct
                             (fun () ->
                               Websocket.send
                                 ws
-                                ~msg:(Sexp.to_string_hum [%sexp (Start state : P.Request.t)]))
+                                ~msg:
+                                  (Sexp.to_string_hum [%sexp (Start state : P.Request.t)]))
                             ())
                   ])
             [ Node.text "start" ]

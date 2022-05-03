@@ -679,27 +679,7 @@ struct
     let collision_body ~v1 ~v2 ~m1 ~m2 ~x1 ~y1 ~x2 ~y2 =
       let v1' = collision ~v1 ~v2 ~x1:(x1, y1) ~x2:(x2, y2) ~m1 ~m2 in
       let v2' = collision ~v1:v2 ~v2:v1 ~x1:(x2, y2) ~x2:(x1, y1) ~m1:m2 ~m2:m1 in
-      if N.(is_finite m1 && is_finite m2)
-         && not
-              N.(
-                abs Vector.(len ((v1 *^ m1) + (v2 *^ m2) - (v1' *^ m1) - (v2' *^ m2)))
-                < eps)
-      then
-        Error.raise_s
-          [%message
-            "collision_body"
-              ~v1:(v1 : N.t * N.t)
-              ~v2:(v2 : N.t * N.t)
-              ~m1:(m1 : N.t)
-              ~m2:(m2 : N.t)
-              ~x1:(x1 : N.t)
-              ~y1:(y1 : N.t)
-              ~x2:(x2 : N.t)
-              ~y2:(y2 : N.t)
-              ~eps:(eps : N.t)
-              ~v1':(v1' : N.t * N.t)
-              ~v2':(v2' : N.t * N.t)]
-      else v1', v2'
+      v1', v2'
     ;;
 
     let calculate_new_v values1 values2 =
@@ -919,6 +899,7 @@ struct
       val before : t -> time:N.t -> t * Scene.t
       val merge_with_list : t -> Scene.t list -> t
       val last_exn : t -> Scene.t
+      val to_map : t -> (N.t, Scene.t, N.comparator_witness) Map.t
     end
 
     type t =
@@ -1208,11 +1189,7 @@ struct
           ~points:(Points.add s.points ~el:point)
           ~time
       | AddLine line ->
-        Scene.update
-          s
-          ~cause:[ LineAdded line ]
-          ~lines:(Lines.add s.lines ~el:line)
-          ~time
+        Scene.update s ~cause:[ LineAdded line ] ~lines:(Lines.add s.lines ~el:line) ~time
       | GiveVelocity { id; v0 } ->
         let body = Scene.Figures.get_by_id s.bodies ~id in
         let body = Figure2.update_v0 body ~v:v0 ~rules:Figure2.Rule.rules1 in
