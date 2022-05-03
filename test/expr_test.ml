@@ -75,8 +75,8 @@ let%test_module "" =
       print_s [%sexp (xy : Expr.t)];
       [%expect
         {|
-        (Div (Sub (Mult (VectorVar X) (VectorVar Y)) (VectorVar X))
-         (Sqr (VectorVar Y)))|}];
+        (Div (Sub (Mult (VectorVar X_x X_y) (VectorVar Y_x Y_y)) (VectorVar X_x X_y))
+         (Sqr (VectorVar Y_x Y_y)))|}];
       print_s
         [%sexp
           (Expr.calc
