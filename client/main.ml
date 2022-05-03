@@ -188,7 +188,9 @@ module WebSocketTest = struct
                       [ type_ "submit"
                       ; value "Send"
                       ; on_click (fun _ ->
-                            Effect.of_sync_fun (fun () -> Websocket.send ws inputtext) ())
+                            Effect.of_sync_fun
+                              (fun () -> Websocket.send ws ~msg:inputtext)
+                              ())
                       ])
                 []
             ; Node.input

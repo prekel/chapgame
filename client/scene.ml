@@ -4,8 +4,11 @@ open Bonsai.Let_syntax
 open Js_of_ocaml
 module Svg = Virtual_dom_svg
 
-module Make (C : Chapgame.Module_types.CONSTS with module N = Float) = struct
-  module P = Chapgame.Protocol.Make (C)
+(* module Make (C : Chapgame.Module_types.CONSTS with module N = Float) = struct module P
+   = Chapgame.Protocol.Make (C) module S = P.S *)
+
+module Scene = struct
+  module P = Chapgame.Protocol.Make ((val Chapgame.Utils.make_consts ~eps:1e-6))
   module S = P.S
 
   type circle =
@@ -330,27 +333,35 @@ module Make (C : Chapgame.Module_types.CONSTS with module N = Float) = struct
   ;;
 
   let connect ~var ~room_id =
-    Websocket.connect
-      (let wp =
-         Uri.make
-           ~scheme:
-             (if String.is_prefix
-                   (Js.to_string Dom_html.window##.location##.protocol)
-                   ~prefix:"https"
-             then "wss"
-             else "ws")
-           ~host:(Js.to_string Dom_html.window##.location##.hostname)
-           ~path:("/room/" ^ Int.to_string room_id ^ "/ws")
-           ()
-       in
-       Uri.with_port
-         wp
-         (match Js.to_string Dom_html.window##.location##.port with
-         | "" -> None
-         | port -> Some (Int.of_string port)))
-      ~on_message:(fun msg ->
-        let (Diff diff) = msg |> Sexp.of_string |> [%of_sexp: P.Response.t] in
-        Bonsai.Var.update var ~f:(fun prev -> S.Engine.update prev ~action:(`Diff diff)))
+    let ws =
+      Websocket.connect
+        (let wp =
+           Uri.make
+             ~scheme:
+               (if String.is_prefix
+                     (Js.to_string Dom_html.window##.location##.protocol)
+                     ~prefix:"https"
+               then "wss"
+               else "ws")
+             ~host:(Js.to_string Dom_html.window##.location##.hostname)
+             ~path:("/room/" ^ Int.to_string room_id ^ "/ws")
+             ()
+         in
+         Uri.with_port
+           wp
+           (match Js.to_string Dom_html.window##.location##.port with
+           | "" -> None
+           | port -> Some (Int.of_string port)))
+    in
+    Lwt.async (fun () ->
+        Lwt_stream.iter_s
+          (fun msg ->
+            let (Diff diff) = msg |> Sexp.of_string |> [%of_sexp: P.Response.t] in
+            Bonsai.Var.update var ~f:(fun prev ->
+                S.Engine.update prev ~action:(`Diff diff));
+            Lwt.return_unit)
+          (Websocket.stream ws));
+    ws
   ;;
 
   let online123 ~state_var ~room_id =
@@ -364,7 +375,7 @@ module Make (C : Chapgame.Module_types.CONSTS with module N = Float) = struct
               match ws with
               | Some ws ->
                 let r = P.Request.Action a in
-                Websocket.send ws (Sexp.to_string_hum [%sexp (r : P.Request.t)])
+                Websocket.send ws ~msg:(Sexp.to_string_hum [%sexp (r : P.Request.t)])
               | None -> ()
             end
           | `Replace _ -> assert false)
@@ -401,7 +412,7 @@ module Make (C : Chapgame.Module_types.CONSTS with module N = Float) = struct
                             (fun () ->
                               Websocket.send
                                 ws
-                                (Sexp.to_string_hum [%sexp (Start state : P.Request.t)]))
+                                ~msg:(Sexp.to_string_hum [%sexp (Start state : P.Request.t)]))
                             ())
                   ])
             [ Node.text "start" ]
@@ -622,3 +633,5 @@ module Make (C : Chapgame.Module_types.CONSTS with module N = Float) = struct
     scene ~state ~dispatch
   ;;
 end
+
+module Make (C : Chapgame.Module_types.CONSTS with module N = Float) = Scene
