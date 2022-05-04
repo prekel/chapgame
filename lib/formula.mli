@@ -3,7 +3,7 @@ module Make
     (Scope : Module_types.SCOPE)
     (N : Module_types.NUMBER)
     (Expr : Expr.S with type key = Key.t and type scope = Scope.t and type scalar = N.t)
-    (Solver : module type of Solver.MakeSolver (N)) : sig
+    (Solver : module type of Solver.All.Make (N)) : sig
   type t [@@deriving sexp, equal]
 
   module Syntax : sig
@@ -29,5 +29,5 @@ module Make
     -> values:(Key.t -> N.t)
     -> scoped_values:(Scope.t -> Key.t -> N.t)
     -> eps:N.t
-    -> Solver.Polynomial.t
+    -> Solver.P.t
 end

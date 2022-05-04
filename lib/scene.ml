@@ -57,7 +57,7 @@ struct
     [@@deriving sexp, equal]
   end
 
-  module Solver = Solver.MakeSolver (N)
+  module Solver = Solver.All.Make (N)
   module Expr = Expr.Make (Vars) (Scope) (N)
   module Formula = Formula.Make (Vars) (Scope) (N) (Expr) (Solver)
 
@@ -249,7 +249,7 @@ struct
     let calc ~values ~rules ~scoped_values ~t =
       let c = Expr.calc ~values ~scoped_values (module N) in
       let calc_xy f =
-        Formula.to_polynomial f ~values ~scoped_values ~eps |> Solver.Polynomial.calc ~x:t
+        Formula.to_polynomial f ~values ~scoped_values ~eps |> Solver.P.calc ~x:t
       in
       List.find_map rules ~f:(fun Rule.{ interval; x; y; v_x; v_y; after; _ } ->
           match interval with
@@ -368,7 +368,7 @@ struct
       type extra =
         { id1 : Figure2.Id.t
         ; id2 : Figure2.Id.t
-        ; p : Solver.Polynomial.t
+        ; p : Solver.P.t
         ; f : Formula.t
         ; roots : N.t list
         ; roots_filtered : N.t list
@@ -404,7 +404,7 @@ struct
                      | `_1 -> Values.to_function values1
                      | `_2 -> Values.to_function values2)
                in
-               let roots = Solver.PolynomialEquation.roots p ~eps in
+               let roots = Solver.PE.roots p ~eps in
                let roots_filtered =
                  roots
                  |> List.filter ~f:(fun root ->
@@ -531,7 +531,7 @@ struct
                           | `with_point `y -> y
                           | _ -> assert false
                         end)
-               |> Solver.PolynomialEquation.roots ~eps
+               |> Solver.PE.roots ~eps
                |> List.filter ~f:(fun root -> is_in_interval root i)
                |> List.min_elt ~compare:N.compare)
         |> Sequence.hd
@@ -613,8 +613,8 @@ struct
                in
                let abc = (a * x) + (b * y) + c |> to_polynomial in
                let is_qwf ~p1 ~p2 ~root =
-                 let x0 = x |> to_polynomial |> Solver.Polynomial.calc ~x:root in
-                 let y0 = y |> to_polynomial |> Solver.Polynomial.calc ~x:root in
+                 let x0 = x |> to_polynomial |> Solver.P.calc ~x:root in
+                 let y0 = y |> to_polynomial |> Solver.P.calc ~x:root in
                  let Point.{ x = x1; y = y1 } = p1 in
                  let Point.{ x = x2; y = y2 } = p2 in
                  let v1 = N.(x2 - x1, y2 - y1) in
@@ -624,10 +624,10 @@ struct
                let c f ~cond =
                  f
                  |> to_polynomial
-                 |> Solver.PolynomialEquation.roots ~eps
+                 |> Solver.PE.roots ~eps
                  |> List.filter ~f:(fun root ->
                         is_in_interval root i
-                        && cond (Solver.Polynomial.calc abc ~x:root)
+                        && cond (Solver.P.calc abc ~x:root)
                         &&
                         match line.kind with
                         | `Line -> true

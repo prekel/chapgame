@@ -2,14 +2,13 @@ open Core
 open Bonsai_web
 open Bonsai.Let_syntax
 open Js_of_ocaml
-module SF = Chapgame.Solver.MakeSolver (Float)
+module SF = Solver.All.Make (Float)
 
 let eps = 1e-5
 
 let state () =
   let init =
-    [%sexp
-      (SF.Polynomial.of_list [ 3, 1.; 2, -2.; 1, -1.; 0, 2. ] ~eps : SF.Polynomial.t)]
+    [%sexp (SF.P.of_list [ 3, 1.; 2, -2.; 1, -1.; 0, 2. ] ~eps : SF.P.t)]
     |> Sexp.to_string_hum
   in
   let%sub state, set_state = Bonsai.state [%here] (module String) ~default_model:init in
@@ -20,16 +19,15 @@ let state () =
 
 let polynomial_and_roots ~poly ~eps =
   let roots =
-    try Some (SF.PolynomialEquation.roots ~eps poly) with
+    try Some (SF.PE.roots ~eps poly) with
     | err ->
       Firebug.console##warn (Js.string (Exn.to_string err));
       None
   in
   Vdom.(
     Node.div
-      [ Node.pre
-          [ Node.text (Sexp.to_string_hum ~indent:2 [%sexp (poly : SF.Polynomial.t)]) ]
-      ; Node.text (SF.Polynomial.to_string_hum poly)
+      [ Node.pre [ Node.text (Sexp.to_string_hum ~indent:2 [%sexp (poly : SF.P.t)]) ]
+      ; Node.text (SF.P.to_string_hum poly)
       ; Node.pre
           [ Node.text (Sexp.to_string_hum ~indent:2 [%sexp (roots : float list option)]) ]
       ; Node.br ()
@@ -40,7 +38,7 @@ let box () =
   let%sub state, set_state = state () in
   let%arr state = state
   and set_state = set_state in
-  ( (try state |> Sexp.of_string |> SF.Polynomial.t_of_sexp |> Option.some with
+  ( (try state |> Sexp.of_string |> SF.P.t_of_sexp |> Option.some with
     | _ -> None)
   , Vdom.Node.div
       [ Vdom.Node.textarea
@@ -146,8 +144,8 @@ let component =
   and box_a = box_a
   and demo2 = demo2 in
   let rec derivatives poly =
-    let d = SF.Polynomial.derivative poly in
-    if SF.Polynomial.degree d = 0 then [ poly; d ] else poly :: derivatives d
+    let d = SF.P.derivative poly in
+    if SF.P.degree d = 0 then [ poly; d ] else poly :: derivatives d
   in
   Vdom.(
     Node.div

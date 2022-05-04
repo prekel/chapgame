@@ -1,12 +1,14 @@
 open Core
 
-module Make (N : Module_types.NUMBER) = struct
-  module I = Interval.Make (N)
-  module P = Polynomial.Make (N)
-  module LE = Linear_equation.Make (N) (P)
-  module QE = Quadratic_equation.Make (N) (P)
-  module BS = Bisection.Make (N) (I)
-
+module Make
+    (N : Module_types.NUMBER)
+    (I : module type of Interval.Make (N))
+    (P : module type of Polynomial.Make (N))
+    (LE : module type of Linear_equation.Make (N) (P))
+    (QE : module type of Quadratic_equation.Make (N) (P))
+    (BS : module type of Bisection.Make (N) (I)) 
+=
+struct
   let rec roots ~eps poly =
     match P.degree poly with
     | not_nat when not_nat <= 0 -> []

@@ -3,49 +3,49 @@ open Chapgame
 
 let%test_module "float solver" =
   (module struct
-    module SF = Solver.MakeSolver (Float)
+    module SF = Solver.All.Make (Float)
 
     let eps = 1e-3
 
     let _print_calcs poly =
-      let print_calc x = printf "x:%f y:%f\n" x @@ SF.Polynomial.calc ~x poly in
+      let print_calc x = printf "x:%f y:%f\n" x @@ SF.P.calc ~x poly in
       List.iter ~f:print_calc
     ;;
 
-    let sample_poly = SF.Polynomial.of_list [ 3, 1.; 1, -1.; 2, -2.; 0, 2. ] ~eps
-    let sample_poly_d1 = SF.Polynomial.derivative sample_poly
-    let sample_poly_d2 = SF.Polynomial.derivative sample_poly_d1
-    let sample_poly_d3 = SF.Polynomial.derivative sample_poly_d2
-    let sample_poly_d4 = SF.Polynomial.derivative sample_poly_d3
+    let sample_poly = SF.P.of_list [ 3, 1.; 1, -1.; 2, -2.; 0, 2. ] ~eps
+    let sample_poly_d1 = SF.P.derivative sample_poly
+    let sample_poly_d2 = SF.P.derivative sample_poly_d1
+    let sample_poly_d3 = SF.P.derivative sample_poly_d2
+    let sample_poly_d4 = SF.P.derivative sample_poly_d3
 
     let%expect_test "to_sexp_test" =
-      print_s [%sexp (sample_poly : SF.Polynomial.t)];
+      print_s [%sexp (sample_poly : SF.P.t)];
       [%expect {|
       ((0 2) (1 -1) (2 -2) (3 1)) |}]
     ;;
 
     let%test "of_sexp_test" =
       let sample_poly_from_sexp =
-        {| ((0 2) (1 -1) (2 -2) (3 1)) |} |> Sexp.of_string |> SF.Polynomial.t_of_sexp
+        {| ((0 2) (1 -1) (2 -2) (3 1)) |} |> Sexp.of_string |> SF.P.t_of_sexp
       in
-      SF.Polynomial.(equal sample_poly sample_poly_from_sexp)
+      SF.P.(equal sample_poly sample_poly_from_sexp)
     ;;
 
     let%test "of_sexp_test (unordered)" =
       let sample_poly_from_sexp =
-        {|( (1 -1) (0 2)  (2 -2) (3 1)) |} |> Sexp.of_string |> SF.Polynomial.t_of_sexp
+        {|( (1 -1) (0 2)  (2 -2) (3 1)) |} |> Sexp.of_string |> SF.P.t_of_sexp
       in
-      SF.Polynomial.(equal sample_poly sample_poly_from_sexp)
+      SF.P.(equal sample_poly sample_poly_from_sexp)
     ;;
 
     let%expect_test "derivative" =
-      print_s [%sexp (SF.Polynomial.derivative sample_poly : SF.Polynomial.t)];
+      print_s [%sexp (SF.P.derivative sample_poly : SF.P.t)];
       [%expect {|
         ((0 -1) (1 -4) (2 3)) |}]
     ;;
 
     let%expect_test "calc" =
-      let print_calc x = printf "x:%f y:%f\n" x @@ SF.Polynomial.calc ~x sample_poly in
+      let print_calc x = printf "x:%f y:%f\n" x @@ SF.P.calc ~x sample_poly in
       print_calc (-2.);
       print_calc (-1.);
       print_calc 0.;
@@ -65,9 +65,9 @@ let%test_module "float solver" =
     ;;
 
     let print_check_roots ~eps poly =
-      let roots = SF.PolynomialEquation.roots ~eps poly in
+      let roots = SF.PE.roots ~eps poly in
       List.iter roots ~f:(fun x ->
-          let y = SF.Polynomial.calc ~x poly in
+          let y = SF.P.calc ~x poly in
           printf "x:%f y:%f lteps:%b\n " x y Float.(abs y < eps))
     ;;
 
@@ -85,7 +85,7 @@ let%test_module "float solver" =
         let sample_poly = sample_poly_d1
 
         let%expect_test "d1 print" =
-          print_s [%sexp (sample_poly : SF.Polynomial.t)];
+          print_s [%sexp (sample_poly : SF.P.t)];
           [%expect {|
       ((0 -1) (1 -4) (2 3)) |}]
         ;;
@@ -100,6 +100,8 @@ let%test_module "float solver" =
       end)
     ;;
 
+    module LinearEquation = Solver.Linear_equation.Make (Float) (SF.P)
+
     let%test_module "d2" =
       (module struct
         let%expect_test "d2 root" =
@@ -108,12 +110,12 @@ let%test_module "float solver" =
         ;;
 
         let%expect_test "d2 linear" =
-          print_s [%sexp (SF.LinearEquation.root_poly sample_poly_d2 : float option)];
+          print_s [%sexp (LinearEquation.root_poly sample_poly_d2 : float option)];
           [%expect {|   (0.66666666666666663) |}]
         ;;
 
         let%expect_test "d2 print" =
-          print_s [%sexp (sample_poly_d2 : SF.Polynomial.t)];
+          print_s [%sexp (sample_poly_d2 : SF.P.t)];
           [%expect {|
       ((0 -4) (1 6)) |}]
         ;;
@@ -128,12 +130,12 @@ let%test_module "float solver" =
         ;;
 
         let%expect_test "d3 linear" =
-          print_s [%sexp (SF.LinearEquation.root_poly sample_poly_d3 : float option)];
+          print_s [%sexp (SF.LE.root_poly sample_poly_d3 : float option)];
           [%expect {|   () |}]
         ;;
 
         let%expect_test "d3 print" =
-          print_s [%sexp (sample_poly_d3 : SF.Polynomial.t)];
+          print_s [%sexp (sample_poly_d3 : SF.P.t)];
           [%expect {|
       ((0 6)) |}]
         ;;
@@ -148,7 +150,7 @@ let%test_module "float solver" =
         ;;
 
         let%expect_test "d4 print" =
-          print_s [%sexp (sample_poly_d4 : SF.Polynomial.t)];
+          print_s [%sexp (sample_poly_d4 : SF.P.t)];
           [%expect {|
       () |}]
         ;;
@@ -156,32 +158,32 @@ let%test_module "float solver" =
     ;;
 
     let%expect_test "intervals_of_list test" =
-      let l = SF.PolynomialEquation.roots ~eps sample_poly_d1 in
+      let l = SF.PE.roots ~eps sample_poly_d1 in
       print_s [%sexp (l : float list)];
-      print_s [%sexp (SF.Interval.intervals_of_list l : SF.Interval.t list)];
+      print_s [%sexp (SF.I.intervals_of_list l : SF.I.t list)];
       [%expect
         {|
         (-0.21525043702153024 1.5485837703548635)
         ((NegInfinity (right -0.21525043702153024))
          (Interval (left -0.21525043702153024) (right 1.5485837703548635))
          (PosInfinity (left 1.5485837703548635))) |}];
-      print_s [%sexp (SF.Interval.intervals_of_list [] : SF.Interval.t list)];
+      print_s [%sexp (SF.I.intervals_of_list [] : SF.I.t list)];
       [%expect {| (Infinity) |}];
-      print_s [%sexp (SF.Interval.intervals_of_list [ -91. ] : SF.Interval.t list)];
+      print_s [%sexp (SF.I.intervals_of_list [ -91. ] : SF.I.t list)];
       [%expect {| ((NegInfinity (right -91)) (PosInfinity (left -91))) |}]
     ;;
 
     let%test_module "-4 1 3 5" =
       (module struct
-        let pd0 = SF.Polynomial.of_list [ 0, 60.; 1, 43.; 2, -21.; 3, -3.; 4, 1. ] ~eps
-        let pd1 = SF.Polynomial.derivative pd0
+        let pd0 = SF.P.of_list [ 0, 60.; 1, 43.; 2, -21.; 3, -3.; 4, 1. ] ~eps
+        let pd1 = SF.P.derivative pd0
 
         let%expect_test "" =
-          let rootsd1 = SF.PolynomialEquation.roots pd1 ~eps in
+          let rootsd1 = SF.PE.roots pd1 ~eps in
           print_s [%sexp (rootsd1 : float list)];
           [%expect {| (-2.8215947105121373 0.917061554293662 4.1545414878558873) |}];
-          let intervals = SF.Interval.intervals_of_list rootsd1 in
-          print_s [%sexp (intervals : SF.Interval.t list)];
+          let intervals = SF.I.intervals_of_list rootsd1 in
+          print_s [%sexp (intervals : SF.I.t list)];
           [%expect
             {|
             ((NegInfinity (right -2.8215947105121373))
@@ -198,9 +200,9 @@ let%test_module "float solver" =
           let sexp =
             {|((0 25746835.984231804) (1 4577291.1195623642) (2 101561.48085614311) (3 -9013.8329630027256) (4 99.999999999999986))|}
           in
-          let poly = SF.Polynomial.t_of_sexp (Sexp.of_string sexp) in
+          let poly = SF.P.t_of_sexp (Sexp.of_string sexp) in
           let eps = 1e-7 in
-          let roots = SF.PolynomialEquation.roots ~eps poly in
+          let roots = SF.PE.roots ~eps poly in
           print_s [%sexp (roots : float list)];
           [%expect
             {|

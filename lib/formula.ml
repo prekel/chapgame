@@ -5,7 +5,7 @@ module Make
     (Scope : Module_types.SCOPE)
     (N : Module_types.NUMBER)
     (Expr : Expr.S with type key = Key.t and type scope = Scope.t and type scalar = N.t)
-    (Solver : module type of Solver.MakeSolver (N)) =
+    (Solver : module type of Solver.All.Make (N)) =
     struct
   include
     Utils.MakeAdvancedMap
@@ -41,6 +41,6 @@ module Make
         match Expr.calc ~values ~scoped_values (module N) a with
         | c when N.is_finite c -> Some c
         | _ -> None)
-    |> Solver.Polynomial.of_map ~eps
+    |> Solver.P.of_map ~eps
   ;;
 end
