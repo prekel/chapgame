@@ -55,11 +55,19 @@ jobs:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
           dune-cache: true
 
-      - run: make deps
-      - run: make
-      - run: make cp_to_build
+      - name: Install deps
+        run: make deps
 
-      - name: Artifact bundle
+      - name: Build
+        run: make
+
+      - name: Run tests (continue if failure)
+        run: dune runtest || true
+
+      - name: Copy to `build` directory
+        run: make cp_to_build
+
+      - name: Artifact executable
         uses: actions/upload-artifact@v2
         with:
           name: main.exe
