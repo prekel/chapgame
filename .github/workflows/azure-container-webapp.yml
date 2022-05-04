@@ -62,7 +62,7 @@ jobs:
         run: make
 
       - name: Run tests (continue if failure)
-        run: dune runtest || true
+        run: opam exec -- dune runtest || true
 
       - name: Copy to `build` directory
         run: make cp_to_build
