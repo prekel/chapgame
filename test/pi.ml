@@ -60,7 +60,7 @@ let%expect_test "pi" =
   print_s [%sexp (1e6 |> model_pi |> model_to_pi : int)];
   print_s [%sexp (1e8 |> model_pi |> model_to_pi : int)];
   [%expect {|
-    3.141592653589793
+    3.1415926535897931
     31
     314
     3141
