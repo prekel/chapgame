@@ -34,7 +34,16 @@ let model_pi m2 =
   |> S.Engine.recv ~action:{ time = 0.; action = Empty; timeout = None }
 ;;
 
-let model_to_pi S.Model.{ scenes; _ } = (S.Model.Scenes.to_map scenes |> Map.length) - 1
+let model_to_pi S.Model.{ scenes; _ } =
+  scenes
+  |> S.Model.Scenes.to_sequence
+  |> Sequence.bind ~f:(fun (_, s) -> Sequence.of_list s.cause)
+  |> Sequence.sum
+       (module Int)
+       ~f:(function
+         | Collision _ | CollisionWithPoint _ -> 1
+         | _ -> 0)
+;;
 
 let%expect_test "3.1" =
   let model = model_pi 1e2 in
@@ -51,7 +60,7 @@ let%expect_test "pi" =
   print_s [%sexp (1e6 |> model_pi |> model_to_pi : int)];
   print_s [%sexp (1e8 |> model_pi |> model_to_pi : int)];
   [%expect {|
-    3.1415926535897931
+    3.141592653589793
     31
     314
     3141

@@ -900,6 +900,7 @@ struct
       val merge_with_list : t -> Scene.t list -> t
       val last_exn : t -> Scene.t
       val to_map : t -> (N.t, Scene.t, N.comparator_witness) Map.t
+      val to_sequence : t -> (N.t * Scene.t) Sequence.t
     end
 
     type t =
