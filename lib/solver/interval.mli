@@ -1,4 +1,4 @@
-module Make (N :Module_types.NUMBER) : sig
+module Make (N : Module_types.NUMBER) : sig
   type t =
     | Interval of
         { left : N.t

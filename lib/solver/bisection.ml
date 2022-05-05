@@ -1,7 +1,7 @@
 open Core
 
 module Make
-    (N :Module_types.NUMBER)
+    (N : Module_types.NUMBER)
     (Interval : module type of Interval.Make (N)) =
     struct
   let two = N.(one + one)

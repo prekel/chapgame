@@ -1,4 +1,4 @@
-module Make (N :Module_types.NUMBER) : sig
+module Make (N : Module_types.NUMBER) : sig
   module I : module type of Interval.Make (N)
   module P : module type of Polynomial.Make (N)
   module LE : module type of Linear_equation.Make (N) (P)

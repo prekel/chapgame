@@ -3,7 +3,13 @@ module Make
     (S : module type of Engine.Scene.Make (C))
     (P : module type of Engine.Protocol.Make (C) (S)) =
     struct
-      module Request = struct end
+      module Request = struct
+        type t =
+          | GiveVelocity of
+              { id : S.Figure2.Id.t
+              ; v : C.N.t * C.N.t
+              }
+      end
 
       module Response = struct
         type t =

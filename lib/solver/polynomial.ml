@@ -1,6 +1,6 @@
 open Core
 
-module Make (N :Module_types.NUMBER) = struct
+module Make (N : Module_types.NUMBER) = struct
   type t = (int, N.t, Int.comparator_witness) Map.t
 
   let equal = Map.equal N.equal
