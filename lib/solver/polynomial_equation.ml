@@ -1,7 +1,7 @@
 open Core
 
 module Make
-    (N : Module_types.NUMBER)
+    (N :Module_types.NUMBER)
     (I : module type of Interval.Make (N))
     (P : module type of Polynomial.Make (N))
     (LE : module type of Linear_equation.Make (N) (P))

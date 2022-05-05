@@ -8,8 +8,10 @@ module Svg = Virtual_dom_svg
    = Chapgame.Protocol.Make (C) module S = P.S *)
 
 module Scene = struct
-  module P = Chapgame.Protocol.Make ((val Chapgame.Utils.make_consts ~eps:1e-6))
-  module S = P.S
+  module C = ((val Chapgame.Utils.make_consts ~eps:1e-6))
+  module S = Chapgame.Scene.Make (C)
+  module P = Chapgame.Protocol.Make  (C) (S)
+  
 
   type circle =
     { id : S.Figure2.Id.t

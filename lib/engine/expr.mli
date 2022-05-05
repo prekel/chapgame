@@ -67,5 +67,5 @@ end
 module Make
     (Key : Module_types.KEY)
     (Scope : Module_types.SCOPE)
-    (N : Module_types.NUMBER) :
+    (N : Solver.Module_types.NUMBER) :
   S with type key = Key.t and type scope = Scope.t and type scalar = N.t

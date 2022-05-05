@@ -1,6 +1,6 @@
 open Core
 
-module Make (N : Module_types.NUMBER) : sig
+module Make (N :Module_types.NUMBER) : sig
   type t [@@deriving sexp, equal]
 
   val of_list : (int * N.t) list -> eps:N.t -> t

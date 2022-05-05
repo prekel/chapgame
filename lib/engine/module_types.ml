@@ -9,7 +9,7 @@ module type SCOPE = sig
 end
 
 module type CONSTS = sig
-  module N : NUMBER
+  module N : Solver.Module_types.NUMBER
 
   val eps : N.t
 end

@@ -1,6 +1,4 @@
-module Make (C : Module_types.CONSTS) = struct
-  module S = Scene.Make (C)
-
+module Make (C : Module_types.CONSTS) (S : module type of Scene.Make (C)) = struct
   module Request = struct
     type t =
       | Action of S.Action.t

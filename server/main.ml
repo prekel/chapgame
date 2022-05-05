@@ -1,10 +1,11 @@
 open Core
 open Lwt.Let_syntax
-module P = Chapgame.Protocol.Make ((val Chapgame.Utils.make_consts ~eps:1e-6))
-module S = P.S
+module C = (val Chapgame.Utils.make_consts ~eps:1e-6)
+module S = Chapgame.Scene.Make (C)
+module P = Chapgame.Protocol.Make (C) (S)
 
 module Client = struct
-  module Id = Chapgame.Utils.MakeIntId (struct
+  module Id = Common.Utils.MakeIntId (struct
     let module_name = "Client.Id"
   end)
 
@@ -16,7 +17,7 @@ module Clients = struct
 end
 
 module Room = struct
-  module Id = Chapgame.Utils.MakeIntId (struct
+  module Id =  Common.Utils.MakeIntId (struct
     let module_name = "Room.Id"
   end)
 

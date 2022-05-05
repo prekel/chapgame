@@ -1,7 +1,7 @@
 open Core
 
 module Make
-    (N : Module_types.NUMBER)
+    (N :Module_types.NUMBER)
     (Polynomial : module type of Polynomial.Make (N)) =
     struct
   let root ~a ~b = N.(-b / a)

@@ -69,7 +69,7 @@ end
 module Make
     (Key : Module_types.KEY)
     (Scope : Module_types.SCOPE)
-    (N : Module_types.NUMBER) =
+    (N :Solver.Module_types.NUMBER) =
 struct
   type key = Key.t [@@deriving sexp, equal]
   type scalar = N.t [@@deriving sexp, equal]

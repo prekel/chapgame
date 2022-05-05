@@ -1,5 +1,4 @@
 open Core
-open Chapgame
 
 let%test_module "float solver" =
   (module struct

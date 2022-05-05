@@ -1,7 +1,7 @@
 open Core
 
 module Make (C : sig
-  module N : Module_types.NUMBER
+  module N : Solver.Module_types.NUMBER
 
   val eps : N.t
 end) =
@@ -77,9 +77,12 @@ struct
     val global_to_scoped : t -> Scope.t -> Vars.t -> N.t
 
     module Diff :
-      Utils.AdvancedMapDiff with type tt = t and type key = Vars.t and type value = N.t
+      Common.Utils.AdvancedMapDiff
+        with type tt = t
+         and type key = Vars.t
+         and type value = N.t
   end = struct
-    include Utils.MakeAdvancedMap (Vars) (N)
+    include Common.Utils.MakeAdvancedMap (Vars) (N)
 
     let get_scalar_exn values ~var = Map.find_exn values var
 
@@ -292,7 +295,7 @@ struct
     include Comparable.Make (T)
   end
 
-  module Points = Utils.MakeAdvancedSet (Point)
+  module Points = Common.Utils.MakeAdvancedSet (Point)
 
   module LineSegmentRay = struct
     module T = struct
@@ -314,7 +317,7 @@ struct
     ;;
   end
 
-  module Lines = Utils.MakeAdvancedSet (LineSegmentRay)
+  module Lines = Common.Utils.MakeAdvancedSet (LineSegmentRay)
 
   module CollisionDetection : sig
     module WithBody : sig
@@ -758,12 +761,12 @@ struct
       val update_by_id : t -> id:Figure2.Id.t -> body:Figure2.t -> t
 
       module Diff :
-        Utils.AdvancedMapDiff
+      Common.Utils.AdvancedMapDiff
           with type tt = t
            and type key = Figure2.Id.t
            and type value = Figure2.t
     end = struct
-      include Utils.MakeAdvancedMap (Figure2.Id) (Figure2)
+      include Common.Utils.MakeAdvancedMap (Figure2.Id) (Figure2)
 
       let calc figures ~t ~global_values =
         figures
@@ -921,11 +924,11 @@ struct
         ; new_timeout : N.t option
         }
 
-      include Utils.Diff with type tt := tt and type t := t
+      include Common.Utils.Diff with type tt := tt and type t := t
     end
   end = struct
     module Scenes = struct
-      include Utils.MakeAdvancedMap (N) (Scene)
+      include Common.Utils.MakeAdvancedMap (N) (Scene)
 
       let before scenes ~time =
         match Map.split scenes time with

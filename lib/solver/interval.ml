@@ -1,6 +1,6 @@
 open Core
 
-module Make (N : Module_types.NUMBER) = struct
+module Make (N :Module_types.NUMBER) = struct
   type t =
     | Interval of
         { left : N.t

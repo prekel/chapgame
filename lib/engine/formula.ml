@@ -3,12 +3,12 @@ open Core
 module Make
     (Key : Module_types.KEY)
     (Scope : Module_types.SCOPE)
-    (N : Module_types.NUMBER)
+    (N : Solver.Module_types.NUMBER)
     (Expr : Expr.S with type key = Key.t and type scope = Scope.t and type scalar = N.t)
     (Solver : module type of Solver.All.Make (N)) =
     struct
   include
-    Utils.MakeAdvancedMap
+    Common.Utils.MakeAdvancedMap
       (Int)
       (struct
         type t = Expr.scalar Expr.t

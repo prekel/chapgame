@@ -1,6 +1,6 @@
 (library
- (name solver)
- (libraries core common)
+ (name game)
+ (libraries core common engine)
  (preprocess
   (pps ppx_jane))
  (flags

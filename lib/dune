@@ -1,7 +1,7 @@
 (library
  (name chapgame)
- (libraries core common solver)
+ (libraries core common solver engine)
  (preprocess
   (pps ppx_jane))
  (flags
-  (:standard -open Common)))
+  (:standard -open Common.Open)))
