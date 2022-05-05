@@ -664,17 +664,17 @@ struct
   module CollisionHandle = struct
     let collision ~v1 ~v2 ~x1 ~x2 ~m1 ~m2 =
       let module V = Vector in
-      let two = N.(one + one) in
+      let open N in
+      let two = one + one in
       let q1 = v1 in
       let q2 =
-        N.(
-          match m1 = infinity, m2 = infinity with
-          | true, true -> one
-          | true, false -> zero
-          | false, true -> two
-          | false, false -> two * m2 / (m1 + m2))
+        match m1 = infinity, m2 = infinity with
+        | true, true -> one
+        | true, false -> zero
+        | false, true -> two
+        | false, false -> two * m2 / (m1 + m2)
       in
-      let q3 = N.(V.(dot (v1 - v2) (x1 - x2)) / square V.(len (x2 - x1))) in
+      let q3 = V.(dot (v1 - v2) (x1 - x2)) / square V.(len (x2 - x1)) in
       let q4 = V.(x1 - x2) in
       V.(q1 - (N.(q2 * q3) ^* q4))
     ;;
@@ -761,7 +761,7 @@ struct
       val update_by_id : t -> id:Figure2.Id.t -> body:Figure2.t -> t
 
       module Diff :
-      Common.Utils.AdvancedMapDiff
+        Common.Utils.AdvancedMapDiff
           with type tt = t
            and type key = Figure2.Id.t
            and type value = Figure2.t
