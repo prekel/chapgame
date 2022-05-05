@@ -280,11 +280,16 @@ let update_room ~(rooms : Rooms.t) ~(room : Room.t) ~room_id action =
         | Some prev -> { prev with model }
         | _ -> assert false);
     let%map _ =
-      Lwt_list.iter_s
+      Lwt_list.iter_p
         (fun (_id, Client.{ websocket = client }) ->
-          Dream.send
-            client
-            ([%sexp (P.Response.Diff diff : P.Response.t)] |> Sexp.to_string_hum))
+          try
+            Dream.send
+              client
+              ([%sexp (P.Response.Diff diff : P.Response.t)] |> Sexp.to_string_hum)
+          with
+          | e ->
+            Dream.log "%s" (Exn.to_string e);
+            Dream.close_websocket client)
         (room.clients |> Hashtbl.to_alist)
     in
     ()
