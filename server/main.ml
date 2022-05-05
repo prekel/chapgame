@@ -17,7 +17,7 @@ module Clients = struct
 end
 
 module Room = struct
-  module Id =  Common.Utils.MakeIntId (struct
+  module Id = Common.Utils.MakeIntId (struct
     let module_name = "Room.Id"
   end)
 
@@ -271,7 +271,11 @@ let room_of_request request =
 let update_room ~(rooms : Rooms.t) ~(room : Room.t) ~room_id action =
   match action with
   | `Action _ as action ->
-    let model, diff = S.Engine.recv_with_diff room.model ~action in
+    let%bind model, diff =
+      Lwt_preemptive.detach
+        (fun (model, action) -> S.Engine.recv_with_diff model ~action)
+        (room.model, action)
+    in
     Hashtbl.update rooms room_id ~f:(function
         | Some prev -> { prev with model }
         | _ -> assert false);
