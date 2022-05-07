@@ -8,10 +8,9 @@ module Svg = Virtual_dom_svg
    = Chapgame.Protocol.Make (C) module S = P.S *)
 
 module Scene = struct
-  module C = ((val Chapgame.Utils.make_consts ~eps:1e-6))
+  module C = (val Chapgame.Utils.make_consts ~eps:1e-6)
   module S = Chapgame.Scene.Make (C)
-  module P = Chapgame.Protocol.Make  (C) (S)
-  
+  module P = Chapgame.Protocol.Make (C) (S)
 
   type circle =
     { id : S.Figure2.Id.t
@@ -183,7 +182,7 @@ module Scene = struct
                            ; y0 = 350.
                            ; r = 50.
                            ; mu = 2.
-                           ; m = 1.
+                           ; m = Float.(pi * 50. * 50.)
                            }
                      ; timeout = Some Float.(time + timeoutd)
                      }
@@ -201,7 +200,7 @@ module Scene = struct
                            ; y0 = 500.
                            ; r = 75.
                            ; mu = 2.
-                           ; m = 2.
+                           ; m = Float.(pi * 75. * 75.)
                            }
                      ; timeout = Some Float.(time + timeoutd)
                      }
@@ -219,7 +218,7 @@ module Scene = struct
                            ; y0 = 500.
                            ; r = 100.
                            ; mu = 2.
-                           ; m = 3.
+                           ; m = Float.(pi * 100. * 100.)
                            }
                      ; timeout = Some Float.(time + timeoutd)
                      }
@@ -320,17 +319,6 @@ module Scene = struct
                        [%sexp (state : S.Model.t)] |> Sexp.to_string_hum |> set_text_state)
                  ])
             [ Node.text "to text" ]
-        ; Node.button
-            ~attr:
-              (Attr.many
-                 [ Attr.on_click (fun _ ->
-                       text_state
-                       |> Sexp.of_string
-                       |> S.Model.t_of_sexp
-                       |> (fun a -> `Replace a)
-                       |> dispatch)
-                 ])
-            [ Node.text "of text" ]
         ])
   ;;
 

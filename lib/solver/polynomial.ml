@@ -1,14 +1,11 @@
 open Core
 
 module Make (N : Module_types.NUMBER) = struct
-  type t = (int, N.t, Int.comparator_witness) Map.t
+  include Common.Utils.MakeAdvancedMap (Int) (N)
 
   let equal = Map.equal N.equal
   let normalize ~eps = Map.filter ~f:N.(fun coef -> N.is_finite coef && abs coef > eps)
   let of_list a ~eps = Map.of_alist_exn (module Int) a |> normalize ~eps
-  let of_list_raw a = Map.of_alist_exn (module Int) a
-  let t_of_sexp s = List.Assoc.t_of_sexp Int.t_of_sexp N.t_of_sexp s |> of_list_raw
-  let sexp_of_t t = [%sexp (Map.to_alist t : (int * N.t) list)]
 
   let derivative p =
     Map.filter_mapi p ~f:(fun ~key:degree ~data:coefficient ->
@@ -29,7 +26,6 @@ module Make (N : Module_types.NUMBER) = struct
     | None -> 0
   ;;
 
-  let to_map = Fn.id
   let of_map m ~eps = normalize m ~eps
 
   let to_string_hum ?var =
