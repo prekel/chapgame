@@ -1,4 +1,6 @@
-*.ml linguist-language=OCaml
-*.mli linguist-language=OCaml
+**.ml linguist-language=OCaml
+**.mli linguist-language=OCaml
 
 vendor/** linguist-vendored
+Makefile linguist-documentation
+*.ipynb linguist-documentation
