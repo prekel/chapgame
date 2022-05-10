@@ -2,8 +2,8 @@ open Core
 module S = Chapgame.Scene.Make ((val Chapgame.Utils.make_consts ~eps:1e-6))
 
 let model_pi m2 =
-  let id1 = S.Figure2.Id.next () in
-  let id2 = S.Figure2.Id.next () in
+  let id1 = S.Body.Id.next () in
+  let id2 = S.Body.Id.next () in
   S.Model.init ~g:10.
   |> S.Engine.recv
        ~action:

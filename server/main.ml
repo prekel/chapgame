@@ -39,7 +39,7 @@ module Room = struct
                { time = 0.
                ; action =
                    S.Action.AddBody
-                     { id = S.Figure2.Id.next ()
+                     { id = S.Body.Id.next ()
                      ; x0 = 425.
                      ; y0 = 275.
                      ; r = 2.
@@ -53,7 +53,7 @@ module Room = struct
                { time = 0.
                ; action =
                    S.Action.AddBody
-                     { id = S.Figure2.Id.next ()
+                     { id = S.Body.Id.next ()
                      ; x0 = 450.
                      ; y0 = 250.
                      ; r = 10.
@@ -67,7 +67,7 @@ module Room = struct
                { time = 0.
                ; action =
                    S.Action.AddBody
-                     { id = S.Figure2.Id.next ()
+                     { id = S.Body.Id.next ()
                      ; x0 = 600.
                      ; y0 = 600.
                      ; r = 50.
@@ -81,7 +81,7 @@ module Room = struct
                { time = 0.
                ; action =
                    S.Action.AddBody
-                     { id = S.Figure2.Id.next ()
+                     { id = S.Body.Id.next ()
                      ; x0 = 500.
                      ; y0 = 500.
                      ; r = 60.
@@ -203,8 +203,8 @@ module Room = struct
 end
 
 let model_pi m2 =
-  let id1 = S.Figure2.Id.next () in
-  let id2 = S.Figure2.Id.next () in
+  let id1 = S.Body.Id.next () in
+  let id2 = S.Body.Id.next () in
   S.Model.init ~g:10.
   |> S.Engine.recv
        ~action:

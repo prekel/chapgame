@@ -13,7 +13,7 @@ module Scene = struct
   module P = Chapgame.Protocol.Make (C) (S)
 
   type circle =
-    { id : S.Figure2.Id.t
+    { id : S.Body.Id.t
     ; x : float
     ; y : float
     ; r : float
@@ -177,7 +177,7 @@ module Scene = struct
                      { time
                      ; action =
                          S.Action.AddBody
-                           { id = S.Figure2.Id.next ()
+                           { id = S.Body.Id.next ()
                            ; x0 = 350.
                            ; y0 = 350.
                            ; r = 50.
@@ -195,7 +195,7 @@ module Scene = struct
                      { time
                      ; action =
                          S.Action.AddBody
-                           { id = S.Figure2.Id.next ()
+                           { id = S.Body.Id.next ()
                            ; x0 = 800.
                            ; y0 = 500.
                            ; r = 75.
@@ -213,7 +213,7 @@ module Scene = struct
                      { time
                      ; action =
                          S.Action.AddBody
-                           { id = S.Figure2.Id.next ()
+                           { id = S.Body.Id.next ()
                            ; x0 = 120.
                            ; y0 = 500.
                            ; r = 100.
@@ -466,7 +466,7 @@ module Scene = struct
                  { time = 0.
                  ; action =
                      S.Action.AddBody
-                       { id = S.Figure2.Id.next ()
+                       { id = S.Body.Id.next ()
                        ; x0 = 425.
                        ; y0 = 275.
                        ; r = 2.
@@ -480,7 +480,7 @@ module Scene = struct
                  { time = 0.
                  ; action =
                      S.Action.AddBody
-                       { id = S.Figure2.Id.next ()
+                       { id = S.Body.Id.next ()
                        ; x0 = 450.
                        ; y0 = 250.
                        ; r = 10.
@@ -494,7 +494,7 @@ module Scene = struct
                  { time = 0.
                  ; action =
                      S.Action.AddBody
-                       { id = S.Figure2.Id.next ()
+                       { id = S.Body.Id.next ()
                        ; x0 = 600.
                        ; y0 = 600.
                        ; r = 50.
@@ -508,7 +508,7 @@ module Scene = struct
                  { time = 0.
                  ; action =
                      S.Action.AddBody
-                       { id = S.Figure2.Id.next ()
+                       { id = S.Body.Id.next ()
                        ; x0 = 500.
                        ; y0 = 500.
                        ; r = 60.

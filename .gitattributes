@@ -1,5 +1,5 @@
-**.ml linguist-language=OCaml
-**.mli linguist-language=OCaml
+*.ml linguist-language=ocaml
+*.mli linguist-language=ocaml
 
 vendor/** linguist-vendored
 Makefile linguist-documentation

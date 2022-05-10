@@ -143,7 +143,7 @@ struct
     ;;
   end
 
-  module Figure2 = struct
+  module Body = struct
     include Body.Make (Vars) (Scope) (N) (Expr) (Solver) (Formula) (Values) (Rule) (C)
 
     let update_x0y0 ~body (x, y, v_x, v_y) ~rules =
@@ -164,82 +164,6 @@ struct
       }
     ;;
   end
-
-  (* module Figure2 = struct module Id : sig include Identifiable.S with type t = int
-
-     val next : unit -> t end = struct module T = struct type t = int [@@deriving bin_io,
-     hash, compare, sexp]
-
-     include Sexpable.To_stringable (struct type nonrec t = t [@@deriving sexp] end)
-
-     let module_name = "Figure.Id" end
-
-     include T include Identifiable.Make (T)
-
-     let current = ref 0
-
-     let next () = let ret = !current in current := ret + 1; ret ;; end
-
-     module Rule = struct type t = { interval : [ `Interval of Expr.t_scalar *
-     Expr.t_scalar | `PosInfinity of Expr.t_scalar ] ; x : Formula.t ; y : Formula.t ; v_x
-     : Formula.t ; v_y : Formula.t ; after : t list ; name : string } [@@deriving equal]
-
-     module Exprs = struct open Expr.Syntax
-
-     let g = scope ~scope:`Global (scalar_var `g) let mu = scalar_var `mu let v0_vec =
-     vector_var `v0_x `v0_y
-
-     let a_vec = let f = mu * g in -vector_unit v0_vec * vector_of_scalar f f ;;
-
-     let a_x = vector_x a_vec let a_y = vector_y a_vec let v0_x = vector_x v0_vec let v0_y
-     = vector_y v0_vec let x0 = scalar_var `x0 let y0 = scalar_var `y0 let r = scalar_var
-     `r let half = scalar_const N.(one / (one + one)) let zero = scalar_const N.zero let
-     three = scalar_const N.(one + one + one) let two = scalar_const N.(one + one) let pi
-     = scalar_const N.pi end
-
-     let rec rules1 = Expr.Syntax. [ { interval = `Interval Exprs.(zero, vector_length
-     v0_vec / vector_length a_vec) ; x = Formula.of_alist_exn Exprs.[ 0, x0; 1, v0_x; 2,
-     a_x / two ] ; y = Formula.of_alist_exn Exprs.[ 0, y0; 1, v0_y; 2, a_y / two ] ; v_x =
-     Formula.of_alist_exn Exprs.[ 0, v0_x; 1, a_x ] ; v_y = Formula.of_alist_exn Exprs.[
-     0, v0_y; 1, a_y ] ; after = rules1 ; name = "rules1 - 0" } ; { interval =
-     `PosInfinity Exprs.(vector_length v0_vec / vector_length a_vec) ; x =
-     Formula.of_alist_exn Exprs. [ ( 0 , x0 + (v0_x * vector_length v0_vec / vector_length
-     a_vec) + (a_x * sqr (vector_length v0_vec) / (two * sqr (vector_length a_vec))) ) ] ;
-     y = Formula.of_alist_exn Exprs. [ ( 0 , y0 + (v0_y * vector_length v0_vec /
-     vector_length a_vec) + (a_y * sqr (vector_length v0_vec) / (two * sqr (vector_length
-     a_vec))) ) ] ; v_x = Formula.of_alist_exn Exprs.[ 0, zero ] ; v_y =
-     Formula.of_alist_exn Exprs.[ 0, zero ] ; after = rules0 ; name = "rules1 - 1" } ]
-
-     and rules0 = [ { interval = `PosInfinity Exprs.zero ; x = Formula.of_alist_exn
-     Exprs.[ 0, x0 ] ; y = Formula.of_alist_exn Exprs.[ 0, y0 ] ; v_x =
-     Formula.of_alist_exn Exprs.[ 0, zero ] ; v_y = Formula.of_alist_exn Exprs.[ 0, zero ]
-     ; after = rules0 ; name = "rules0 - 0" } ] ;;
-
-     let rules1_0, rules1_1, rules0_0 = match rules1, rules0 with | [ rules1_0; rules1_1
-     ], [ rules0_0 ] -> rules1_0, rules1_1, rules0_0 | _ -> assert false ;;
-
-     let sexp_of_t { name; _ } = Sexp.Atom name
-
-     let t_of_sexp = function | Sexp.Atom "rules1 - 0" -> rules1_0 | Sexp.Atom "rules1 -
-     1" -> rules1_1 | Sexp.Atom "rules0 - 0" -> rules0_0 | _ -> assert false ;; end
-
-     type t = { id : Id.t ; values : Values.t ; rules : Rule.t list } [@@deriving sexp,
-     equal]
-
-     let calc ~values ~rules ~scoped_values ~t = let c = Expr.calc ~values ~scoped_values
-     (module N) in let calc_xy f = Formula.to_polynomial f ~values ~scoped_values ~eps |>
-     Solver.P.calc ~x:t in List.find_map rules ~f:(fun Rule.{ interval; x; y; v_x; v_y;
-     after; _ } -> match interval with | `Interval (l, r) when N.(c l <= t && t < c r) ->
-     Some ((calc_xy x, calc_xy y, calc_xy v_x, calc_xy v_y), after) | `PosInfinity l when
-     N.(c l <= t) -> Some ((calc_xy x, calc_xy y, calc_xy v_x, calc_xy v_y), after) | _ ->
-     None) ;;
-
-     let update_x0y0 ~body (x, y, v_x, v_y) ~rules = { body with values = body.values |>
-     Values.update_scalar ~var:`x0 ~value:x |> Values.update_scalar ~var:`y0 ~value:y |>
-     Values.update_vector ~var_x:`v0_x ~var_y:`v0_y ~value:(v_x, v_y) ; rules } ;;
-
-     let update_v0 body ~v ~rules = { body with values = body.values |>
-     Values.update_vector ~var_x:`v0_x ~var_y:`v0_y ~value:v ; rules } ;; end *)
 
   module Point = struct
     module T = struct
@@ -281,29 +205,29 @@ struct
   module CollisionDetection : sig
     module WithBody : sig
       val first_collision
-        :  (Figure2.Id.t * Figure2.t) Sequence.t
+        :  (Body.Id.t * Body.t) Sequence.t
         -> r:Formula.t
         -> global:Values.t
         -> a:Expr.vector Expr.t
-        -> (N.t * Figure2.Id.t * Figure2.Id.t) option
+        -> (N.t * Body.Id.t * Body.Id.t) option
     end
 
     module WithPoint : sig
       val first_collision
         :  global:Values.t
-        -> (Figure2.Id.t * Figure2.t) Sequence.t
+        -> (Body.Id.t * Body.t) Sequence.t
         -> points:Point.t Sequence.t
         -> r:Formula.t
-        -> (N.t * Figure2.Id.t * Point.t) option
+        -> (N.t * Body.Id.t * Point.t) option
     end
 
     module WithLine : sig
       val first_collision
         :  global:Values.t
-        -> (Figure2.Id.t * Figure2.t) Sequence.t
+        -> (Body.Id.t * Body.t) Sequence.t
         -> lines:LineSegmentRay.t Sequence.t
         -> r:Formula.t
-        -> (N.t * Figure2.Id.t * LineSegmentRay.t) option
+        -> (N.t * Body.Id.t * LineSegmentRay.t) option
     end
   end = struct
     let distance ~x1 ~y1 ~x2 ~y2 = N.(sqrt (square (x2 - x1) + square (y2 - y1)))
@@ -328,8 +252,8 @@ struct
 
     module WithBody = struct
       type extra =
-        { id1 : Figure2.Id.t
-        ; id2 : Figure2.Id.t
+        { id1 : Body.Id.t
+        ; id2 : Body.Id.t
         ; p : Solver.P.t
         ; f : Formula.t
         ; roots : N.t list
@@ -405,7 +329,7 @@ struct
         distance ~x1 ~y1 ~x2 ~y2
       ;;
 
-      let collisions_extra ~eps ~global_values (bodies : (_ * Figure2.t) Sequence.t) ~r ~a
+      let collisions_extra ~eps ~global_values (bodies : (_ * Body.t) Sequence.t) ~r ~a
         =
         Sequence.cartesian_product bodies bodies
         |> Sequence.filter_map ~f:(fun ((id1, f1), (id2, f2)) ->
@@ -452,7 +376,7 @@ struct
 
     module WithPoint = struct
       let distance_beetween_body_and_point
-          ~(body : Figure2.t)
+          ~(body : Body.t)
           ~point:Point.{ x = x2; y = y2 }
         =
         let x1 = Values.get_scalar_exn body.values ~var:`x0 in
@@ -516,7 +440,7 @@ struct
     end
 
     module WithLine = struct
-      let distance_beetween_body_and_line ~(body : Figure2.t) ~line =
+      let distance_beetween_body_and_line ~(body : Body.t) ~line =
         let a, b, c = LineSegmentRay.to_abc line in
         let x = Values.get_scalar_exn body.values ~var:`x0 in
         let y = Values.get_scalar_exn body.values ~var:`y0 in
@@ -605,7 +529,7 @@ struct
 
       let first_collision ~global bodies ~lines ~r =
         Sequence.cartesian_product bodies lines
-        |> Sequence.filter_map ~f:(fun ((id, (body : Figure2.t)), line) ->
+        |> Sequence.filter_map ~f:(fun ((id, (body : Body.t)), line) ->
                let distance = distance_beetween_body_and_line ~body ~line in
                let radius = Values.get_scalar_exn body.values ~var:`r in
                if N.(radius + eps < distance)
@@ -661,7 +585,7 @@ struct
     ;;
 
     let calculate_new_v_with_point ~body ~point:Point.{ x = x2; y = y2 } =
-      let v1 = Values.get_vector_exn body.Figure2.values ~var_x:`v0_x ~var_y:`v0_y in
+      let v1 = Values.get_vector_exn body.Body.values ~var_x:`v0_x ~var_y:`v0_y in
       let m1 = Values.get_scalar_exn body.values ~var:`m in
       let x1 = Values.get_scalar_exn body.values ~var:`x0 in
       let y1 = Values.get_scalar_exn body.values ~var:`y0 in
@@ -670,7 +594,7 @@ struct
 
     let calculate_new_v_with_line ~body ~line =
       let a, b, c = LineSegmentRay.to_abc line in
-      let v1 = Values.get_vector_exn body.Figure2.values ~var_x:`v0_x ~var_y:`v0_y in
+      let v1 = Values.get_vector_exn body.Body.values ~var_x:`v0_x ~var_y:`v0_y in
       let m1 = Values.get_scalar_exn body.values ~var:`m in
       let x1 = Values.get_scalar_exn body.values ~var:`x0 in
       let y1 = Values.get_scalar_exn body.values ~var:`y0 in
@@ -687,22 +611,22 @@ struct
       type t =
         | Init
         | Collision of
-            { id1 : Figure2.Id.t
-            ; id2 : Figure2.Id.t
+            { id1 : Body.Id.t
+            ; id2 : Body.Id.t
             }
         | CollisionWithPoint of
-            { id : Figure2.Id.t
+            { id : Body.Id.t
             ; point : Point.t
             }
         | CollisionWithLine of
-            { id : Figure2.Id.t
+            { id : Body.Id.t
             ; line : LineSegmentRay.t
             }
         | VelocityGiven of
-            { id : Figure2.Id.t
+            { id : Body.Id.t
             ; v : N.t * N.t
             }
-        | BodyAdded of { id : Figure2.Id.t }
+        | BodyAdded of { id : Body.Id.t }
         | PointAdded of Point.t
         | LineAdded of LineSegmentRay.t
         | Empty
@@ -713,29 +637,29 @@ struct
       type t [@@deriving sexp, equal]
 
       val calc : t -> t:N.t -> global_values:Values.t -> t
-      val add : t -> id:Figure2.Id.t -> body:Figure2.t -> t
+      val add : t -> id:Body.Id.t -> body:Body.t -> t
       val empty : t
-      val to_sequence : t -> (Figure2.Id.t * Figure2.t) Sequence.t
-      val get_by_id : t -> id:Figure2.Id.t -> Figure2.t
-      val update_by_id : t -> id:Figure2.Id.t -> body:Figure2.t -> t
+      val to_sequence : t -> (Body.Id.t * Body.t) Sequence.t
+      val get_by_id : t -> id:Body.Id.t -> Body.t
+      val update_by_id : t -> id:Body.Id.t -> body:Body.t -> t
 
       module Diff :
         Common.Utils.AdvancedMapDiff
           with type tt = t
-           and type key = Figure2.Id.t
-           and type value = Figure2.t
+           and type key = Body.Id.t
+           and type value = Body.t
     end = struct
-      include Common.Utils.MakeAdvancedMap (Figure2.Id) (Figure2)
+      include Common.Utils.MakeAdvancedMap (Body.Id) (Body)
 
       let calc figures ~t ~global_values =
         figures
         |> Map.map ~f:(fun f ->
-               Figure2.calc
-                 ~values:(Values.to_function f.Figure2.values)
+               Body.calc
+                 ~values:(Values.to_function f.Body.values)
                  ~rules:f.rules
                  ~scoped_values:(Values.global_to_scoped global_values)
                  ~t
-               |> Option.map ~f:(fun (xy, rules) -> Figure2.update_x0y0 ~body:f xy ~rules)
+               |> Option.map ~f:(fun (xy, rules) -> Body.update_x0y0 ~body:f xy ~rules)
                |> Option.value ~default:f)
       ;;
     end
@@ -765,7 +689,7 @@ struct
         figures
         ~id
         ~body:
-          Figure2.
+          Body.
             { id
             ; values =
                 Values.of_alist
@@ -830,7 +754,7 @@ struct
   module Action = struct
     type a =
       | AddBody of
-          { id : Figure2.Id.t
+          { id : Body.Id.t
           ; x0 : N.t
           ; y0 : N.t
           ; r : N.t
@@ -840,7 +764,7 @@ struct
       | AddPoint of Point.t
       | AddLine of LineSegmentRay.t
       | GiveVelocity of
-          { id : Figure2.Id.t
+          { id : Body.Id.t
           ; v0 : N.t * N.t
           }
       | Empty
@@ -1059,10 +983,10 @@ struct
                       (q
                       |> Scene.Figures.update_by_id
                            ~id:id1
-                           ~body:(Figure2.update_v0 body1 ~v:v1n ~rules:Rule.rules1)
+                           ~body:(Body.update_v0 body1 ~v:v1n ~rules:Rule.rules1)
                       |> Scene.Figures.update_by_id
                            ~id:id2
-                           ~body:(Figure2.update_v0 body2 ~v:v2n ~rules:Rule.rules1))
+                           ~body:(Body.update_v0 body2 ~v:v2n ~rules:Rule.rules1))
                     ~cause:[ Collision { id1; id2 } ]
                     ~time:N.(scene.time + t)
                     ~points:scene.points
@@ -1080,7 +1004,7 @@ struct
                       (Scene.Figures.update_by_id
                          q
                          ~id
-                         ~body:(Figure2.update_v0 body ~v:v' ~rules:Rule.rules1))
+                         ~body:(Body.update_v0 body ~v:v' ~rules:Rule.rules1))
                     ~cause:[ CollisionWithPoint { id; point } ]
                     ~time:new_time
                     ~points:scene.points
@@ -1098,7 +1022,7 @@ struct
                       (Scene.Figures.update_by_id
                          q
                          ~id
-                         ~body:(Figure2.update_v0 body ~v:v' ~rules:Rule.rules1))
+                         ~body:(Body.update_v0 body ~v:v' ~rules:Rule.rules1))
                     ~cause:[ CollisionWithLine { id; line } ]
                     ~time:new_time
                     ~points:scene.points
@@ -1153,7 +1077,7 @@ struct
         Scene.update s ~cause:[ LineAdded line ] ~lines:(Lines.add s.lines ~el:line) ~time
       | GiveVelocity { id; v0 } ->
         let body = Scene.Figures.get_by_id s.bodies ~id in
-        let body = Figure2.update_v0 body ~v:v0 ~rules:Rule.rules1 in
+        let body = Body.update_v0 body ~v:v0 ~rules:Rule.rules1 in
         Scene.update
           s
           ~bodies:(Scene.Figures.update_by_id s.bodies ~id:body.id ~body)

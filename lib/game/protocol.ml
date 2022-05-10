@@ -6,7 +6,7 @@ module Make
       module Request = struct
         type t =
           | GiveVelocity of
-              { id : S.Figure2.Id.t
+              { id : S.Body.Id.t
               ; v : C.N.t * C.N.t
               }
       end
