@@ -1,4 +1,4 @@
-open Core
+(* open Core
 open Chapgame
 
 let%test_module "" =
@@ -107,4 +107,4 @@ let%test_module "" =
         (-1.0833333333333333 0) |}]
     ;;
   end)
-;;
+;; *)

@@ -1,5 +1,5 @@
 module Make (N : Solver.Module_types.NUMBER) : sig
-  include Module_types.BASIC_OPS with type t = N.t * N.t
+  include Common.Module_types.BASIC_OPS with type t = N.t * N.t
 
   (*** [dot v1 v2] is dot-product (scalar product) of vector [v1] and [v2] *)
   val dot : t -> t -> N.t

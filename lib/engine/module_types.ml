@@ -1,11 +1,15 @@
-include Common.Module_types
+open Core
 
-module type KEY = sig
-  type t [@@deriving sexp, equal]
+module type VAR = sig
+  include Comparable.S
+  include Sexpable.S with type t := t
 end
 
 module type SCOPE = sig
-  type t [@@deriving sexp, equal]
+  include Equal.S
+  include Sexpable.S with type t := t
+
+  val is_global : t -> bool
 end
 
 module type CONSTS = sig

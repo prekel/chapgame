@@ -1,7 +1,7 @@
 open Core
 
 module Make
-    (Key : Module_types.KEY)
+    (Key : Module_types.VAR)
     (Scope : Module_types.SCOPE)
     (N : Solver.Module_types.NUMBER)
     (Expr : Expr.S with type key = Key.t and type scope = Scope.t and type scalar = N.t)
