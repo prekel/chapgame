@@ -24,10 +24,14 @@ module Room = struct
   type t =
     { model : S.Model.t
     ; clients : Clients.t
+    ; lock : Lwt_mutex.t
     }
 
   let init () =
-    { model = S.Model.init ~g:10.; clients = Hashtbl.create (module Client.Id) }
+    { model = S.Model.init ~g:10.
+    ; clients = Hashtbl.create (module Client.Id)
+    ; lock = Lwt_mutex.create ()
+    }
   ;;
 
   let init1 () =
@@ -269,44 +273,45 @@ let room_of_request request =
 ;;
 
 let update_room ~(rooms : Rooms.t) ~(room : Room.t) ~room_id action =
-  match action with
-  | `Action _ as action ->
-    let%bind model, diff =
-      Lwt_preemptive.detach
-        (fun (model, action) -> S.Engine.recv_with_diff model ~action)
-        (room.model, action)
-    in
-    Hashtbl.update rooms room_id ~f:(function
-        | Some prev -> { prev with model }
-        | _ -> assert false);
-    let%map _ =
-      Lwt_list.iter_p
-        (fun (_id, Client.{ websocket = client }) ->
-          try
-            Dream.send
-              client
-              ([%sexp (P.Response.Diff diff : P.Response.t)] |> Sexp.to_string_hum)
-          with
-          | e ->
-            Dream.log "%s" (Exn.to_string e);
-            Dream.close_websocket client)
-        (room.clients |> Hashtbl.to_alist)
-    in
-    ()
-  | `Replace _ as action ->
-    let model = S.Engine.update room.model ~action in
-    Hashtbl.update rooms room_id ~f:(function
-        | Some prev -> { prev with model }
-        | _ -> assert false);
-    let%map _ =
-      Lwt_list.iter_s
-        (fun (_id, Client.{ websocket = client }) ->
-          Dream.send
-            client
-            ([%sexp (P.Response.Replace model : P.Response.t)] |> Sexp.to_string_hum))
-        (room.clients |> Hashtbl.to_alist)
-    in
-    ()
+  Lwt_mutex.with_lock room.lock (fun () ->
+      match action with
+      | `Action _ as action ->
+        let%bind model, diff =
+          Lwt_preemptive.detach
+            (fun (model, action) -> S.Engine.recv_with_diff model ~action)
+            (room.model, action)
+        in
+        Hashtbl.update rooms room_id ~f:(function
+            | Some prev -> { prev with model }
+            | _ -> assert false);
+        let%map _ =
+          Lwt_list.iter_p
+            (fun (_id, Client.{ websocket = client }) ->
+              try
+                Dream.send
+                  client
+                  ([%sexp (P.Response.Diff diff : P.Response.t)] |> Sexp.to_string_hum)
+              with
+              | e ->
+                Dream.log "%s" (Exn.to_string e);
+                Dream.close_websocket client)
+            (room.clients |> Hashtbl.to_alist)
+        in
+        ()
+      | `Replace _ as action ->
+        let model = S.Engine.update room.model ~action in
+        Hashtbl.update rooms room_id ~f:(function
+            | Some prev -> { prev with model }
+            | _ -> assert false);
+        let%map _ =
+          Lwt_list.iter_s
+            (fun (_id, Client.{ websocket = client }) ->
+              Dream.send
+                client
+                ([%sexp (P.Response.Replace model : P.Response.t)] |> Sexp.to_string_hum))
+            (room.clients |> Hashtbl.to_alist)
+        in
+        ())
 ;;
 
 let loader path ~content_type =
