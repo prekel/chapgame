@@ -10,7 +10,7 @@ module Make
     struct
       let rec roots ~eps poly =
         match P.degree poly with
-        | not_nat when not_nat <= 0 -> []
+        | non_nat when non_nat <= 0 -> []
         | 1 -> poly |> LE.root_poly |> Option.to_list
         | 2 -> poly |> QE.roots_poly
         | _ ->

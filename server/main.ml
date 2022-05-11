@@ -39,7 +39,7 @@ module Room = struct
                { time = 0.
                ; action =
                    S.Action.AddBody
-                     { id = S.Body.Id.next ()
+                     { id = Some (S.Body.Id.next ())
                      ; x0 = 425.
                      ; y0 = 275.
                      ; r = 2.
@@ -53,7 +53,7 @@ module Room = struct
                { time = 0.
                ; action =
                    S.Action.AddBody
-                     { id = S.Body.Id.next ()
+                     { id = Some (S.Body.Id.next ())
                      ; x0 = 450.
                      ; y0 = 250.
                      ; r = 10.
@@ -67,7 +67,7 @@ module Room = struct
                { time = 0.
                ; action =
                    S.Action.AddBody
-                     { id = S.Body.Id.next ()
+                     { id = Some (S.Body.Id.next ())
                      ; x0 = 600.
                      ; y0 = 600.
                      ; r = 50.
@@ -81,7 +81,7 @@ module Room = struct
                { time = 0.
                ; action =
                    S.Action.AddBody
-                     { id = S.Body.Id.next ()
+                     { id = Some (S.Body.Id.next ())
                      ; x0 = 500.
                      ; y0 = 500.
                      ; r = 60.
@@ -209,13 +209,13 @@ let model_pi m2 =
   |> S.Engine.recv
        ~action:
          { time = 0.
-         ; action = AddBody { id = id1; x0 = 5.; y0 = 2.; r = 1.; mu = 0.; m = 1. }
+         ; action = AddBody { id = Some id1; x0 = 5.; y0 = 2.; r = 1.; mu = 0.; m = 1. }
          ; timeout = Some 0.
          }
   |> S.Engine.recv
        ~action:
          { time = 0.
-         ; action = AddBody { id = id2; x0 = 10.; y0 = 2.; r = 1.; mu = 0.; m = m2 }
+         ; action = AddBody { id = Some id2; x0 = 10.; y0 = 2.; r = 1.; mu = 0.; m = m2 }
          ; timeout = Some 0.
          }
   |> S.Engine.recv

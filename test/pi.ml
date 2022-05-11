@@ -8,13 +8,13 @@ let model_pi m2 =
   |> S.Engine.recv
        ~action:
          { time = 0.
-         ; action = AddBody { id = id1; x0 = 350.; y0 = 200.; r = 100.; mu = 0.; m = 1. }
+         ; action = AddBody { id = Some id1; x0 = 350.; y0 = 200.; r = 100.; mu = 0.; m = 1. }
          ; timeout = Some 0.
          }
   |> S.Engine.recv
        ~action:
          { time = 0.
-         ; action = AddBody { id = id2; x0 = 700.; y0 = 200.; r = 100.; mu = 0.; m = m2 }
+         ; action = AddBody { id = Some id2; x0 = 700.; y0 = 200.; r = 100.; mu = 0.; m = m2 }
          ; timeout = Some 0.
          }
   |> S.Engine.recv
@@ -36,7 +36,7 @@ let model_pi m2 =
 
 let model_to_pi S.Model.{ scenes; _ } =
   scenes
-  |> S.Model.Scenes.to_sequence
+  |> S.Scenes.to_sequence
   |> Sequence.bind ~f:(fun (_, s) -> Sequence.of_list s.cause)
   |> Sequence.sum
        (module Int)

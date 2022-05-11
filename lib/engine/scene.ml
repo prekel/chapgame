@@ -165,41 +165,9 @@ struct
     ;;
   end
 
-  module Point = struct
-    module T = struct
-      type t =
-        { x : N.t
-        ; y : N.t
-        }
-      [@@deriving sexp, equal, compare]
-    end
-
-    include T
-    include Comparable.Make (T)
-  end
-
+  module Point = Point.Make (N)
   module Points = Common.Utils.MakeAdvancedSet (Point)
-
-  module LineSegmentRay = struct
-    module T = struct
-      type t =
-        { p1 : Point.t
-        ; p2 : Point.t
-        ; kind : [ `Line | `Segment | `Ray ]
-        }
-      [@@deriving sexp, equal, compare]
-    end
-
-    include T
-    include Comparable.Make (T)
-
-    let of_points ~p1 ~p2 ~kind = { p1; p2; kind }
-
-    let to_abc { p1; p2; kind = _ } =
-      N.(p2.y - p1.y, p1.x - p2.x, (p1.y * p2.x) - (p1.x * p2.y))
-    ;;
-  end
-
+  module LineSegmentRay = Straight.Make (N) (Point)
   module Lines = Common.Utils.MakeAdvancedSet (LineSegmentRay)
 
   module CollisionDetection : sig
@@ -329,8 +297,7 @@ struct
         distance ~x1 ~y1 ~x2 ~y2
       ;;
 
-      let collisions_extra ~eps ~global_values (bodies : (_ * Body.t) Sequence.t) ~r ~a
-        =
+      let collisions_extra ~eps ~global_values (bodies : (_ * Body.t) Sequence.t) ~r ~a =
         Sequence.cartesian_product bodies bodies
         |> Sequence.filter_map ~f:(fun ((id1, f1), (id2, f2)) ->
                let r1 = Values.get_scalar_exn f1.values ~var:`r in
@@ -385,56 +352,55 @@ struct
       ;;
 
       let collision ~rules ~point:Point.{ x; y } ~r ~values ~global ~eps =
-        rules
-        |> Sequence.of_list
-        |> Sequence.filter_map ~f:(fun (rule : Rule.t) ->
-               let open Formula.Syntax in
-               let x_1 = scope rule.x ~scope:`_1 in
-               let y_1 = scope rule.y ~scope:`_1 in
-               let x_2 =
-                 Expr.Syntax.scalar_var (`with_point `x)
-                 |> Formula.singleton_zero
-                 |> scope ~scope:`_2
-               in
-               let y_2 =
-                 Expr.Syntax.scalar_var (`with_point `y)
-                 |> Formula.singleton_zero
-                 |> scope ~scope:`_2
-               in
-               let r_1 = scope r ~scope:`_1 in
-               let i = inter values rule.interval ~global in
-               sqr (x_2 - x_1) + sqr (y_2 - y_1) - sqr r_1
-               |> Formula.to_polynomial
-                    ~eps
-                    ~values:(Values.to_function global)
-                    ~scoped_values:(function
-                      | `Global -> Values.to_function global
-                      | `_1 -> Values.to_function values
-                      | `_2 ->
-                        begin
-                          function
-                          | `with_point `x -> x
-                          | `with_point `y -> y
-                          | _ -> assert false
-                        end)
-               |> Solver.PE.roots ~eps
-               |> List.filter ~f:(fun root -> is_in_interval root i)
-               |> List.min_elt ~compare:N.compare)
-        |> Sequence.hd
+        let f rule =
+          let open Formula.Syntax in
+          let x_1 = scope rule.Rule.x ~scope:`_1 in
+          let y_1 = scope rule.y ~scope:`_1 in
+          let x_2 =
+            Expr.Syntax.scalar_var (`with_point `x)
+            |> Formula.singleton_zero
+            |> scope ~scope:`_2
+          in
+          let y_2 =
+            Expr.Syntax.scalar_var (`with_point `y)
+            |> Formula.singleton_zero
+            |> scope ~scope:`_2
+          in
+          let r_1 = scope r ~scope:`_1 in
+          let i = inter values rule.interval ~global in
+          sqr (x_2 - x_1) + sqr (y_2 - y_1) - sqr r_1
+          |> Formula.to_polynomial
+               ~eps
+               ~values:(Values.to_function global)
+               ~scoped_values:(function
+                 | `Global -> Values.to_function global
+                 | `_1 -> Values.to_function values
+                 | `_2 ->
+                   (function
+                   | `with_point `x -> x
+                   | `with_point `y -> y
+                   | _ -> assert false))
+          |> Solver.PE.roots ~eps
+          |> List.filter ~f:(fun root -> is_in_interval root i)
+          |> List.min_elt ~compare:N.compare
+        in
+        rules |> Sequence.of_list |> Sequence.filter_map ~f |> Sequence.hd
       ;;
 
       let first_collision ~global bodies ~points ~r =
+        let f ((id, body), point) =
+          let distance = distance_beetween_body_and_point ~body ~point in
+          let radius = Values.get_scalar_exn body.values ~var:`r in
+          if N.(radius + eps < distance)
+          then (
+            let%map.Option ret =
+              collision ~rules:body.rules ~point ~r ~values:body.values ~global ~eps
+            in
+            ret, id, point)
+          else None
+        in
         Sequence.cartesian_product bodies points
-        |> Sequence.filter_map ~f:(fun ((id, body), point) ->
-               let distance = distance_beetween_body_and_point ~body ~point in
-               let radius = Values.get_scalar_exn body.values ~var:`r in
-               if N.(radius + eps < distance)
-               then (
-                 let%map.Option ret =
-                   collision ~rules:body.rules ~point ~r ~values:body.values ~global ~eps
-                 in
-                 ret, id, point)
-               else None)
+        |> Sequence.filter_map ~f
         |> Sequence.min_elt ~compare:(fun (a, _, _) (b, _, _) -> N.compare a b)
       ;;
     end
@@ -448,97 +414,96 @@ struct
       ;;
 
       let collision ~rules ~(line : LineSegmentRay.t) ~r ~values ~global ~eps =
-        rules
-        |> Sequence.of_list
-        |> Sequence.filter_map ~f:(fun (rule : Rule.t) ->
-               let open Formula.Syntax in
-               let x = scope rule.x ~scope:`_1 in
-               let y = scope rule.y ~scope:`_1 in
-               let r = scope r ~scope:`_1 in
-               let a =
-                 Expr.Syntax.scalar_var (`with_line `a)
-                 |> Formula.singleton_zero
-                 |> scope ~scope:`_2
-               in
-               let b =
-                 Expr.Syntax.scalar_var (`with_line `b)
-                 |> Formula.singleton_zero
-                 |> scope ~scope:`_2
-               in
-               let c =
-                 Expr.Syntax.scalar_var (`with_line `c)
-                 |> Formula.singleton_zero
-                 |> scope ~scope:`_2
-               in
-               let a2b2 =
-                 Expr.Syntax.scalar_var (`with_line `a2b2)
-                 |> Formula.singleton_zero
-                 |> scope ~scope:`_2
-               in
-               let i = inter values rule.interval ~global in
-               let f1 = (a * x) + (b * y) + c - (r * a2b2) in
-               let f2 = (a * x) + (b * y) + c + (r * a2b2) in
-               let a', b', c' = LineSegmentRay.to_abc line in
-               let a2b2' = N.(sqrt (square a' + square b')) in
-               let to_polynomial =
-                 Formula.to_polynomial
-                   ~eps
-                   ~values:(Values.to_function global)
-                   ~scoped_values:(function
-                     | `Global -> Values.to_function global
-                     | `_1 -> Values.to_function values
-                     | `_2 ->
-                       begin
-                         function
-                         | `with_line `a -> a'
-                         | `with_line `b -> b'
-                         | `with_line `c -> c'
-                         | `with_line `a2b2 -> a2b2'
-                         | _ -> assert false
-                       end)
-               in
-               let abc = (a * x) + (b * y) + c |> to_polynomial in
-               let is_qwf ~p1 ~p2 ~root =
-                 let x0 = x |> to_polynomial |> Solver.P.calc ~x:root in
-                 let y0 = y |> to_polynomial |> Solver.P.calc ~x:root in
-                 let Point.{ x = x1; y = y1 } = p1 in
-                 let Point.{ x = x2; y = y2 } = p2 in
-                 let v1 = N.(x2 - x1, y2 - y1) in
-                 let v2 = N.(x0 - x1, y0 - y1) in
-                 N.(Vector.dot v1 v2 > zero)
-               in
-               let c f ~cond =
-                 f
-                 |> to_polynomial
-                 |> Solver.PE.roots ~eps
-                 |> List.filter ~f:(fun root ->
-                        is_in_interval root i
-                        && cond (Solver.P.calc abc ~x:root)
-                        &&
-                        match line.kind with
-                        | `Line -> true
-                        | `Ray -> is_qwf ~p1:line.p1 ~p2:line.p2 ~root
-                        | `Segment ->
-                          is_qwf ~p1:line.p1 ~p2:line.p2 ~root
-                          && is_qwf ~p1:line.p2 ~p2:line.p1 ~root)
-               in
-               c f1 ~cond:N.(fun a -> a >= zero) @ c f2 ~cond:N.(fun a -> a < zero)
-               |> List.min_elt ~compare:N.compare)
-        |> Sequence.hd
+        let f (rule : Rule.t) =
+          let open Formula.Syntax in
+          let x = scope rule.x ~scope:`_1 in
+          let y = scope rule.y ~scope:`_1 in
+          let r = scope r ~scope:`_1 in
+          let a =
+            Expr.Syntax.scalar_var (`with_line `a)
+            |> Formula.singleton_zero
+            |> scope ~scope:`_2
+          in
+          let b =
+            Expr.Syntax.scalar_var (`with_line `b)
+            |> Formula.singleton_zero
+            |> scope ~scope:`_2
+          in
+          let c =
+            Expr.Syntax.scalar_var (`with_line `c)
+            |> Formula.singleton_zero
+            |> scope ~scope:`_2
+          in
+          let a2b2 =
+            Expr.Syntax.scalar_var (`with_line `a2b2)
+            |> Formula.singleton_zero
+            |> scope ~scope:`_2
+          in
+          let i = inter values rule.interval ~global in
+          let f1 = (a * x) + (b * y) + c - (r * a2b2) in
+          let f2 = (a * x) + (b * y) + c + (r * a2b2) in
+          let a', b', c' = LineSegmentRay.to_abc line in
+          let a2b2' = N.(sqrt (square a' + square b')) in
+          let to_polynomial =
+            Formula.to_polynomial
+              ~eps
+              ~values:(Values.to_function global)
+              ~scoped_values:(function
+                | `Global -> Values.to_function global
+                | `_1 -> Values.to_function values
+                | `_2 ->
+                  (function
+                  | `with_line `a -> a'
+                  | `with_line `b -> b'
+                  | `with_line `c -> c'
+                  | `with_line `a2b2 -> a2b2'
+                  | _ -> assert false))
+          in
+          let abc = (a * x) + (b * y) + c |> to_polynomial in
+          let is_qwf ~p1 ~p2 ~root =
+            let x0 = x |> to_polynomial |> Solver.P.calc ~x:root in
+            let y0 = y |> to_polynomial |> Solver.P.calc ~x:root in
+            let Point.{ x = x1; y = y1 } = p1 in
+            let Point.{ x = x2; y = y2 } = p2 in
+            let v1 = N.(x2 - x1, y2 - y1) in
+            let v2 = N.(x0 - x1, y0 - y1) in
+            N.(Vector.dot v1 v2 > zero)
+          in
+          let c f ~cond =
+            f
+            |> to_polynomial
+            |> Solver.PE.roots ~eps
+            |> List.filter ~f:(fun root ->
+                   is_in_interval root i
+                   && cond (Solver.P.calc abc ~x:root)
+                   &&
+                   match line.kind with
+                   | `Line -> true
+                   | `Ray -> is_qwf ~p1:line.p1 ~p2:line.p2 ~root
+                   | `Segment ->
+                     is_qwf ~p1:line.p1 ~p2:line.p2 ~root
+                     && is_qwf ~p1:line.p2 ~p2:line.p1 ~root)
+          in
+          c f1 ~cond:N.(fun a -> a >= zero) @ c f2 ~cond:N.(fun a -> a < zero)
+          |> List.min_elt ~compare:N.compare
+        in
+        rules |> Sequence.of_list |> Sequence.filter_map ~f |> Sequence.hd
       ;;
 
       let first_collision ~global bodies ~lines ~r =
+        let f ((id, (body : Body.t)), line) =
+          let distance = distance_beetween_body_and_line ~body ~line in
+          let radius = Values.get_scalar_exn body.values ~var:`r in
+          if N.(radius + eps < distance)
+          then (
+            let%map.Option ret =
+              collision ~rules:body.rules ~line ~r ~values:body.values ~global ~eps
+            in
+            ret, id, line)
+          else None
+        in
         Sequence.cartesian_product bodies lines
-        |> Sequence.filter_map ~f:(fun ((id, (body : Body.t)), line) ->
-               let distance = distance_beetween_body_and_line ~body ~line in
-               let radius = Values.get_scalar_exn body.values ~var:`r in
-               if N.(radius + eps < distance)
-               then (
-                 let%map.Option ret =
-                   collision ~rules:body.rules ~line ~r ~values:body.values ~global ~eps
-                 in
-                 ret, id, line)
-               else None)
+        |> Sequence.filter_map ~f
         |> Sequence.min_elt ~compare:(fun (a, _, _) (b, _, _) -> N.compare a b)
       ;;
     end
@@ -653,14 +618,14 @@ struct
 
       let calc figures ~t ~global_values =
         figures
-        |> Map.map ~f:(fun f ->
+        |> Map.map ~f:(fun body ->
                Body.calc
-                 ~values:(Values.to_function f.Body.values)
-                 ~rules:f.rules
+                 ~values:(Values.to_function body.Body.values)
+                 ~rules:body.rules
                  ~scoped_values:(Values.global_to_scoped global_values)
                  ~t
-               |> Option.map ~f:(fun (xy, rules) -> Body.update_x0y0 ~body:f xy ~rules)
-               |> Option.value ~default:f)
+               |> Option.map ~f:(fun (xy, rules) -> Body.update_x0y0 ~body xy ~rules)
+               |> Option.value ~default:body)
       ;;
     end
 
@@ -754,7 +719,7 @@ struct
   module Action = struct
     type a =
       | AddBody of
-          { id : Body.Id.t
+          { id : Body.Id.t option
           ; x0 : N.t
           ; y0 : N.t
           ; r : N.t
@@ -778,17 +743,49 @@ struct
     [@@deriving sexp, equal]
   end
 
+  module Scenes : sig
+    type t [@@deriving sexp, equal]
+
+    val before : t -> time:N.t -> t * Scene.t
+    val merge_with_list : t -> Scene.t list -> t
+    val last_exn : t -> Scene.t
+    val to_map : t -> (N.t, Scene.t, N.comparator_witness) Map.t
+    val of_map : (N.t, Scene.t, N.comparator_witness) Map.t -> t
+    val to_sequence : t -> (N.t * Scene.t) Sequence.t
+    val get_by_id : t -> id:N.t -> Scene.t
+  end = struct
+    include Common.Utils.MakeAdvancedMap (N) (Scene)
+
+    let before scenes ~time =
+      match Map.split scenes time with
+      | l, Some (k, v), _ -> Map.add_exn l ~key:k ~data:v, v
+      | l, None, _ -> l, snd @@ Map.max_elt_exn l
+    ;;
+
+    let merge_with_list scenes l =
+      (* TODO *)
+      let l =
+        Map.of_alist_reduce
+          (module N)
+          (List.map l ~f:(fun scene -> scene.Scene.time, scene))
+          ~f:(fun _a b -> b)
+      in
+      Map.merge_skewed scenes l ~combine:(fun ~key v1 v2 ->
+          Scene.update
+            v2
+            ~bodies:v2.bodies
+            ~cause:
+              (* TODO *)
+              (v2.cause @ v1.cause |> List.dedup_and_sort ~compare:Scene.Cause.compare)
+            ~points:v2.points
+            ~lines:v2.lines
+            ~time:key)
+    ;;
+
+    let last_exn = Map.max_elt_exn >> snd
+  end
+
   module Model : sig
-    module Scenes : sig
-      type t [@@deriving sexp, equal]
-
-      val before : t -> time:N.t -> t * Scene.t
-      val merge_with_list : t -> Scene.t list -> t
-      val last_exn : t -> Scene.t
-      val to_map : t -> (N.t, Scene.t, N.comparator_witness) Map.t
-      val to_sequence : t -> (N.t * Scene.t) Sequence.t
-    end
-
     type t =
       { scenes : Scenes.t
       ; timeout : N.t option
@@ -810,38 +807,6 @@ struct
       include Common.Utils.Diff with type tt := tt and type t := t
     end
   end = struct
-    module Scenes = struct
-      include Common.Utils.MakeAdvancedMap (N) (Scene)
-
-      let before scenes ~time =
-        match Map.split scenes time with
-        | l, Some (k, v), _ -> Map.add_exn l ~key:k ~data:v, v
-        | l, None, _ -> l, snd @@ Map.max_elt_exn l
-      ;;
-
-      let merge_with_list scenes l =
-        (* TODO *)
-        let l =
-          Map.of_alist_reduce
-            (module N)
-            (List.map l ~f:(fun scene -> scene.Scene.time, scene))
-            ~f:(fun _a b -> b)
-        in
-        Map.merge_skewed scenes l ~combine:(fun ~key v1 v2 ->
-            Scene.update
-              v2
-              ~bodies:v2.bodies
-              ~cause:
-                (* TODO *)
-                (v2.cause @ v1.cause |> List.dedup_and_sort ~compare:Scene.Cause.compare)
-              ~points:v2.points
-              ~lines:v2.lines
-              ~time:key)
-      ;;
-
-      let last_exn = Map.max_elt_exn >> snd
-    end
-
     type t =
       { scenes : Scenes.t
       ; timeout : N.t option
@@ -849,12 +814,14 @@ struct
     [@@deriving sexp, equal]
 
     let init ~g =
-      { scenes = Map.of_alist_exn (module N) [ N.zero, Scene.init ~g ]; timeout = None }
+      { scenes = Map.of_alist_exn (module N) [ N.zero, Scene.init ~g ] |> Scenes.of_map
+      ; timeout = None
+      }
     ;;
 
     let of_scenes scenes ~time ~scene ~timeout =
       { scenes =
-          Map.update scenes time ~f:(function
+          Map.update (Scenes.to_map scenes) time ~f:(function
               | Some s ->
                 Scene.update
                   s
@@ -864,6 +831,7 @@ struct
                   ~lines:scene.lines
                   ~time
               | None -> scene)
+          |> Scenes.of_map
       ; timeout
       }
     ;;
@@ -896,7 +864,7 @@ struct
             ~finish:(fun acc -> acc)
           |> Option.map ~f:(fun since -> `Since since)
           |> Option.value
-               ~default:(`Init (Scenes.of_map curr.scenes |> Map.min_elt_exn |> snd))
+               ~default:(`Init (curr.scenes |> Scenes.to_map |> Map.min_elt_exn |> snd))
         in
         let init_time, init_scene =
           match init with
@@ -918,7 +886,9 @@ struct
         let common_scenes, init_scene =
           match diff.init with
           | `Init init -> Map.singleton (module N) init.time init, init
-          | `Since since -> Scenes.before (Scenes.to_map old.scenes) ~time:since
+          | `Since since ->
+            let l, r = Scenes.before old.scenes ~time:since in
+            Scenes.to_map l, r
         in
         let scenes =
           diff.scene_diffs
@@ -1062,6 +1032,11 @@ struct
 
     let apply_action s ~time = function
       | Action.AddBody { id; x0; y0; r; mu; m } ->
+        let id =
+          match id with
+          | Some id -> id
+          | None -> Body.Id.next ()
+        in
         Scene.update
           s
           ~bodies:(Scene.add_figure s.Scene.bodies ~id ~x0 ~y0 ~r ~mu ~m)
@@ -1087,14 +1062,14 @@ struct
     ;;
 
     let recv Model.{ scenes; _ } ~action:Action.{ time; action; timeout } =
-      let before, s = Model.Scenes.before scenes ~time in
+      let before, s = Scenes.before scenes ~time in
       let scenes = forward s ~time ~timeout in
-      let scenes = Model.Scenes.merge_with_list before scenes in
-      let before, s = Model.Scenes.before scenes ~time in
+      let scenes = Scenes.merge_with_list before scenes in
+      let before, s = Scenes.before scenes ~time in
       let r = apply_action ~time s action in
       let m = before |> Model.of_scenes ~time:r.time ~scene:r ~timeout in
-      let f = forward (Model.Scenes.last_exn m.scenes) ~timeout in
-      { m with scenes = Model.Scenes.merge_with_list m.scenes f }
+      let f = forward (Scenes.last_exn m.scenes) ~timeout in
+      { m with scenes = Scenes.merge_with_list m.scenes f }
     ;;
 
     let update model ~action =
