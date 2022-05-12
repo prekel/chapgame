@@ -244,7 +244,7 @@ module Rooms = struct
 
   let init () = Hashtbl.create (module Room.Id)
 end
-w
+
 let rooms_field : Rooms.t Dream.field = Dream.new_field ()
 let rooms_var = Rooms.init ()
 

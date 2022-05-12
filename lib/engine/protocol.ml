@@ -24,18 +24,21 @@ module Make1
       include Equal.S with type t := t
     end) =
     struct
+  module N = C.N
+
   module Request = struct
     type t =
-      | Action of S.Action.t
-      | Start of S.Model.t
-      | Replace of S.Model.t
+      { time : N.t
+      ; speed : N.t
+      ; action : [ `Action of S.Action.t | `Replace of S.Model.t ]
+      }
     [@@deriving sexp, equal]
   end
 
   module Response = struct
     type t =
-      { time : C.N.t
-      ; speed : C.N.t
+      { time : N.t
+      ; speed : N.t
       ; payload : Payload.t
       ; diff : [ `Diff of S.Model.Diff.t | `Replace of S.Model.t ]
       }
