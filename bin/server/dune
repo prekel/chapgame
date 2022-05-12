@@ -1,0 +1,7 @@
+(executable
+ (public_name chapgame)
+ (package chapgame)
+ (name main)
+ (libraries chapgame dream core dream-encoding server)
+ (preprocess
+  (pps ppx_jane)))

@@ -1,8 +1,6 @@
-(executable
- (public_name chapgame)
- (package chapgame)
- (name main)
- (libraries chapgame dream core dream-encoding)
+(library
+ (name server)
+ (libraries chapgame dream core dream-encoding irmin irmin-unix)
  (preprocess
   (pps ppx_jane)))
 

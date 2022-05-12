@@ -1,5 +1,4 @@
 open Core
-open Dream
 
 let sexp ?status ?code ?headers ?mach sexp =
   let body =

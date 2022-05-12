@@ -328,7 +328,7 @@ let loader path ~content_type =
         ]
 ;;
 
-let () =
+let main () =
   Dream.run ~interface:"0.0.0.0"
   @@ Dream.logger
   @@ Dream.router
