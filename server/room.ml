@@ -40,15 +40,16 @@ module Make
     [@@deriving sexp]
 
     let to_response ?diff (room : t) =
-      Protocol.Response.
-        { time = room.time
-        ; speed = room.speed
-        ; payload = room.payload
-        ; diff =
-            (match diff with
-            | Some diff -> `Diff diff
-            | None -> `Replace room.model)
-        }
+      Protocol.Response.(
+        Full
+          { time = room.time
+          ; speed = room.speed
+          ; payload = room.payload
+          ; diff =
+              (match diff with
+              | Some diff -> `Diff diff
+              | None -> `Replace room.model)
+          })
     ;;
 
     let update_room room Protocol.Request.{ time; speed; action } =

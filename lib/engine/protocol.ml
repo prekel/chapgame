@@ -36,12 +36,17 @@ module Make1
   end
 
   module Response = struct
-    type t =
+    type f =
       { time : N.t
       ; speed : N.t
       ; payload : Payload.t
       ; diff : [ `Diff of S.Model.Diff.t | `Replace of S.Model.t ]
       }
+    [@@deriving sexp, equal]
+
+    type t =
+      | Full of f
+      | Chunk of S.Model.Diff.t
     [@@deriving sexp, equal]
   end
 end
