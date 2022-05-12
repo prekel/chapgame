@@ -30,13 +30,14 @@ module Make
 
     type t =
       { model : S.Model.t
-      ; clients : Clients.t
-      ; lock : Lwt_mutex.t
+      ; clients : (Clients.t[@sexp.opaque])
+      ; lock : (Lwt_mutex.t[@sexp.opaque])
       ; time : N.t
       ; speed : N.t
       ; payload : Payload.t
-      ; token : string
+      ; token : (string[@sexp.opaque])
       }
+    [@@deriving sexp]
 
     let to_response ?diff (room : t) =
       Protocol.Response.
@@ -100,8 +101,14 @@ module Make
     Dream.scope
       "/room"
       [ middleware ]
-      [ Dream.post "/:room_id/action" (fun request ->
+      [ Dream.get "/:room_id" (fun request ->
             let _, room, _ = room_of_request request in
+            Dream_ext.sexp [%sexp (room : Room.t)])
+      ; Dream.get "/:room_id/model" (fun request ->
+            let _, room, _ = room_of_request request in
+            Dream_ext.sexp [%sexp (room.model : S.Model.t)])
+      ; Dream.post "/:room_id/action" (fun request ->
+            let rooms, room, room_id = room_of_request request in
             let token = Dream.query request "token" in
             match token with
             | Some token when String.(token = room.token) ->
@@ -110,6 +117,7 @@ module Make
               let () =
                 Lwt.async (fun () ->
                     let%bind new_room, diff = Room.update_room room r in
+                    Hashtbl.update rooms room_id ~f:(fun _ -> new_room);
                     let response = Room.to_response ?diff new_room in
                     broadcast_response room.lock room.clients response)
               in
