@@ -1,7 +1,14 @@
-(executable
- (name main)
- (modes js)
- (libraries core bonsai.web virtual_dom.svg chapgame lwt cohttp-lwt-jsoo
-   js_of_ocaml-lwt bonsai.extra)
+(library
+ (name client_lib)
+
+ (libraries
+  core
+  bonsai.web
+  virtual_dom.svg
+  chapgame
+  lwt
+  cohttp-lwt-jsoo
+  js_of_ocaml-lwt
+  bonsai.extra)
  (preprocess
   (pps js_of_ocaml-ppx ppx_jane)))

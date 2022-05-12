@@ -1,12 +1,12 @@
 (library
- (name server)
- (libraries chapgame dream core dream-encoding irmin irmin-unix)
+ (name server_lib)
+ (libraries chapgame dream core dream-encoding irmin-unix)
  (preprocess
   (pps ppx_jane)))
 
 (rule
  (target assets.ml)
- (deps assets/index.html assets/main.bc.js)
+ (deps assets/index.html assets/client_bin.bc.js)
  (action
   (with-stdout-to
    %{null}

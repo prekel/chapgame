@@ -60,6 +60,10 @@ release: all ## Run the release script
 
 .PHONY: create_switch
 create_switch: ## Create an opam switch without any dependency
+	opam switch create . 4.13.1 --no-install -y
+
+.PHONY: create_switch_extra
+create_switch_extra: ## Create an opam switch without any dependency
 	opam switch create . 4.13.1 --no-install -y --repos=janestreet-bleeding=https://ocaml.janestreet.com/opam-repository,default
 
 .PHONY: deps_all

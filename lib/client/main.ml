@@ -129,7 +129,7 @@ module WebSocketTest = struct
   ;;
 end
 
-let (_ : _ Start.Handle.t) =
+let main () : _ Start.Handle.t =
   Start.start
     Start.Result_spec.just_the_view
     ~bind_to_element_with_id:"app"

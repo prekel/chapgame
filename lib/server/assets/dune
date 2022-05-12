@@ -1,2 +1,2 @@
 (copy_files
- (files ../../client/{main.bc.js,index.html}))
+ (files ../../../bin/client/{client_bin.bc.js,index.html}))

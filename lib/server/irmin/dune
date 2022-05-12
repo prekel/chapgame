@@ -1,6 +1,0 @@
-(executable
- (name main)
- (modules main)
- (libraries lwt irmin-unix core)
- (preprocess
-  (pps ppx_jane)))

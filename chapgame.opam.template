@@ -1,0 +1,5 @@
+pin-depends: [
+  ["dream.~dev"         "git+https://github.com/clecat/dream.git#e60190b8a8ba22c6696b8919b20c0395608ea5b6"]
+  ["dream-mirage.~dev"  "git+https://github.com/clecat/dream.git#e60190b8a8ba22c6696b8919b20c0395608ea5b6"]
+  ["dream-pure.~dev"    "git+https://github.com/clecat/dream.git#e60190b8a8ba22c6696b8919b20c0395608ea5b6"]
+]

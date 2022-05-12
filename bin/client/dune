@@ -1,0 +1,6 @@
+(executable
+ (name client_bin)
+ (modes js)
+ (libraries client_lib)
+ (preprocess
+  (pps js_of_ocaml-ppx ppx_jane)))
