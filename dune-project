@@ -41,8 +41,6 @@
   dream
   cohttp-lwt-jsoo
   dream-encoding
-  irmin
-  irmin-unix
   (crunch :build)
   (ppx_jane :build)
   (bisect_ppx :with-test)
