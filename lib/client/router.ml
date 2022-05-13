@@ -3,7 +3,7 @@ open Bonsai_web
 open Bonsai.Let_syntax
 
 module SC = Scene.Make (Defaults.C) (Defaults.S)
-module Offline = Offline.Make (Defaults.C) (Defaults.S) (SC)
+module Offline = Offline.Make (Defaults.C) (Defaults.S) (SC) (Defaults.Replays)
 
 let main_page =
   Bonsai.const
