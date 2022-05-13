@@ -1,0 +1,7 @@
+(library
+ (name protocol)
+ (libraries core common engine)
+ (preprocess
+  (pps ppx_jane))
+ (flags
+  (:standard -open Common.Open)))

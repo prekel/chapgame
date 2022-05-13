@@ -16,15 +16,7 @@ module Make
       end)
 
   module N = C.N
-
-  module Request = struct
-    type t =
-      { time : N.t
-      ; speed : N.t
-      ; action : [ `Action of S.Action.t | `Replace of S.Model.t ]
-      }
-    [@@deriving sexp, equal]
-  end
+  module Request = Protocol.Request.Make (C) (S)
 
   let update_room (room : Room.t) Request.{ time; speed; action } =
     Lwt_mutex.with_lock room.lock (fun () ->

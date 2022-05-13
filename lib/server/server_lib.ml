@@ -1,9 +1,7 @@
 open Core
-module C = (val Chapgame.Utils.make_consts ~eps:1e-6)
-module S = Chapgame.Scene.Make (C)
 
 module Room =
-  Room.Make (C) (S)
+  Room.Make (Defaults.C) (Defaults.S)
     (struct
       let replay _ = assert false
     end)

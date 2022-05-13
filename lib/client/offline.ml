@@ -3,8 +3,8 @@ open Bonsai_web
 open Bonsai.Let_syntax
 
 module Make
-    (C : Chapgame.Module_types.CONSTS with module N = Float)
-    (S : module type of Chapgame.Scene.Make (C))
+    (C : Engine.Module_types.CONSTS with module N = Float)
+    (S : module type of Engine.Scene.Make (C))
     (SC : module type of Scene.Make (C) (S)) =
     struct
       let route = [ "offline" ], []

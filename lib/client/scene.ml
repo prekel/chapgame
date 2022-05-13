@@ -5,8 +5,8 @@ open Js_of_ocaml
 module Svg = Virtual_dom_svg
 
 module Make
-    (C : Chapgame.Module_types.CONSTS with module N = Float)
-    (S : module type of Chapgame.Scene.Make (C)) =
+    (C : Engine.Module_types.CONSTS with module N = Float)
+    (S : module type of Engine.Scene.Make (C)) =
     struct
   type circle =
     { id : S.Body.Id.t

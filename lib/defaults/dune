@@ -1,6 +1,6 @@
 (library
- (name chapgame)
- (libraries core common solver engine)
+ (name defaults)
+ (libraries core common engine protocol)
  (preprocess
   (pps ppx_jane))
  (flags

@@ -1,10 +1,9 @@
 (* open Core *)
 open Bonsai_web
 open Bonsai.Let_syntax
-module C = (val Chapgame.Utils.make_consts ~eps:1e-6)
-module S = Chapgame.Scene.Make (C)
-module SC = Scene.Make (C) (S)
-module Offline = Offline.Make (C) (S) (SC)
+
+module SC = Scene.Make (Defaults.C) (Defaults.S)
+module Offline = Offline.Make (Defaults.C) (Defaults.S) (SC)
 
 let main_page =
   Bonsai.const

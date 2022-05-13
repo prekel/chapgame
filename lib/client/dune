@@ -1,11 +1,10 @@
 (library
  (name client_lib)
-
  (libraries
+  defaults
   core
   bonsai.web
   virtual_dom.svg
-  chapgame
   lwt
   cohttp-lwt-jsoo
   js_of_ocaml-lwt

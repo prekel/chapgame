@@ -5,7 +5,7 @@ let random = Stdlib.Random.State.make_self_init ()
 
 module Make
     (C : Engine.Module_types.CONSTS)
-    (S : module type of Engine.Scene.Make (C))  (R : sig
+    (S : module type of Engine.Scene.Make (C)) (R : sig
       val replay : string -> S.Model.t
     end) (Payload : sig
       type t [@@deriving sexp, equal]
@@ -14,20 +14,7 @@ module Make
     end) =
     struct
   module N = C.N
-  module Response = struct
-    type f =
-      { time : N.t
-      ; speed : N.t
-      ; payload : Payload.t
-      ; diff : [ `Diff of S.Model.Diff.t | `Replace of S.Model.t ]
-      }
-    [@@deriving sexp, equal]
-
-    type t =
-      | Full of f
-      | Chunk of S.Model.Diff.t
-    [@@deriving sexp, equal]
-  end
+  module Response = Protocol.Response.Make (C) (S) (Payload)
 
   module Client = struct
     module Id = Common.Utils.MakeIntId (struct
@@ -71,7 +58,6 @@ module Make
               | None -> `Replace room.model)
           })
     ;;
-
 
     let init ~token ~payload model =
       { model
