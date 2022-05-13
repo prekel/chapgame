@@ -1,15 +1,33 @@
 open Core
 open Lwt.Let_syntax
 
+let random = Stdlib.Random.State.make_self_init ()
+
 module Make
     (C : Engine.Module_types.CONSTS)
-    (S : module type of Engine.Scene.Make (C)) (Payload : sig
-      include Sexpable.S
-      include Equal.S with type t := t
+    (S : module type of Engine.Scene.Make (C))  (R : sig
+      val replay : string -> S.Model.t
+    end) (Payload : sig
+      type t [@@deriving sexp, equal]
+
+      val empty : t
     end) =
     struct
   module N = C.N
-  module Protocol = Engine.Protocol.Make1 (C) (S) (Payload)
+  module Response = struct
+    type f =
+      { time : N.t
+      ; speed : N.t
+      ; payload : Payload.t
+      ; diff : [ `Diff of S.Model.Diff.t | `Replace of S.Model.t ]
+      }
+    [@@deriving sexp, equal]
+
+    type t =
+      | Full of f
+      | Chunk of S.Model.Diff.t
+    [@@deriving sexp, equal]
+  end
 
   module Client = struct
     module Id = Common.Utils.MakeIntId (struct
@@ -21,6 +39,8 @@ module Make
 
   module Clients = struct
     type t = (Client.Id.t, Client.t) Hashtbl.t
+
+    let create () = Hashtbl.create (module Client.Id)
   end
 
   module Room = struct
@@ -40,7 +60,7 @@ module Make
     [@@deriving sexp]
 
     let to_response ?diff (room : t) =
-      Protocol.Response.(
+      Response.(
         Full
           { time = room.time
           ; speed = room.speed
@@ -52,20 +72,19 @@ module Make
           })
     ;;
 
-    let update_room room Protocol.Request.{ time; speed; action } =
-      Lwt_mutex.with_lock room.lock (fun () ->
-          let%map model, diff =
-            match action with
-            | `Action _ as a ->
-              let%map model, diff =
-                Lwt_preemptive.detach
-                  (fun (model, action) -> S.Engine.recv_with_diff model ~action)
-                  (room.model, a)
-              in
-              model, Some diff
-            | `Replace model -> Lwt.return (model, None)
-          in
-          { room with model; time; speed }, diff)
+
+    let init ~token ~payload model =
+      { model
+      ; clients = Clients.create ()
+      ; lock = Lwt_mutex.create ()
+      ; time = N.zero
+      ; speed = N.one
+      ; payload
+      ; token =
+          (match token with
+          | Some token -> token
+          | None -> Uuidm.v4_gen random () |> Uuidm.to_string)
+      }
     ;;
   end
 
@@ -78,7 +97,7 @@ module Make
   let rooms_field : Rooms.t Dream.field = Dream.new_field ()
   let rooms_var = Rooms.init ()
 
-  let middleware inner_handler request =
+  let inject_rooms inner_handler request =
     Dream.set_field request rooms_field rooms_var;
     inner_handler request
   ;;
@@ -92,58 +111,62 @@ module Make
   let broadcast_response lock clients response =
     Lwt_mutex.with_lock lock (fun () ->
         let clients = Hashtbl.to_alist clients in
-        let message = response |> [%sexp_of: Protocol.Response.t] |> Sexp.to_string_hum in
+        let message = response |> [%sexp_of: Response.t] |> Sexp.to_string_hum in
         Lwt_list.iter_p
           (fun (_id, Client.{ websocket }) -> Dream.send websocket message)
           clients)
   ;;
 
-  let route =
-    Dream.scope
-      "/room"
-      [ middleware ]
-      [ Dream.get "/:room_id" (fun request ->
-            let _, room, _ = room_of_request request in
-            Dream_ext.sexp [%sexp (room : Room.t)])
-      ; Dream.get "/:room_id/model" (fun request ->
-            let _, room, _ = room_of_request request in
-            Dream_ext.sexp [%sexp (room.model : S.Model.t)])
-      ; Dream.post "/:room_id/action" (fun request ->
-            let rooms, room, room_id = room_of_request request in
-            let token = Dream.query request "token" in
-            match token with
-            | Some token when String.(token = room.token) ->
-              let%bind body = Dream.body request in
-              let r = body |> Sexp.of_string |> [%of_sexp: Protocol.Request.t] in
-              let () =
-                Lwt.async (fun () ->
-                    let%bind new_room, diff = Room.update_room room r in
-                    Hashtbl.update rooms room_id ~f:(fun _ -> new_room);
-                    let response = Room.to_response ?diff new_room in
-                    broadcast_response room.lock room.clients response)
+  let generic_routes =
+    [ Dream.post "/create" (fun request ->
+          let rooms = Dream.field request rooms_field |> Option.value_exn in
+          let token = Dream.query request "token" in
+          match Dream.query request "replay_id" with
+          | Some replay_id ->
+            let id = Room.Id.next () in
+            Hashtbl.add_exn
+              rooms
+              ~key:id
+              ~data:(Room.init ~token ~payload:Payload.empty (R.replay replay_id));
+            Dream_ext.sexp [%sexp (id : Room.Id.t)]
+          | None ->
+            let%bind body = Dream.body request in
+            let id = Room.Id.next () in
+            Hashtbl.add_exn
+              rooms
+              ~key:id
+              ~data:
+                (Room.init
+                   ~token
+                   ~payload:Payload.empty
+                   (body |> Sexp.of_string |> [%of_sexp: S.Model.t]));
+            Dream_ext.sexp [%sexp (id : Room.Id.t)])
+    ; Dream.get "/:room_id" (fun request ->
+          let _, room, _ = room_of_request request in
+          Dream_ext.sexp [%sexp (room : Room.t)])
+    ; Dream.get "/:room_id/model" (fun request ->
+          let _, room, _ = room_of_request request in
+          Dream_ext.sexp [%sexp (room.model : S.Model.t)])
+    ; Dream.get "/:room_id/ws" (fun request ->
+          Dream.websocket (fun client ->
+              let client_id = Client.Id.next () in
+              let _, room, _ = room_of_request request in
+              let%bind () =
+                Room.to_response room
+                |> [%sexp_of: Response.t]
+                |> Sexp.to_string_hum
+                |> Dream.send client
               in
-              Dream.empty `Accepted
-            | _ -> Dream.empty `Forbidden)
-      ; Dream.get "/:room_id/ws" (fun request ->
-            Dream.websocket (fun client ->
-                let client_id = Client.Id.next () in
-                let _, room, _ = room_of_request request in
-                let%bind () =
-                  Room.to_response room
-                  |> [%sexp_of: Protocol.Response.t]
-                  |> Sexp.to_string_hum
-                  |> Dream.send client
-                in
-                let rec loop () =
-                  let%bind msg = Dream.receive client in
-                  match msg with
-                  | Some _ -> loop ()
-                  | None ->
-                    Lwt_mutex.with_lock room.lock (fun () ->
-                        Hashtbl.remove room.clients client_id;
-                        Dream.close_websocket client)
-                in
-                loop ()))
-      ]
+              let rec loop () =
+                let%bind msg = Dream.receive client in
+                match msg with
+                | Some _ -> loop ()
+                | None ->
+                  Lwt_mutex.with_lock room.lock (fun () ->
+                      Hashtbl.remove room.clients client_id;
+                      Dream.close_websocket client)
+              in
+              loop ()))
+    ]
   ;;
 end
