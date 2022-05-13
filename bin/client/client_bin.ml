@@ -1,3 +1,8 @@
 open Bonsai_web
 
-let (_ : _ Start.Handle.t) = Client_lib.Main.main ()
+let (_ : _ Start.Handle.t) =
+  Start.start
+    Start.Result_spec.just_the_view
+    ~bind_to_element_with_id:"app"
+    Client_lib.Router.component
+;;

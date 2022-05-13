@@ -1,4 +1,4 @@
-open Core
+(* open Core
 open Bonsai_web
 open Bonsai.Let_syntax
 open Js_of_ocaml
@@ -134,4 +134,4 @@ let main () : _ Start.Handle.t =
     Start.Result_spec.just_the_view
     ~bind_to_element_with_id:"app"
     (Scene.online ~room_id:(Value.return 0))
-;;
+;; *)

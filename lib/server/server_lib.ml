@@ -30,9 +30,9 @@ let main () =
        ; Dream.scope
            "/"
            [ Dream_encoding.compress ]
-           [ Dream.get "/" (fun _ -> loader "index.html" ~content_type:`text_html)
-           ; Dream.get "/client_bin.bc.js" (fun _ ->
+           [ Dream.get "/client_bin.bc.js" (fun _ ->
                  loader "client_bin.bc.js" ~content_type:`application_javascript)
+           ; Dream.get "/**" (fun _ -> loader "index.html" ~content_type:`text_html)
            ]
        ]
 ;;
