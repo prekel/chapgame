@@ -82,8 +82,8 @@ coverage: ## Run coverage
 
 .PHONY: all
 all:
-	opam exec -- dune build --release ./server/main.exe
+	opam exec -- dune build --release ./bin/server/server_bin.exe
 
 .PHONY: cp_to_build
 cp_to_build:
-	cp ./_build/default/server/main.exe ./build/main.exe -f
+	cp ./_build/default/bin/server/server_bin.exe ./build/server_bin.exe -f

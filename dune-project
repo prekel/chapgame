@@ -41,6 +41,7 @@
   dream
   cohttp-lwt-jsoo
   dream-encoding
+  brr
   (crunch :build)
   (ppx_jane :build)
   (bisect_ppx :with-test)

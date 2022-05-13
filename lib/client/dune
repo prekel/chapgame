@@ -9,6 +9,7 @@
   lwt
   cohttp-lwt-jsoo
   js_of_ocaml-lwt
-  bonsai.extra)
+  bonsai.extra
+  brr)
  (preprocess
   (pps js_of_ocaml-ppx ppx_jane)))
