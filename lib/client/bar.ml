@@ -25,18 +25,17 @@ let component ~inner ~outer =
     [ div
         ~attr:(many [ classes [ "column"; "is-narrow" ] ])
         [ Node.div
-            ~attr:(many [ style (Css_gen.width (`Px_float 300.)) ])
+            ~attr:(many [ style (Css_gen.min_width (`Px 300)) ])
             [ Node.create
                 "nav"
                 ~attr:(many [ classes [ "navbar" ] ])
-                [ div
-                    ~attr:(many [ classes [ "navbar-menu" ] ])
-                    [ div
-                        ~attr:(many [ classes [ "navbar-start" ] ])
-                        [ div ~attr:(many [ classes [ "navbar-item" ] ]) [ text "1" ]
-                        ; div ~attr:(many [ classes [ "navbar-item" ] ]) [ text "2" ]
-                        ; div ~attr:(many [ classes [ "navbar-item" ] ]) [ text "3" ]
-                        ]
+                [ div ~attr:(many [ classes [ "navbar-brand" ] ]) [] ]
+            ; div
+                ~attr:(many [ classes [ "tabs"; "is-centered" ] ])
+                [ ul
+                    [ li ~attr:(class_ "is-active") [ a [ Node.text "1" ] ]
+                    ; li [ a [ Node.text "2" ] ]
+                    ; li [ a [ Node.text "3" ] ]
                     ]
                 ]
             ; Node.div
