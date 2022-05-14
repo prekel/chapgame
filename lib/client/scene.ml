@@ -12,16 +12,33 @@ module Make
     let x = S.Values.get_scalar_exn figure.S.Body.values ~var:`x0 in
     let y = S.Values.get_scalar_exn figure.values ~var:`y0 in
     let r = S.Values.get_scalar_exn figure.values ~var:`r in
-    let on_click id evt =
-      match Js.Opt.to_option evt##.target with
-      | Some e ->
-        let dim = e##getBoundingClientRect in
+    let on_click id (evt : Dom_html.mouseEvent Js.t) =
+      let t1 = evt##.target |> Js.Opt.to_option in
+      let t2 =
+        t1
+        |> Option.map ~f:Dom_svg.CoerceTo.element
+        |> Option.bind ~f:Js.Opt.to_option
+        |> Option.map ~f:Dom_svg.CoerceTo.circle
+        |> Option.bind ~f:Js.Opt.to_option
+      in
+      match t1, t2 with
+      | Some e1, Some e ->
+        let dim = e1##getBoundingClientRect in
+        let svg = e##.ownerSVGElement in
+        let pt = svg##createSVGPoint in
+        (Obj.magic pt)##.x := evt##.clientX;
+        (Obj.magic pt)##.y := evt##.clientY;
+        let cursorpt = pt##matrixTransform svg##getScreenCTM##inverse in
         Firebug.console##log evt;
-        Firebug.console##log dim;
-        let x = Float.(of_int evt##.clientX - dim##.left) in
-        let y = Float.(of_int evt##.clientY - dim##.top) in
-        body_click id x y r
-      | None -> assert false
+        Firebug.console##log svg;
+        Firebug.console##log pt;
+        Firebug.console##log cursorpt;
+        let x = dim##.left -. Int.to_float evt##.clientX in
+        let y = dim##.top -. Int.to_float evt##.clientY in
+        printf "x: %f, y: %f\n" x y;
+        let _ = x, y in
+        body_click id 0. 0. r
+      | _ -> assert false
     in
     let open Vdom in
     Svg.Node.circle
@@ -85,14 +102,14 @@ module Make
     Svg.Node.svg
       ~attr:
         (Attr.many
-           [ Attr.on_mousewheel (fun event ->
-                 Js_of_ocaml.Firebug.console##log event;
+           [ Attr.on_mousewheel (fun _event ->
+                 (* Js_of_ocaml.Firebug.console##log event; *)
                  Effect.Ignore)
-           ; Attr.on_mousedown (fun event ->
-                 Js_of_ocaml.Firebug.console##log event;
+           ; Attr.on_mousedown (fun _event ->
+                 (* Js_of_ocaml.Firebug.console##log event; *)
                  Effect.Ignore)
-           ; Attr.on_mouseup (fun event ->
-                 Js_of_ocaml.Firebug.console##log event;
+           ; Attr.on_mouseup (fun _event ->
+                 (* Js_of_ocaml.Firebug.console##log event; *)
                  Effect.Ignore)
            ; Svg.Attr.viewbox ~min_x ~min_y ~width ~height
            ])
