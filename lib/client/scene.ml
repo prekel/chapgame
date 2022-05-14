@@ -4,6 +4,9 @@ open Bonsai.Let_syntax
 open Js_of_ocaml
 module Svg = Virtual_dom_svg
 
+let svg_ref = ref None
+let pt_ref = ref None
+
 module Make
     (C : Engine.Module_types.CONSTS with module N = Float)
     (S : module type of Engine.Scene.Make (C)) =
@@ -22,22 +25,24 @@ module Make
         |> Option.bind ~f:Js.Opt.to_option
       in
       match t1, t2 with
-      | Some e1, Some e ->
-        let dim = e1##getBoundingClientRect in
+      | Some _, Some e ->
         let svg = e##.ownerSVGElement in
-        let pt = svg##createSVGPoint in
+        let pt =
+          match !svg_ref, !pt_ref with
+          | Some svg, Some pt when phys_equal svg e##.ownerSVGElement -> pt
+          | _ ->
+            let pt = svg##createSVGPoint in
+            svg_ref := Some e##.ownerSVGElement;
+            pt_ref := Some pt;
+            pt
+        in
         (Obj.magic pt)##.x := evt##.clientX;
         (Obj.magic pt)##.y := evt##.clientY;
         let cursorpt = pt##matrixTransform svg##getScreenCTM##inverse in
-        Firebug.console##log evt;
-        Firebug.console##log svg;
-        Firebug.console##log pt;
-        Firebug.console##log cursorpt;
-        let x = dim##.left -. Int.to_float evt##.clientX in
-        let y = dim##.top -. Int.to_float evt##.clientY in
+        let x = cursorpt##.x -. x in
+        let y = cursorpt##.y -. y in
         printf "x: %f, y: %f\n" x y;
-        let _ = x, y in
-        body_click id 0. 0. r
+        body_click id x y r
       | _ -> assert false
     in
     let open Vdom in
@@ -175,7 +180,7 @@ module Make
                   { time
                   ; action =
                       S.Action.GiveVelocity
-                        { id; v0 = Float.((x - r) / r * -200., (y - r) / r * -200.) }
+                        { id; v0 = Float.(x / r * -200., y / r * -200.) }
                   ; timeout = Some Float.(time + timeoutd)
                   }))
       <*> timeoutd
