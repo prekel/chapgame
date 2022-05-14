@@ -13,8 +13,7 @@ type tab =
 (* ~opened_tab ~show_tabs ~is_tab_enabled *)
 
 let component ~inner ~outer =
-  let%sub inner = inner in
-  let%sub outer = outer in
+  (* let%sub inner = inner in let%sub outer = outer in *)
   let%arr inner = inner
   and outer = outer in
   let open Vdom in
@@ -29,7 +28,10 @@ let component ~inner ~outer =
             [ Node.create
                 "nav"
                 ~attr:(many [ classes [ "navbar" ] ])
-                [ div ~attr:(many [ classes [ "navbar-brand" ] ]) [] ]
+                [ div
+                    ~attr:(many [ classes [ "navbar-brand" ] ])
+                    [ a ~attr:(many [ classes [ "navbar-item" ] ]) [ text "chapgame" ] ]
+                ]
             ; div
                 ~attr:(many [ classes [ "tabs"; "is-centered" ] ])
                 [ ul
