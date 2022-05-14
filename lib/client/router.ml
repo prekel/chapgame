@@ -1,4 +1,4 @@
-(* open Core *)
+open Core
 open Bonsai_web
 open Bonsai.Let_syntax
 module SC = Scene.Make (Defaults.C) (Defaults.S)
@@ -26,5 +26,17 @@ let component =
     Room.component ~room_id ~token:(Bonsai.Value.map ~f:Option.some token)
   | [ "room"; room_id ], _ -> Room.component ~room_id ~token:(Bonsai.Value.return None)
   | [ "offline" ], _ -> Offline.component
+  | [ "slider" ], _ ->
+    let r =
+      let p a =
+        printf "%f" a;
+        Effect.Ignore
+      in
+      Slider.component
+        ~value:(Bonsai.Value.return 15.)
+        ~value_changed:(Bonsai.Value.return p)
+        (Bonsai.Computation.return (Vdom.Node.text "qqqq"))
+    in
+    Bar.component ~inner:r ~outer:r
   | _ -> not_found
 ;;
