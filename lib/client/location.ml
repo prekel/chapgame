@@ -4,6 +4,8 @@ open Js_of_ocaml
 open Bonsai_web
 open Bonsai.Let_syntax
 
+type t = string list * (string * string) list
+
 let path () =
   Window.location G.window
   |> Uri.path
@@ -23,7 +25,7 @@ let query () =
 let path_var = Bonsai.Var.create (path ())
 let query_var = Bonsai.Var.create (query ())
 
-let push =
+let push : t -> _ =
   Effect.of_sync_fun (fun (path, query) ->
       match
         Uri.with_uri
@@ -42,7 +44,9 @@ let push =
       | Error error -> Js_of_ocaml.Firebug.console##error error)
 ;;
 
-let use () =
+let back = Effect.of_sync_fun (fun () -> Window.History.back (Window.history G.window))
+
+let use () : t Computation.t =
   Dom_html.window##.onpopstate
     := Dom.handler (fun _ ->
            Bonsai.Var.set path_var (path ());

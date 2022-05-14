@@ -9,7 +9,7 @@ module Make
       val replay : string -> S.Model.t
     end) =
     struct
-      let route = [ "offline" ], []
+      let route : Location.t = [ "offline" ], []
 
       let component =
         let%sub state, dispatch =
