@@ -1,0 +1,3 @@
+pin-depends: [
+  [ "virtual_dom.v0.15" "git+https://github.com/prekel/virtual_dom#on_wheel" ]
+]

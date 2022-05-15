@@ -93,8 +93,9 @@ module Make
       ~(body_click : (S.Body.Id.t -> float -> float -> float -> unit Ui_effect.t) Value.t)
       ~time
       ~viewbox
-      ~move_viewbox
+      ~move_viewbox (* ~scale *)
     =
+    let%sub scale, set_scale = Bonsai.state [%here] (module Float) ~default_model:1. in
     let%sub mouse_down_coords, set_mouse_down_coords =
       Bonsai.state_opt
         [%here]
@@ -108,7 +109,9 @@ module Make
     and min_x, min_y, width, height = viewbox
     and mouse_down_coords = mouse_down_coords
     and set_mouse_down_coords = set_mouse_down_coords
-    and move_viewbox = move_viewbox in
+    and move_viewbox = move_viewbox
+    and scale = scale
+    and set_scale = set_scale in
     let t = time -. scene.time in
     let circles =
       scene.bodies
@@ -125,14 +128,34 @@ module Make
     Svg.Node.svg
       ~attr:
         (Attr.many
-           [ Attr.on_mousewheel (fun event ->
-                 Js_of_ocaml.Firebug.console##log event;
-                 Effect.Ignore)
+           [ Attr.on_wheel (fun event ->
+                 let (dy : float) = (Js.Unsafe.coerce event)##.deltaY in
+                 let old_width = width *. scale in
+                 let old_height = height *. scale in
+                 (* let nx, ny = svg_click_coords (event :> Dom_html.mouseEvent Js.t) in *)
+                 (* let s = scale in  *)
+                 let scaled = 0.01 *. if Float.is_positive dy then 1. else -1. in
+                 let new_scale = scale +. scaled in
+                 let new_width = width *. new_scale in
+                 let new_height = height *. new_scale in
+                 let x = (old_width -. new_width) /. 2. in 
+                 let y = (old_height -. new_height) /. 2. in
+                 let%bind.Effect () = set_scale new_scale in 
+                 move_viewbox (x, y))
+                 (* move_viewbox
+                   Float.(nx - ((width * s - width * new_scale) / 2.), ny - (width * new_scale / 2.) *)
            ; Attr.on_mousedown (fun event ->
                  let ox, oy = svg_click_coords event in
                  printf "ox %f oy %f\n" ox oy;
                  (* Js_of_ocaml.Firebug.console##log event; *)
                  set_mouse_down_coords (Some (ox, oy)))
+           ; Attr.on_mousemove (fun event ->
+                 match mouse_down_coords with
+                 | Some (ox, oy) ->
+                   let nx, ny = svg_click_coords event in
+                   let%bind.Effect () = set_mouse_down_coords (Some (ox, oy)) in
+                   move_viewbox (nx -. ox, ny -. oy)
+                 | _ -> Effect.Ignore)
            ; Attr.on_mouseup (fun event ->
                  let nx, ny = svg_click_coords event in
                  printf "nx %f ny %f\n" nx ny;
@@ -144,7 +167,10 @@ module Make
                    | None -> Effect.Ignore
                  in
                  set_mouse_down_coords None)
+           (* ; Svg.Attr.width (width *. scale) *)
+           (* ; Svg.Attr.height (height *. scale) *)
            ; Svg.Attr.viewbox ~min_x ~min_y ~width ~height
+           ; Svg.Attr.preserve_aspect_ratio ~align:X_min_y_mid ()
            ])
       all
   ;;
@@ -305,7 +331,7 @@ module Make
         []
     in
     ( viewbox
-    , (fun (dx, dy) -> set_viewbox (min_x -. dx, min_y -. dy, width -. dx, height -. dy))
+    , (fun (dx, dy) -> set_viewbox (min_x -. dx, min_y -. dy, width, height))
     , div
         [ inp min_x set_min_x
         ; br ()
@@ -466,6 +492,6 @@ module Make
                    ])
               [ Node.text "to text" ]
           ]
-      , Node.div [ frame ] ))
+      , frame ))
   ;;
 end
