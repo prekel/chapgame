@@ -253,7 +253,37 @@ module Make
     Bonsai.Clock.every [%here] (Time_ns.Span.of_sec frame_time60) calc_new_time
   ;;
 
-  let timespeed_box ~title ~value ~buttons ~inpt = assert false
+  let timespeed_box ~title ~value ~buttons ~input =
+    let title_ = title
+    and value_ = value
+    and buttons_ = buttons
+    and input_ = input in
+    let open Vdom in
+    let open Node in
+    let open Attr in
+    div
+      ~attr:(many [ classes [ "box" ] ])
+      [ div
+          ~attr:(many [ classes [ "columns"; "is-mobile"; "is-gapless" ] ])
+          [ div
+              ~attr:(many [ classes [ "column"; "is-9" ] ])
+              [ h5 ~attr:(many [ classes [ "title"; "is-5" ] ]) [ text title_ ] ]
+          ; div
+              ~attr:(many [ classes [ "column"; "is-3" ] ])
+              [ p [ text (sprintf "%.2f" value_) ] ]
+          ]
+      ; div
+          ~attr:(many [ classes [ "columns"; "is-mobile"; "is-gapless" ] ])
+          [ div
+              ~attr:(many [ classes [ "column"; "is-9" ] ])
+              [ div
+                  ~attr:(many [ classes [ "buttons"; "has-addons"; "are-small" ] ])
+                  buttons_
+              ]
+          ; div ~attr:(many [ classes [ "column"; "is-3" ] ]) [ input_ ]
+          ]
+      ]
+  ;;
 
   let time_panel ~time_changed_manually =
     let%sub time, set_time = Bonsai.state [%here] (module Float) ~default_model:0. in
@@ -294,65 +324,44 @@ module Make
     let open Attr in
     ( time
     , set_time
-    , div
-        ~attr:(many [ classes [ "box" ] ])
-        [ div
-            ~attr:(many [ classes [ "columns"; "is-mobile"; "is-gapless" ] ])
-            [ div
-                ~attr:(many [ classes [ "column"; "is-9" ] ])
-                [ h5 ~attr:(many [ classes [ "title"; "is-5" ] ]) [ text "Time" ] ]
-            ; div
-                ~attr:(many [ classes [ "column"; "is-3" ] ])
-                [ p [ text (sprintf "%.2f" time) ] ]
-            ]
-        ; div
-            ~attr:(many [ classes [ "columns"; "is-mobile"; "is-gapless" ] ])
-            [ div
-                ~attr:(many [ classes [ "column"; "is-9" ] ])
-                [ div
-                    ~attr:(many [ classes [ "buttons"; "has-addons"; "are-small" ] ])
-                    [ button
-                        ~attr:
-                          (many
-                             [ classes [ "button" ]
-                             ; on_click (fun _ -> set_time_manually (time -. 1.))
-                             ])
-                        [ text "-1" ]
-                    ; button
-                        ~attr:
-                          (many
-                             [ classes [ "button" ]
-                             ; on_click (fun _ -> set_time_manually 0.)
-                             ])
-                        [ text "0" ]
-                    ; button
-                        ~attr:
-                          (many
-                             [ classes [ "button" ]
-                             ; on_click (fun _ -> set_time_manually (time +. 1.))
-                             ])
-                        [ text "+1" ]
-                    ]
-                ]
-            ; div
-                ~attr:(many [ classes [ "column"; "is-3" ] ])
-                [ input
-                    ~attr:
-                      (Attr.many
-                         [ classes [ "input"; "is-small" ]
-                         ; type_ "text"
-                         ; on_focus (fun _ -> set_is_focused true)
-                         ; on_blur (fun _ -> set_is_focused false)
-                         ; on_input (fun _ s -> set_field s)
-                         ; on_change (fun _ a ->
-                               try a |> Float.of_string |> set_time_manually with
-                               | _ -> Effect.Ignore)
-                         ; value_prop field
-                         ])
-                    []
-                ]
-            ]
-        ] )
+    , timespeed_box
+        ~title:"Time"
+        ~value:time
+        ~buttons:
+          [ button
+              ~attr:
+                (many
+                   [ classes [ "button" ]
+                   ; on_click (fun _ -> set_time_manually (time -. 1.))
+                   ])
+              [ text "-1" ]
+          ; button
+              ~attr:
+                (many [ classes [ "button" ]; on_click (fun _ -> set_time_manually 0.) ])
+              [ text "0" ]
+          ; button
+              ~attr:
+                (many
+                   [ classes [ "button" ]
+                   ; on_click (fun _ -> set_time_manually (time +. 1.))
+                   ])
+              [ text "+1" ]
+          ]
+        ~input:
+          (input
+             ~attr:
+               (Attr.many
+                  [ classes [ "input"; "is-small" ]
+                  ; type_ "text"
+                  ; on_focus (fun _ -> set_is_focused true)
+                  ; on_blur (fun _ -> set_is_focused false)
+                  ; on_input (fun _ s -> set_field s)
+                  ; on_change (fun _ a ->
+                        try a |> Float.of_string |> set_time_manually with
+                        | _ -> Effect.Ignore)
+                  ; value_prop field
+                  ])
+             []) )
   ;;
 
   let speed_panel ~speed ~set_speed =
