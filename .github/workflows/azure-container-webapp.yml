@@ -70,8 +70,8 @@ jobs:
       - name: Artifact executable
         uses: actions/upload-artifact@v2
         with:
-          name: main.exe
-          path: ./build/main.exe
+          name: server_bin.exe
+          path: ./build/server_bin.exe
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
@@ -97,27 +97,33 @@ jobs:
       - name: Copy bundle
         run: make cp_to_ghpages
 
+      - name: Artifact bundle
+        uses: actions/upload-artifact@v2
+        with:
+          name: bundle
+          path: ./_ghpages
+
       - name: Deploy pages
         uses: JamesIves/github-pages-deploy-action@v4.2.5
         with:
           branch: gh-pages
           folder: _ghpages
 
-  # deploy:
-  #   runs-on: ubuntu-latest
-  #   needs: build
-  #   environment:
-  #     name: "Development"
-  #     url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: "Development"
+      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
 
-  #   steps:
-  #     - name: Lowercase the repo name and username
-  #       run: echo "REPO=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
+    steps:
+      - name: Lowercase the repo name and username
+        run: echo "REPO=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
 
-  #     - name: Deploy to Azure Web App
-  #       id: deploy-to-webapp
-  #       uses: azure/webapps-deploy@v2
-  #       with:
-  #         app-name: ${{ env.AZURE_WEBAPP_NAME }}
-  #         publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-  #         images: "ghcr.io/${{ env.REPO }}:${{ github.sha }}"
+      - name: Deploy to Azure Web App
+        id: deploy-to-webapp
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          images: "ghcr.io/${{ env.REPO }}:${{ github.sha }}"
