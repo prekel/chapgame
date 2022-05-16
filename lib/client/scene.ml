@@ -54,13 +54,14 @@ module Make
     in
     let open Vdom in
     Svg.Node.circle
+      ~key:(S.Body.Id.to_string id)
       ~attr:
         (Attr.many
            [ Svg.Attr.cx x; Svg.Attr.cy y; Svg.Attr.r r; Attr.on_click (on_click id) ])
       []
   ;;
 
-  let line S.LineSegmentRay.{ p1; p2; kind } =
+  let line (S.LineSegmentRay.{ p1; p2; kind } as line) =
     let open Float in
     let x1, y1, x2, y2 = p1.x, p1.y, p2.x, p2.y in
     let dx, dy = x2 - x1, y2 - y1 in
@@ -72,6 +73,7 @@ module Make
     in
     let open Vdom in
     Svg.Node.line
+      ~key:(Sexp.to_string [%sexp (line : S.LineSegmentRay.t)])
       ~attr:
         (Attr.many
            [ Svg.Attr.x1 x1
@@ -83,9 +85,12 @@ module Make
       []
   ;;
 
-  let point S.Point.{ x; y } =
+  let point (S.Point.{ x; y } as point) =
     let open Vdom in
-    Svg.Node.circle ~attr:(Attr.many [ Svg.Attr.cx x; Svg.Attr.cy y; Svg.Attr.r 1. ]) []
+    Svg.Node.circle
+      ~key:(Sexp.to_string [%sexp (point : S.Point.t)])
+      ~attr:(Attr.many [ Svg.Attr.cx x; Svg.Attr.cy y; Svg.Attr.r 1. ])
+      []
   ;;
 
   let actual_wh_var = Bonsai.Var.create None
@@ -121,8 +126,7 @@ module Make
                        |> Js.Optdef.to_option
                        |> Option.value_exn
                      in
-                     Bonsai.Var.set actual_wh_var (Some (width, height));
-                     Firebug.console##debug (Js.string (sprintf "%f x %f" width height))))
+                     Bonsai.Var.set actual_wh_var (Some (width, height))))
             ()
         in
         resize_observer, div)
@@ -188,9 +192,6 @@ module Make
                        let y = Float.(ny - ((ny - min_y) * c) - min_y) in
                        let%bind.Effect () = set_scale new_scale in
                        move_viewbox (x, y)))
-                 (* ; Attr.on_mousedown (fun event -> let ox, oy = svg_click_coords event
-                    in printf "ox %f oy %f\n" ox oy; (* Js_of_ocaml.Firebug.console##log
-                    event; *) set_mouse_down_coords (Some (ox, oy))) *)
                ; Attr.on_mousemove (fun event ->
                      match (Js.Unsafe.coerce event)##.buttons with
                      | 1 ->
@@ -203,19 +204,12 @@ module Make
                          let ox, oy = svg_click_coords event in
                          set_mouse_down_coords (Some (ox, oy)))
                      | _ -> set_mouse_down_coords None)
-                 (* ; Attr.on_mouseup (fun event -> let nx, ny = svg_click_coords event in
-                    printf "nx %f ny %f\n" nx ny; let%bind.Effect () = match
-                    mouse_down_coords with | Some (ox, oy) -> printf "dx %f dy %f\n" (nx
-                    -. ox) (ny -. oy); move_viewbox Float.(-(nx - ox), -(ny - oy)) | None
-                    -> Effect.Ignore in set_mouse_down_coords None) *)
-                 (* ; Svg.Attr.width (width *. scale) *)
-                 (* ; Svg.Attr.height (height *. scale) *)
                ; Svg.Attr.viewbox
                    ~min_x
                    ~min_y
                    ~width:(width *. scale)
                    ~height:(height *. scale)
-                 (* ; Svg.Attr.preserve_aspect_ratio ~align:X_min_y_mid () *)
+               ; Svg.Attr.preserve_aspect_ratio ~align:X_min_y_mid ~meet_or_slice:`Meet ()
                ])
           all
       ; view_resize_observer
