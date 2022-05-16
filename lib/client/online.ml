@@ -7,7 +7,7 @@ module Make
     (S : module type of Engine.Scene.Make (C)) =
     struct
   let route room_id token : Location.t =
-    ( [ "room"; Int.to_string room_id ]
+    ( [ "online"; Int.to_string room_id ]
     , match token with
       | Some token -> [ "token", token ]
       | None -> [] )
