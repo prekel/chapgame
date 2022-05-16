@@ -22,11 +22,6 @@ let component =
   let%sub location = Location.use () in
   let%sub a, b = Offline.component in
   match%sub location with
-  | [ "" ], _ ->
-    let%map.Computation () =
-      Bonsai.Edge.after_display (Bonsai.Value.return (Location.push Offline.route))
-    in
-    Vdom.Node.none
   | [ "online"; room_id ], _ ->
     let c = Online.component ~room_id ~token:(Bonsai.Value.return None) in
     Bar.component
@@ -37,7 +32,7 @@ let component =
         (Bonsai.Value.return (function
             | `Offline -> Location.push Offline.route
             | `Online -> Effect.Ignore))
-  | [ "offline" ], _ ->
+  | [ "" ], _ ->
     Bar.component
       ~inner:(Bonsai.read a)
       ~outer:(Bonsai.read b)

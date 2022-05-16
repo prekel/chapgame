@@ -87,3 +87,9 @@ all:
 .PHONY: cp_to_build
 cp_to_build:
 	cp ./_build/default/bin/server/server_bin.exe ./build/server_bin.exe -f
+
+.PHONY: cp_to_ghpages
+cp_to_ghpages:
+	mkdir -p ./_ghpages
+	cp -f ./_build/default/bin/client/index.html ./_ghpages/index.html
+	cp -f ./_build/default/bin/client/client_bin.bc.js ./_ghpages/client_bin.bc.js
