@@ -27,7 +27,7 @@ let component ~inner ~outer ~opened_tab ~tab_click =
   let open Node in
   let open Attr in
   div
-    ~attr:(many [ classes [ "columns" ] ])
+    ~attr:(many [ classes [ "columns"; "is-gapless" ] ])
     [ div
         ~attr:(many [ classes [ "column"; "is-narrow"; "bar-column" ] ])
         [ Node.div
@@ -40,7 +40,7 @@ let component ~inner ~outer ~opened_tab ~tab_click =
                     [ a ~attr:(many [ classes [ "navbar-item" ] ]) [ text "chapgame" ] ]
                 ]
             ; div
-                ~attr:(many [ classes [ "tabs"; "is-centered"; "tabs-nomarginbottom" ] ])
+                ~attr:(many [ classes [ "tabs"; "is-centered" ] ])
                 [ ul
                     [ li
                         ~attr:

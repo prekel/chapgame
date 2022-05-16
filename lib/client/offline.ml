@@ -38,5 +38,9 @@ module Make
             (Bonsai.Value.return (fun t ->
                  printf "%f\n" t;
                  Effect.Ignore))
+          ~speed_changed_manually:
+            (Bonsai.Value.return (fun s ->
+                 printf "%f\n" s;
+                 Effect.Ignore))
       ;;
     end
