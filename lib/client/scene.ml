@@ -134,7 +134,8 @@ module Make
       ~(body_click : (S.Body.Id.t -> float -> float -> float -> unit Ui_effect.t) Value.t)
       ~time
       ~viewbox
-      ~move_viewbox (* ~scale *)
+      ~(* ~set_viewbox ~scale *)
+       move_viewbox
     =
     let%sub scale, set_scale = Bonsai.state [%here] (module Float) ~default_model:1. in
     let%sub mouse_down_coords, set_mouse_down_coords =
@@ -175,20 +176,14 @@ module Make
             (Attr.many
                [ Attr.on_wheel (fun event ->
                      let (dy : float) = (Js.Unsafe.coerce event)##.deltaY in
-                     let old_width = width *. scale in
-                     let old_height = height *. scale in
-                     (* let nx, ny = svg_click_coords (event :> Dom_html.mouseEvent Js.t) in *)
-                     (* let s = scale in  *)
+                     let nx, ny = svg_click_coords (event :> Dom_html.mouseEvent Js.t) in
                      let scaled = 0.01 *. if Float.is_positive dy then 1. else -1. in
                      let new_scale = scale +. scaled in
-                     let new_width = width *. new_scale in
-                     let new_height = height *. new_scale in
-                     let x = (old_width -. new_width) /. 2. in
-                     let y = (old_height -. new_height) /. 2. in
+                     let c = new_scale /. scale in
+                     let x = Float.(nx - ((nx - min_x) * c) - min_x) in
+                     let y = Float.(ny - ((ny - min_y) * c) - min_y) in
                      let%bind.Effect () = set_scale new_scale in
                      move_viewbox (x, y))
-                 (* move_viewbox Float.(nx - ((width * s - width * new_scale) / 2.), ny -
-                    (width * new_scale / 2.) *)
                ; Attr.on_mousedown (fun event ->
                      let ox, oy = svg_click_coords event in
                      printf "ox %f oy %f\n" ox oy;
@@ -199,7 +194,7 @@ module Make
                      | Some (ox, oy) ->
                        let nx, ny = svg_click_coords event in
                        let%bind.Effect () = set_mouse_down_coords (Some (ox, oy)) in
-                       move_viewbox (nx -. ox, ny -. oy)
+                       move_viewbox Float.(-(nx - ox), -(ny - oy))
                      | _ -> Effect.Ignore)
                ; Attr.on_mouseup (fun event ->
                      let nx, ny = svg_click_coords event in
@@ -208,14 +203,18 @@ module Make
                        match mouse_down_coords with
                        | Some (ox, oy) ->
                          printf "dx %f dy %f\n" (nx -. ox) (ny -. oy);
-                         move_viewbox (nx -. ox, ny -. oy)
+                         move_viewbox Float.(-(nx - ox), -(ny - oy))
                        | None -> Effect.Ignore
                      in
                      set_mouse_down_coords None)
                  (* ; Svg.Attr.width (width *. scale) *)
                  (* ; Svg.Attr.height (height *. scale) *)
-               ; Svg.Attr.viewbox ~min_x ~min_y ~width ~height
-               ; Svg.Attr.preserve_aspect_ratio ~align:X_min_y_mid ()
+               ; Svg.Attr.viewbox
+                   ~min_x
+                   ~min_y
+                   ~width:(width *. scale)
+                   ~height:(height *. scale)
+                 (* ; Svg.Attr.preserve_aspect_ratio ~align:X_min_y_mid () *)
                ])
           all
       ; view_resize_observer
@@ -378,7 +377,7 @@ module Make
         []
     in
     ( viewbox
-    , (fun (dx, dy) -> set_viewbox (min_x -. dx, min_y -. dy, width, height))
+    , (fun (dx, dy) -> set_viewbox (min_x +. dx, min_y +. dy, width, height))
     , div
         [ inp min_x set_min_x
         ; br ()
