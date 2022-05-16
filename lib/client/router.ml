@@ -41,10 +41,15 @@ let component =
         (Bonsai.Value.return (function
             | `Offline -> Effect.Ignore
             | `Online -> Location.push (Online.route 1 (Some "qwfqwf"))))
-    (* | [ "slider" ], _ -> *)
-    (* let r = let p a = printf "%f" a; Effect.Ignore in Slider.component
-       ~value:(Bonsai.Value.return 15.) ~value_changed:(Bonsai.Value.return p)
-       (Bonsai.Computation.return (Vdom.Node.text "qqqq")) in Bar.component ~inner:r
-       ~outer:r *)
+  | [ "chapgame" ], _ ->
+    (* Gh pages *)
+    Bar.component
+      ~inner:(Bonsai.read a)
+      ~outer:(Bonsai.read b)
+      ~opened_tab:(Bonsai.Value.return `Offline)
+      ~tab_click:
+        (Bonsai.Value.return (function
+            | `Offline -> Effect.Ignore
+            | `Online -> Effect.Ignore))
   | _ -> not_found
 ;;
