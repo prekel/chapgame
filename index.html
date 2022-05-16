@@ -2,9 +2,48 @@
 <html>
 
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Title</title>
-    <script defer src="main.bc.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.4/css/bulma.min.css"
+        integrity="sha512-HqxHUkJM0SYcbvxUw5P60SzdOTy/QVwA1JJrvaXJv4q7lmbDZCmZaqz01UPOaQveoxfYRv1tHozWGPMcuTBuvQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://kit.fontawesome.com/e8a7538d16.js" crossorigin="anonymous"></script>
+    <style>
+        html {
+            overflow: hidden;
+        }
+
+        svg {
+            width: 100%;
+            height: 100vh;
+        }
+
+        .resize-div {
+            width: 100%;
+            height: 100vh;
+        }
+
+        .tabs,
+        .box {
+            margin-bottom: 0.5rem !important;
+        }
+
+        @media only screen and (min-width: 768px) {
+            .bar-column {
+                min-width: 375px;
+                max-width: 375px;
+            }
+        }
+
+        @media only screen and (max-width: 768px) {
+            svg {
+                width: 100vw;
+                height: 100%;
+            }
+        }
+    </style>
+    <script defer src="/client_bin.bc.js"></script>
 </head>
 
 <body>
