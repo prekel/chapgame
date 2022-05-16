@@ -23,8 +23,7 @@ module Make
                 ]
               [@@deriving sexp, equal]
             end)
-            ~default_model:
-              (R.replay "start")
+            ~default_model:(R.replay "start")
             ~apply_action:(fun ~inject:_ ~schedule_event:_ model action ->
               match action with
               | `Replace _ as action -> S.Engine.update model ~action
@@ -32,6 +31,12 @@ module Make
                 let _, diff = S.Engine.recv_with_diff model ~action in
                 S.Engine.update model ~action:(`Diff diff))
         in
-        SC.scene ~state ~dispatch
+        SC.scene
+          ~state
+          ~dispatch
+          ~time_changed_manually:
+            (Bonsai.Value.return (fun t ->
+                 printf "%f\n" t;
+                 Effect.Ignore))
       ;;
     end

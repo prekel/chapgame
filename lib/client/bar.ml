@@ -17,7 +17,8 @@ let tab_text = function
 ;;
 
 let component ~inner ~outer ~opened_tab ~tab_click =
-  let%sub inner = inner in let%sub outer = outer in
+  let%sub inner = inner in
+  let%sub outer = outer in
   let%arr inner = inner
   and outer = outer
   and opened_tab = opened_tab
@@ -39,7 +40,7 @@ let component ~inner ~outer ~opened_tab ~tab_click =
                     [ a ~attr:(many [ classes [ "navbar-item" ] ]) [ text "chapgame" ] ]
                 ]
             ; div
-                ~attr:(many [ classes [ "tabs"; "is-centered" ] ])
+                ~attr:(many [ classes [ "tabs"; "is-centered"; "tabs-nomarginbottom" ] ])
                 [ ul
                     [ li
                         ~attr:
@@ -61,9 +62,7 @@ let component ~inner ~outer ~opened_tab ~tab_click =
                         [ a [ Node.text (tab_text `Online) ] ]
                     ]
                 ]
-            ; Node.div
-                ~attr:(many [ classes [ "container"; "is-fluid"; "is-primary" ] ])
-                [ inner ]
+            ; Node.div ~attr:(many [ classes [] ]) [ inner ]
             ]
         ]
     ; div ~attr:(many [ classes [ "column" ] ]) [ outer ]

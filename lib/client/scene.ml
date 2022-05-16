@@ -229,13 +229,13 @@ module Make
     scene_frame ~scene ~time ~body_click ~viewbox ~move_viewbox
   ;;
 
-  let calc_new_time_every ~model ~time ~update_time ~is_pause ~speed =
+  let calc_new_time_every ~model ~time ~set_time ~is_pause ~speed =
     let%sub calc_new_time =
       let%arr is_pause = is_pause
       and speed = speed
       and model = model
       and time = time
-      and update_time = update_time in
+      and set_time = set_time in
       let open Float in
       let p =
         match time + (frame_time60 * speed), is_pause with
@@ -248,39 +248,111 @@ module Make
         | Some timeout -> min timeout p
         | None -> p
       in
-      update_time tm
+      set_time tm
     in
     Bonsai.Clock.every [%here] (Time_ns.Span.of_sec frame_time60) calc_new_time
   ;;
 
-  let time_panel ~time ~set_time =
+  let timespeed_box ~title ~value ~buttons ~inpt = assert false
+
+  let time_panel ~time_changed_manually =
+    let%sub time, set_time = Bonsai.state [%here] (module Float) ~default_model:0. in
+    let%sub field, set_field = Bonsai.state [%here] (module String) ~default_model:"" in
+    let%sub is_focused, set_is_focused =
+      Bonsai.state [%here] (module Bool) ~default_model:false
+    in
+    let%sub set_time =
+      let%arr set_time = set_time in
+      fun t -> if Float.is_negative t then Effect.Ignore else set_time t
+    in
+    let%sub set_time =
+      let%arr set_time = set_time
+      and set_field = set_field
+      and is_focused = is_focused in
+      if is_focused
+      then set_time
+      else
+        fun t ->
+        let%bind.Effect () = set_field (sprintf "%.2f" t) in
+        set_time t
+    in
+    let%sub set_time_manually =
+      let%arr set_time = set_time
+      and time_changed_manually = time_changed_manually in
+      fun new_time ->
+        let%bind.Effect () = time_changed_manually new_time in
+        set_time new_time
+    in
     let%arr time = time
-    and set_time = set_time in
+    and set_time = set_time
+    and set_time_manually = set_time_manually
+    and field = field
+    and set_field = set_field
+    and set_is_focused = set_is_focused in
     let open Vdom in
     let open Node in
-    div
-      [ input
-          ~attr:
-            (Attr.many
-               [ Attr.type_ "range"
-               ; Attr.min (to_prec 0.)
-               ; Attr.max (to_prec 100.)
-               ; Attr.on_change (fun _ a ->
-                     try a |> Float.of_string |> of_prec |> set_time with
-                     | _ -> Effect.Ignore)
-               ; Attr.value_prop (Float.to_string (to_prec time))
-               ])
-          []
-      ; input
-          ~attr:
-            (Attr.many
-               [ Attr.on_change (fun _ a ->
-                     try a |> Float.of_string |> set_time with
-                     | _ -> Effect.Ignore)
-               ; Attr.value (Float.to_string time)
-               ])
-          []
-      ]
+    let open Attr in
+    ( time
+    , set_time
+    , div
+        ~attr:(many [ classes [ "box" ] ])
+        [ div
+            ~attr:(many [ classes [ "columns"; "is-mobile"; "is-gapless" ] ])
+            [ div
+                ~attr:(many [ classes [ "column"; "is-9" ] ])
+                [ h5 ~attr:(many [ classes [ "title"; "is-5" ] ]) [ text "Time" ] ]
+            ; div
+                ~attr:(many [ classes [ "column"; "is-3" ] ])
+                [ p [ text (sprintf "%.2f" time) ] ]
+            ]
+        ; div
+            ~attr:(many [ classes [ "columns"; "is-mobile"; "is-gapless" ] ])
+            [ div
+                ~attr:(many [ classes [ "column"; "is-9" ] ])
+                [ div
+                    ~attr:(many [ classes [ "buttons"; "has-addons"; "are-small" ] ])
+                    [ button
+                        ~attr:
+                          (many
+                             [ classes [ "button" ]
+                             ; on_click (fun _ -> set_time_manually (time -. 1.))
+                             ])
+                        [ text "-1" ]
+                    ; button
+                        ~attr:
+                          (many
+                             [ classes [ "button" ]
+                             ; on_click (fun _ -> set_time_manually 0.)
+                             ])
+                        [ text "0" ]
+                    ; button
+                        ~attr:
+                          (many
+                             [ classes [ "button" ]
+                             ; on_click (fun _ -> set_time_manually (time +. 1.))
+                             ])
+                        [ text "+1" ]
+                    ]
+                ]
+            ; div
+                ~attr:(many [ classes [ "column"; "is-3" ] ])
+                [ input
+                    ~attr:
+                      (Attr.many
+                         [ classes [ "input"; "is-small" ]
+                         ; type_ "text"
+                         ; on_focus (fun _ -> set_is_focused true)
+                         ; on_blur (fun _ -> set_is_focused false)
+                         ; on_input (fun _ s -> set_field s)
+                         ; on_change (fun _ a ->
+                               try a |> Float.of_string |> set_time_manually with
+                               | _ -> Effect.Ignore)
+                         ; value_prop field
+                         ])
+                    []
+                ]
+            ]
+        ] )
   ;;
 
   let speed_panel ~speed ~set_speed =
@@ -385,8 +457,7 @@ module Make
         ] )
   ;;
 
-  let scene ~(state : S.Model.t Value.t) ~dispatch =
-    let%sub time, update_time = Bonsai.state [%here] (module Float) ~default_model:0. in
+  let scene ~(state : S.Model.t Value.t) ~dispatch ~time_changed_manually =
     let%sub is_pause, set_is_pause =
       Bonsai.state [%here] (module Bool) ~default_model:false
     in
@@ -394,7 +465,8 @@ module Make
     let%sub timeoutd, set_timeoutd =
       Bonsai.state [%here] (module Float) ~default_model:10.
     in
-    let%sub () = calc_new_time_every ~model:state ~time ~update_time ~is_pause ~speed in
+    let%sub time, set_time, time_panel = time_panel ~time_changed_manually in
+    let%sub () = calc_new_time_every ~model:state ~time ~set_time ~is_pause ~speed in
     let%sub text_state, set_text_state =
       Bonsai.state [%here] (module String) ~default_model:""
     in
@@ -417,7 +489,6 @@ module Make
     in
     let%sub frame = scene1 ~model:state ~time ~body_click ~viewbox ~move_viewbox in
     let%sub speed_panel = speed_panel ~speed ~set_speed in
-    let%sub time_panel = time_panel ~time ~set_time:update_time in
     let%sub timeoutd_panel = timeoutd_panel ~timeoutd ~set_timeoutd in
     let%arr time = time
     and frame = frame
@@ -434,7 +505,7 @@ module Make
     and viewbox_panel = viewbox_panel in
     Vdom.(
       ( Node.div
-          [ Node.text (Float.to_string time)
+          [ time_panel
           ; Node.br ()
           ; Node.button
               ~attr:
@@ -496,7 +567,6 @@ module Make
           ; Node.br ()
           ; speed_panel
           ; Node.br ()
-          ; time_panel
           ; Node.br ()
           ; timeoutd_panel
           ; Node.br ()
