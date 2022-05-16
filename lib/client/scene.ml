@@ -90,6 +90,7 @@ module Make
 
   let actual_wh_var = Bonsai.Var.create None
 
+  (* https://github.com/janestreet/incr_dom/blob/04804a65152a751ca9b795475dbf1159acfc2e4e/example/widget_raw_html/app.ml#L26-L63 *)
   let view_resize_observer =
     let widget_id =
       Type_equal.Id.create
@@ -177,36 +178,36 @@ module Make
                [ Attr.on_wheel (fun event ->
                      let (dy : float) = (Js.Unsafe.coerce event)##.deltaY in
                      let nx, ny = svg_click_coords (event :> Dom_html.mouseEvent Js.t) in
-                     let scaled = 0.01 *. if Float.is_positive dy then 1. else -1. in
+                     let scaled = 0.03 *. if Float.is_positive dy then 1. else -1. in
                      let new_scale = scale +. scaled in
-                     let c = new_scale /. scale in
-                     let x = Float.(nx - ((nx - min_x) * c) - min_x) in
-                     let y = Float.(ny - ((ny - min_y) * c) - min_y) in
-                     let%bind.Effect () = set_scale new_scale in
-                     move_viewbox (x, y))
-               ; Attr.on_mousedown (fun event ->
-                     let ox, oy = svg_click_coords event in
-                     printf "ox %f oy %f\n" ox oy;
-                     (* Js_of_ocaml.Firebug.console##log event; *)
-                     set_mouse_down_coords (Some (ox, oy)))
+                     if Float.(new_scale <= 0.01)
+                     then Effect.Ignore
+                     else (
+                       let c = new_scale /. scale in
+                       let x = Float.(nx - ((nx - min_x) * c) - min_x) in
+                       let y = Float.(ny - ((ny - min_y) * c) - min_y) in
+                       let%bind.Effect () = set_scale new_scale in
+                       move_viewbox (x, y)))
+                 (* ; Attr.on_mousedown (fun event -> let ox, oy = svg_click_coords event
+                    in printf "ox %f oy %f\n" ox oy; (* Js_of_ocaml.Firebug.console##log
+                    event; *) set_mouse_down_coords (Some (ox, oy))) *)
                ; Attr.on_mousemove (fun event ->
-                     match mouse_down_coords with
-                     | Some (ox, oy) ->
-                       let nx, ny = svg_click_coords event in
-                       let%bind.Effect () = set_mouse_down_coords (Some (ox, oy)) in
-                       move_viewbox Float.(-(nx - ox), -(ny - oy))
-                     | _ -> Effect.Ignore)
-               ; Attr.on_mouseup (fun event ->
-                     let nx, ny = svg_click_coords event in
-                     printf "nx %f ny %f\n" nx ny;
-                     let%bind.Effect () =
-                       match mouse_down_coords with
+                     match (Js.Unsafe.coerce event)##.buttons with
+                     | 1 ->
+                       (match mouse_down_coords with
                        | Some (ox, oy) ->
-                         printf "dx %f dy %f\n" (nx -. ox) (ny -. oy);
+                         let nx, ny = svg_click_coords event in
+                         let%bind.Effect () = set_mouse_down_coords (Some (ox, oy)) in
                          move_viewbox Float.(-(nx - ox), -(ny - oy))
-                       | None -> Effect.Ignore
-                     in
-                     set_mouse_down_coords None)
+                       | None ->
+                         let ox, oy = svg_click_coords event in
+                         set_mouse_down_coords (Some (ox, oy)))
+                     | _ -> set_mouse_down_coords None)
+                 (* ; Attr.on_mouseup (fun event -> let nx, ny = svg_click_coords event in
+                    printf "nx %f ny %f\n" nx ny; let%bind.Effect () = match
+                    mouse_down_coords with | Some (ox, oy) -> printf "dx %f dy %f\n" (nx
+                    -. ox) (ny -. oy); move_viewbox Float.(-(nx - ox), -(ny - oy)) | None
+                    -> Effect.Ignore in set_mouse_down_coords None) *)
                  (* ; Svg.Attr.width (width *. scale) *)
                  (* ; Svg.Attr.height (height *. scale) *)
                ; Svg.Attr.viewbox
