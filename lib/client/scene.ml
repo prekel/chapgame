@@ -134,28 +134,64 @@ let set_value_manually ~value_changed_manually ~set_value =
     set_value new_value
 ;;
 
-let time_panel ~time_changed_manually =
-  let%sub time, set_time = Bonsai.state [%here] (module Float) ~default_model:0. in
-  let%sub field, set_field = Bonsai.state [%here] (module String) ~default_model:"0.00" in
+let interactive_input ~value ~set_manually =
+  let%sub init = Bonsai_extra.freeze [%here] (module Float) value in
+  let%sub field, set_field =
+    Bonsai_extra.state_dynamic_model
+      [%here]
+      (module String)
+      ~model:(`Given (Bonsai.Value.map init ~f:format_float))
+  in
   let%sub is_focused, set_is_focused =
     Bonsai.state [%here] (module Bool) ~default_model:false
   in
+  let%sub value_changed =
+    let%arr is_focused = is_focused
+    and set_field = set_field in
+    fun v -> if is_focused then Effect.Ignore else set_field (format_float v)
+  in
+  let%sub () =
+    Bonsai.Edge.on_change [%here] (module Float) value ~callback:value_changed
+  in
+  let%arr field = field
+  and set_field = set_field
+  and set_is_focused = set_is_focused
+  and set_manually = set_manually in
+  let open Vdom in
+  let open Node in
+  let open Attr in
+  input
+    ~attr:
+      (Attr.many
+         [ classes [ "input"; "is-small" ]
+         ; type_ "text"
+         ; on_focus (fun _ -> set_is_focused true)
+         ; on_blur (fun _ -> set_is_focused false)
+         ; on_input (fun _ s -> set_field s)
+         ; on_change (fun _ a ->
+               try a |> Float.of_string |> set_manually with
+               | _ -> Effect.Ignore)
+         ; value_prop field
+         ])
+    []
+;;
+
+let time_panel ~time_changed_manually =
+  let%sub time, set_time = Bonsai.state [%here] (module Float) ~default_model:0. in
   let%sub set_time =
     let%arr set_time = set_time in
     fun t -> if Float.is_negative t then Effect.Ignore else set_time t
   in
-  let%sub set_time =
-    set_value_and_speed_if_not_focused ~set_value:set_time ~is_focused ~set_field
-  in
   let%sub set_time_manually =
     set_value_manually ~value_changed_manually:time_changed_manually ~set_value:set_time
+  in
+  let%sub interactve_input =
+    interactive_input ~value:time ~set_manually:set_time_manually
   in
   let%arr time = time
   and set_time = set_time
   and set_time_manually = set_time_manually
-  and field = field
-  and set_field = set_field
-  and set_is_focused = set_is_focused in
+  and interactve_input = interactve_input in
   let open Vdom in
   let open Node in
   let open Attr in
@@ -184,44 +220,24 @@ let time_panel ~time_changed_manually =
                  ])
             [ text "+1" ]
         ]
-      ~input:
-        (input
-           ~attr:
-             (Attr.many
-                [ classes [ "input"; "is-small" ]
-                ; type_ "text"
-                ; on_focus (fun _ -> set_is_focused true)
-                ; on_blur (fun _ -> set_is_focused false)
-                ; on_input (fun _ s -> set_field s)
-                ; on_change (fun _ a ->
-                      try a |> Float.of_string |> set_time_manually with
-                      | _ -> Effect.Ignore)
-                ; value_prop field
-                ])
-           []) )
+      ~input:interactve_input )
 ;;
 
 let speed_panel ~speed_changed_manually =
   let%sub speed, set_speed = Bonsai.state [%here] (module Float) ~default_model:1. in
-  let%sub field, set_field = Bonsai.state [%here] (module String) ~default_model:"1.00" in
-  let%sub is_focused, set_is_focused =
-    Bonsai.state [%here] (module Bool) ~default_model:false
-  in
-  let%sub set_speed =
-    set_value_and_speed_if_not_focused ~set_value:set_speed ~is_focused ~set_field
-  in
   let%sub set_speed_manually =
     set_value_manually ~value_changed_manually:speed_changed_manually ~set_value:set_speed
   in
   let%sub paused_speed, set_paused_speed = Bonsai.state_opt [%here] (module Float) in
+  let%sub interactve_input =
+    interactive_input ~value:speed ~set_manually:set_speed_manually
+  in
   let%arr speed = speed
   and set_speed = set_speed
   and set_speed_manually = set_speed_manually
-  and field = field
-  and set_field = set_field
-  and set_is_focused = set_is_focused
   and paused_speed = paused_speed
-  and set_paused_speed = set_paused_speed in
+  and set_paused_speed = set_paused_speed
+  and interactve_input = interactve_input in
   let open Vdom in
   let open Node in
   let open Attr in
@@ -280,21 +296,7 @@ let speed_panel ~speed_changed_manually =
                  ])
             [ text "+0.1" ]
         ]
-      ~input:
-        (input
-           ~attr:
-             (Attr.many
-                [ classes [ "input"; "is-small" ]
-                ; type_ "text"
-                ; on_focus (fun _ -> set_is_focused true)
-                ; on_blur (fun _ -> set_is_focused false)
-                ; on_input (fun _ s -> set_field s)
-                ; on_change (fun _ a ->
-                      try a |> Float.of_string |> set_speed_manually with
-                      | _ -> Effect.Ignore)
-                ; value_prop field
-                ])
-           []) )
+      ~input:interactve_input )
 ;;
 
 let calc_new_time_every ~timeout ~time ~set_time ~speed =
@@ -464,13 +466,6 @@ module Make
       ; view_resize_observer
       ]
   ;;
-
-  let to_prec a = a *. 1000.
-  let of_prec a = a /. 1000.
-
-  (* let scene1 ~model ~time ~body_click = let%sub scene = let%arr model = model and time
-     = time in model.S.Model.scenes |> S.Scenes.before ~time |> snd in scene_frame ~scene
-     ~time ~body_click ;; *)
 
   let export_import_clear ~model ~set_model =
     let%sub modal_is_open, set_modal_is_open =
@@ -747,12 +742,7 @@ module Make
             }
         |> dispatch
     in
-    let%sub bodies_table =
-      bodies_table
-        ~scene
-        ~time
-        ~remove_body
-    in
+    let%sub bodies_table = bodies_table ~scene ~time ~remove_body in
     let%arr time = time
     and frame = frame
     and dispatch = dispatch
