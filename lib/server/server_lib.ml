@@ -30,7 +30,7 @@ let main () =
            "/"
            [ Dream_encoding.compress ]
            [ Dream.get "/client_bin.bc.js" (fun _ -> Dream.empty `No_Content)
-           ; Dream.get "/asset/client_bin.bc.js" (fun _ ->
+           ; Dream.get "/assets/client_bin.bc.js" (fun _ ->
                  loader "client_bin.bc.js" ~content_type:`application_javascript)
            ; Dream.get "/**" (fun request ->
                  let%map response = loader "index.html" ~content_type:`text_html in

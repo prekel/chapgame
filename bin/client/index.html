@@ -62,9 +62,48 @@
                 height: 100%;
             }
         }
+
+        /* Make navbar unresponsive */
+
+        .navbar {
+            min-height: 3.25rem;
+            align-items: stretch;
+            display: flex;
+            background-color: #fff;
+            min-height: 3.25rem;
+            position: relative;
+            z-index: 30;
+        }
+
+        .navbar-menu {
+            flex-grow: 1;
+            flex-shrink: 0;
+            align-items: stretch;
+            display: flex;
+        }
+
+        @media screen and (max-width: 1023px) {
+            .navbar-menu {
+                background-color: unset;
+                box-shadow: unset;
+                padding: unset;
+            }
+        }
+
+        .navbar-end {
+            justify-content: flex-end;
+            margin-left: auto;
+            align-items: stretch;
+            display: flex;
+        }
+
+        .navbar-end>a:nth-child(1) {
+            align-items: center;
+            display: flex;
+        }
     </style>
     <script defer src="client_bin.bc.js"></script>
-    <script defer src="/asset/client_bin.bc.js"></script>
+    <script defer src="/assets/client_bin.bc.js"></script>
 </head>
 
 <body>
