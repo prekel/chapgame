@@ -1,15 +1,6 @@
 open Bonsai_web
 open Bonsai.Let_syntax
-
-type tab =
-  [ `Offline
-  | `Online
-  ]
-
-(* opened_tab:tab Value.t -> show_tabs:bool Value.t -> is_tab_enabled:(tab -> bool)
-   Value.t -> inner:Vdom.Node.t Computation.t -> outer:Vdom.Node.t Computation.t ->
-   Vdom.Node.t Computation.t *)
-(* ~opened_tab ~show_tabs ~is_tab_enabled *)
+open Js_of_ocaml
 
 let tab_text = function
   | `Offline -> "Offline"
@@ -37,7 +28,36 @@ let component ~inner ~outer ~opened_tab ~tab_click =
                 ~attr:(many [ classes [ "navbar" ] ])
                 [ div
                     ~attr:(many [ classes [ "navbar-brand" ] ])
-                    [ a ~attr:(many [ classes [ "navbar-item" ] ]) [ text "chapgame" ] ]
+                    [ a
+                        ~attr:
+                          (many
+                             [ classes [ "navbar-item" ]
+                             ; on_click (fun _ ->
+                                   Dom_html.window##.location##reload;
+                                   Effect.Ignore)
+                             ])
+                        [ text "chapgame" ]
+                    ]
+                ; div
+                    ~attr:(many [ classes [ "navbar-menu" ] ])
+                    [ div
+                        ~attr:(many [ classes [ "navbar-end" ] ])
+                        [ a
+                            ~attr:
+                              (many
+                                 [ classes [ "navbar-item" ]
+                                 ; href "https://github.com/prekel/chapgame"
+                                 ])
+                            [ span
+                                ~attr:(class_ "icon")
+                                [ Node.create
+                                    "i"
+                                    ~attr:(classes [ "fab"; "fa-github" ])
+                                    []
+                                ]
+                            ]
+                        ]
+                    ]
                 ]
             ; div
                 ~attr:(many [ classes [ "tabs"; "is-centered" ] ])

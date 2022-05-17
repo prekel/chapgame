@@ -417,8 +417,9 @@ module Make
               [ text "-0.1" ]
           ; button
               ~attr:
-                (many [ classes [ "button" ]; on_click (fun _ -> set_speed_manually 0.) ])
-              [ text "0" ]
+                (many
+                   [ classes [ "button" ]; on_click (fun _ -> set_speed_manually (-1.)) ])
+              [ text "-1x" ]
           ; button
               ~attr:
                 (many
@@ -447,7 +448,7 @@ module Make
           ; button
               ~attr:
                 (many [ classes [ "button" ]; on_click (fun _ -> set_speed_manually 1.) ])
-              [ text "1" ]
+              [ text "1x" ]
           ; button
               ~attr:
                 (many
