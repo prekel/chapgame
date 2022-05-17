@@ -4,6 +4,7 @@ open Bonsai.Let_syntax
 open Js_of_ocaml
 module Svg = Virtual_dom_svg
 
+let format_float = sprintf "%.2f"
 let svg_ref = ref None
 let pt_ref = ref None
 
@@ -98,7 +99,7 @@ let timespeed_box ~title ~value ~buttons ~input =
             [ h5 ~attr:(many [ classes [ "title"; "is-5" ] ]) [ text title_ ] ]
         ; div
             ~attr:(many [ classes [ "column"; "is-3" ] ])
-            [ p [ text (sprintf "%.2f" value_) ] ]
+            [ p [ text (format_float value_) ] ]
         ]
     ; div
         ~attr:(many [ classes [ "columns"; "is-mobile"; "is-gapless" ] ])
@@ -121,7 +122,7 @@ let set_value_and_speed_if_not_focused ~set_value ~is_focused ~set_field =
   then set_value
   else
     fun t ->
-    let%bind.Effect () = set_field (sprintf "%.2f" t) in
+    let%bind.Effect () = set_field (format_float t) in
     set_value t
 ;;
 
@@ -467,14 +468,9 @@ module Make
   let to_prec a = a *. 1000.
   let of_prec a = a /. 1000.
 
-  let scene1 ~model ~time ~body_click =
-    let%sub scene =
-      let%arr model = model
-      and time = time in
-      model.S.Model.scenes |> S.Scenes.before ~time |> snd
-    in
-    scene_frame ~scene ~time ~body_click
-  ;;
+  (* let scene1 ~model ~time ~body_click = let%sub scene = let%arr model = model and time
+     = time in model.S.Model.scenes |> S.Scenes.before ~time |> snd in scene_frame ~scene
+     ~time ~body_click ;; *)
 
   let export_import_clear ~model ~set_model =
     let%sub modal_is_open, set_modal_is_open =
@@ -604,6 +600,86 @@ module Make
       ]
   ;;
 
+  let bodies_table ~scene ~time =
+    let%arr scene = scene
+    and time = time in
+    let bodies =
+      scene.S.Scene.bodies
+      |> S.Scene.Figures.calc ~t:(time -. scene.time) ~global_values:scene.global_values
+    in
+    let open Vdom in
+    let open Node in
+    let open Attr in
+    let body_tr body =
+      let id = body.S.Body.id |> S.Body.Id.to_string in
+      let x = S.Values.get_scalar_exn body.values ~var:`x0 in
+      let y = S.Values.get_scalar_exn body.values ~var:`y0 in
+      let mu = S.Values.get_scalar_exn body.values ~var:`mu in
+      let m = S.Values.get_scalar_exn body.values ~var:`m in
+      let r = S.Values.get_scalar_exn body.values ~var:`r in
+      let v_x = S.Values.get_scalar_exn body.values ~var:`v0_x in
+      let v_y = S.Values.get_scalar_exn body.values ~var:`v0_y in
+      let module V = Engine.Vector.Make (Float) in
+      let calc =
+        S.Expr.calc
+          ~values:(S.Values.to_function body.values)
+          ~scoped_values:(S.Values.global_to_scoped scene.global_values)
+          (module V)
+      in
+      let ((a_x, a_y) as a_vec) = calc S.Rule.Exprs.a_vec in
+      let v_len = V.len (v_x, v_y) in
+      let a_len = V.len a_vec in
+      tr
+        ~key:id
+        [ td [ text id ]
+        ; td [ text (format_float x) ]
+        ; td [ text (format_float y) ]
+        ; td [ text (format_float mu) ]
+        ; td [ text (format_float m) ]
+        ; td [ text (format_float r) ]
+        ; td [ text (format_float v_x) ]
+        ; td [ text (format_float v_y) ]
+        ; td [ text (format_float v_len) ]
+        ; td [ text (format_float a_x) ]
+        ; td [ text (format_float a_y) ]
+        ; td [ text (format_float a_len) ]
+        ]
+    in
+    div
+      ~attr:(many [ classes [ "box"; "nopaddinglr" ] ])
+      [ h5 ~attr:(classes [ "is-5"; "title"; "paddinglp" ]) [ text "Bodies" ]
+      ; div
+          ~attr:(many [ classes [ "table-container" ] ])
+          [ table
+              ~attr:(many [ classes [ "table"; "is-narrow"; "is-fullwidth" ] ])
+              [ thead
+                  [ tr
+                      [ th [ p [ text "id" ] ]
+                      ; th [ p [ text "x" ] ]
+                      ; th [ p [ text "y" ] ]
+                      ; th [ p [ text "μ" ] ]
+                      ; th [ p [ text "m" ] ]
+                      ; th [ p [ text "r" ] ]
+                      ; th [ p [ text "v"; Node.create "sub" [ text "x" ] ] ]
+                      ; th [ p [ text "v"; Node.create "sub" [ text "y" ] ] ]
+                      ; th [ p [ text "|v|" ] ]
+                      ; th [ p [ text "a"; Node.create "sub" [ text "x" ] ] ]
+                      ; th [ p [ text "a"; Node.create "sub" [ text "y" ] ] ]
+                      ; th [ p [ text "|a|" ] ]
+                      ]
+                  ]
+              ; Node.create "tfoot" []
+              ; tbody
+                  (bodies
+                  |> S.Scene.Figures.to_sequence
+                  |> Sequence.map ~f:snd
+                  |> Sequence.map ~f:body_tr
+                  |> Sequence.to_list)
+              ]
+          ]
+      ]
+  ;;
+
   let scene
       ~(model : S.Model.t Value.t)
       ~dispatch
@@ -639,13 +715,19 @@ module Make
               ; timeout = Some Float.(time + timeoutd)
               })
     in
-    let%sub frame = scene1 ~model ~time ~body_click in
+    let%sub scene =
+      let%arr model = model
+      and time = time in
+      model.S.Model.scenes |> S.Scenes.before ~time |> snd
+    in
+    let%sub frame = scene_frame ~scene ~body_click ~time in
     let%sub export_import_clear =
       export_import_clear
         ~model
         ~set_model:
           (Bonsai.Value.map dispatch ~f:(fun dispatch a -> `Replace a |> dispatch))
     in
+    let%sub bodies_table = bodies_table ~scene ~time in
     let%arr time = time
     and frame = frame
     and dispatch = dispatch
@@ -655,12 +737,14 @@ module Make
     and model = model
     and timeoutd = timeoutd
     and speed_panel = speed_panel
-    and export_import_clear = export_import_clear in
+    and export_import_clear = export_import_clear
+    and bodies_table = bodies_table in
     Vdom.(
       ( Node.div
           [ export_import_clear
           ; time_panel
           ; speed_panel
+          ; bodies_table
           ; Node.br ()
           ; Node.button
               ~attr:

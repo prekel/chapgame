@@ -47,24 +47,24 @@ let fake_router =
   match%sub tab with
   | `Offline ->
     Bar.component
-      ~inner:(Bonsai.read a)
-      ~outer:(Bonsai.read b)
+      ~inner:a
+      ~outer:b
       ~opened_tab:(Bonsai.Value.return `Offline)
       ~tab_click:tab_click_offline
   | `Online ->
+    let%sub not_found = not_found in
     Bar.component
       ~inner:not_found
-      ~outer:(Bonsai.read b)
+      ~outer:b
       ~opened_tab:(Bonsai.Value.return `Online)
       ~tab_click:tab_click_online
 ;;
 
 let router =
   let%sub location = Location.use () in
-  let%sub a, b = Offline.component in
   match%sub location with
   | [ "online"; room_id ], _ ->
-    let c = Online.component ~room_id ~token:(Bonsai.Value.return None) in
+    let%sub c = Online.component ~room_id ~token:(Bonsai.Value.return None) in
     Bar.component
       ~inner:c
       ~outer:c
@@ -74,9 +74,10 @@ let router =
             | `Offline -> Location.push Offline.route
             | `Online -> Effect.Ignore))
   | [ "" ], _ ->
+    let%sub a, b = Offline.component in
     Bar.component
-      ~inner:(Bonsai.read a)
-      ~outer:(Bonsai.read b)
+      ~inner:a
+      ~outer:b
       ~opened_tab:(Bonsai.Value.return `Offline)
       ~tab_click:
         (Bonsai.Value.return (function
