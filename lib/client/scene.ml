@@ -476,8 +476,136 @@ module Make
     scene_frame ~scene ~time ~body_click
   ;;
 
+  let export_import_clear ~model ~set_model =
+    let%sub modal_is_open, set_modal_is_open =
+      Bonsai.state [%here] (module Bool) ~default_model:false
+    in
+    let%sub text_state, set_text_state =
+      Bonsai.state [%here] (module String) ~default_model:""
+    in
+    let%sub set_modal_is_open =
+      let%arr set_text_state = set_text_state
+      and set_modal_is_open = set_modal_is_open
+      and model = model in
+      function
+      | true ->
+        let%bind.Effect () =
+          model |> [%sexp_of: S.Model.t] |> Sexp.to_string_hum ~indent:2 |> set_text_state
+        in
+        set_modal_is_open true
+      | false ->
+        let%bind.Effect () = set_text_state "" in
+        set_modal_is_open false
+    in
+    let%arr modal_is_open = modal_is_open
+    and set_modal_is_open = set_modal_is_open
+    and text_state = text_state
+    and set_text_state = set_text_state
+    and set_model = set_model in
+    let open Vdom in
+    let open Node in
+    let open Attr in
+    div
+      ~attr:(classes [ "columns"; "container"; "is-fluid"; "is-mobile" ])
+      [ div
+          ~attr:(classes [ "column" ])
+          [ button
+              ~attr:
+                (many
+                   [ classes [ "button"; "is-fullwidth" ]
+                   ; on_click (fun _ -> set_modal_is_open true)
+                   ])
+              [ text "Copy/Paste" ]
+          ]
+      ; div
+          ~attr:(classes [ "column" ])
+          [ button
+              ~attr:
+                (many
+                   [ classes [ "button"; "is-fullwidth" ]
+                   ; on_click (fun _ -> set_model @@ S.Model.init ~g:10.)
+                   ])
+              [ text "Clear" ]
+          ]
+      ; (if modal_is_open
+        then
+          div
+            ~attr:(classes [ "modal"; "is-active" ])
+            [ div
+                ~attr:
+                  (many
+                     [ class_ "modal-background"
+                     ; on_click (fun _ -> set_modal_is_open false)
+                     ])
+                []
+            ; div
+                ~attr:(many [ class_ "modal-card" ])
+                [ header
+                    ~attr:(many [ class_ "modal-card-head" ])
+                    [ p
+                        ~attr:(many [ class_ "modal-card-title" ])
+                        [ text "Current state as text:" ]
+                    ; button
+                        ~attr:
+                          (many
+                             [ class_ "delete"
+                             ; on_click (fun _ -> set_modal_is_open false)
+                             ])
+                        []
+                    ]
+                ; section
+                    ~attr:(class_ "modal-card-body")
+                    [ textarea
+                        ~attr:
+                          (many
+                             [ classes [ "textarea"; "is-small" ]
+                             ; on_focus
+                                 (Effect.of_sync_fun (fun event ->
+                                      let this =
+                                        event##.target
+                                        |> Js.Opt.to_option
+                                        |> Option.value_exn
+                                        |> Js_of_ocaml.Dom_html.CoerceTo.textarea
+                                        |> Js.Opt.to_option
+                                        |> Option.value_exn
+                                      in
+                                      this##select))
+                             ; on_change (fun _ -> set_text_state)
+                             ])
+                        [ text text_state ]
+                    ]
+                ; footer
+                    ~attr:(class_ "modal-card-foot")
+                    [ button
+                        ~attr:
+                          (many
+                             [ classes [ "button"; "is-success" ]
+                             ; on_click (fun _ ->
+                                   let%bind.Effect () =
+                                     text_state
+                                     |> Sexp.of_string
+                                     |> [%of_sexp: S.Model.t]
+                                     |> set_model
+                                   in
+                                   set_modal_is_open false)
+                             ])
+                        [ text "OK" ]
+                    ; button
+                        ~attr:
+                          (many
+                             [ classes [ "button" ]
+                             ; on_click (fun _ -> set_modal_is_open false)
+                             ])
+                        [ text "Cancel" ]
+                    ]
+                ]
+            ]
+        else none)
+      ]
+  ;;
+
   let scene
-      ~(state : S.Model.t Value.t)
+      ~(model : S.Model.t Value.t)
       ~dispatch
       ~time_changed_manually
       ~speed_changed_manually
@@ -489,7 +617,7 @@ module Make
     let%sub speed, _, speed_panel = speed_panel ~speed_changed_manually in
     let%sub () =
       calc_new_time_every
-        ~timeout:(Bonsai.Value.map state ~f:(fun { timeout; _ } -> timeout))
+        ~timeout:(Bonsai.Value.map model ~f:(fun { timeout; _ } -> timeout))
         ~time
         ~set_time
         ~speed
@@ -511,19 +639,27 @@ module Make
               ; timeout = Some Float.(time + timeoutd)
               })
     in
-    let%sub frame = scene1 ~model:state ~time ~body_click in
+    let%sub frame = scene1 ~model ~time ~body_click in
+    let%sub export_import_clear =
+      export_import_clear
+        ~model
+        ~set_model:
+          (Bonsai.Value.map dispatch ~f:(fun dispatch a -> `Replace a |> dispatch))
+    in
     let%arr time = time
     and frame = frame
     and dispatch = dispatch
     and time_panel = time_panel
     and text_state = text_state
     and set_text_state = set_text_state
-    and state = state
+    and model = model
     and timeoutd = timeoutd
-    and speed_panel = speed_panel in
+    and speed_panel = speed_panel
+    and export_import_clear = export_import_clear in
     Vdom.(
       ( Node.div
-          [ time_panel
+          [ export_import_clear
+          ; time_panel
           ; speed_panel
           ; Node.br ()
           ; Node.button
@@ -606,7 +742,7 @@ module Make
               ~attr:
                 (Attr.many
                    [ Attr.on_click (fun _ ->
-                         [%sexp (state : S.Model.t)]
+                         [%sexp (model : S.Model.t)]
                          |> Sexp.to_string_hum
                          |> set_text_state)
                    ])

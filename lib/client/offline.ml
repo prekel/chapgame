@@ -12,7 +12,7 @@ module Make
       let route : Location.t = [ "" ], []
 
       let component =
-        let%sub state, dispatch =
+        let%sub model, dispatch =
           Bonsai.state_machine0
             [%here]
             (module S.Model)
@@ -32,7 +32,7 @@ module Make
                 S.Engine.update model ~action:(`Diff diff))
         in
         SC.scene
-          ~state
+          ~model
           ~dispatch
           ~time_changed_manually:
             (Bonsai.Value.return (fun t ->
