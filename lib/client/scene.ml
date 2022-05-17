@@ -600,9 +600,10 @@ module Make
       ]
   ;;
 
-  let bodies_table ~scene ~time =
+  let bodies_table ~scene ~time ~remove_body =
     let%arr scene = scene
-    and time = time in
+    and time = time
+    and remove_body = remove_body in
     let bodies =
       scene.S.Scene.bodies
       |> S.Scene.Figures.calc ~t:(time -. scene.time) ~global_values:scene.global_values
@@ -643,6 +644,11 @@ module Make
         ; td [ text (format_float a_x) ]
         ; td [ text (format_float a_y) ]
         ; td [ text (format_float a_len) ]
+        ; td
+            [ button
+                ~attr:(many [ class_ "delete"; on_click (fun _ -> remove_body body.id) ])
+                []
+            ]
         ]
     in
     div
@@ -666,6 +672,7 @@ module Make
                       ; th [ p [ text "a"; Node.create "sub" [ text "x" ] ] ]
                       ; th [ p [ text "a"; Node.create "sub" [ text "y" ] ] ]
                       ; th [ p [ text "|a|" ] ]
+                      ; th []
                       ]
                   ]
               ; Node.create "tfoot" []
@@ -727,7 +734,25 @@ module Make
         ~set_model:
           (Bonsai.Value.map dispatch ~f:(fun dispatch a -> `Replace a |> dispatch))
     in
-    let%sub bodies_table = bodies_table ~scene ~time in
+    let%sub remove_body =
+      let%arr dispatch = dispatch
+      and time = time
+      and timeoutd = timeoutd in
+      fun id ->
+        `Action
+          S.Action.
+            { time
+            ; action = S.Action.RemoveBody id
+            ; timeout = Some Float.(time + timeoutd)
+            }
+        |> dispatch
+    in
+    let%sub bodies_table =
+      bodies_table
+        ~scene
+        ~time
+        ~remove_body
+    in
     let%arr time = time
     and frame = frame
     and dispatch = dispatch

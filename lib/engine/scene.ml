@@ -594,6 +594,7 @@ struct
         | BodyAdded of { id : Body.Id.t }
         | PointAdded of Point.t
         | LineAdded of LineSegmentRay.t
+        | BodyRemoved of Body.Id.t
         | Empty
       [@@deriving sexp, equal, compare]
     end
@@ -607,6 +608,7 @@ struct
       val to_sequence : t -> (Body.Id.t * Body.t) Sequence.t
       val get_by_id : t -> id:Body.Id.t -> Body.t
       val update_by_id : t -> id:Body.Id.t -> body:Body.t -> t
+      val remove : t -> Body.Id.t -> t
 
       module Diff :
         Common.Utils.AdvancedMapDiff
@@ -732,6 +734,7 @@ struct
           { id : Body.Id.t
           ; v0 : N.t * N.t
           }
+      | RemoveBody of Body.Id.t
       | Empty
     [@@deriving sexp, equal]
 
@@ -1057,6 +1060,12 @@ struct
           s
           ~bodies:(Scene.Figures.update_by_id s.bodies ~id:body.id ~body)
           ~cause:[ VelocityGiven { id; v = v0 } ]
+          ~time
+      | RemoveBody id ->
+        Scene.update
+          s
+          ~bodies:(Scene.Figures.remove s.bodies id)
+          ~cause:[ BodyRemoved id ]
           ~time
       | Empty -> Scene.update s ~cause:[ Empty ] ~time
     ;;

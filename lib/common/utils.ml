@@ -140,6 +140,7 @@ end) : sig
   val of_map : (Key.t, Value.t, Key.comparator_witness) Map.t -> t
   val of_alist_exn : (Key.t * Value.t) list -> t
   val find_exn : t -> Key.t -> Value.t
+  val remove : t -> Key.t -> t
 
   module Diff :
     AdvancedMapDiff with type tt = t and type key = Key.t and type value = Value.t
@@ -158,6 +159,7 @@ end = struct
   let of_map = Fn.id
   let of_alist_exn = Map.of_alist_exn (module Key)
   let find_exn = Map.find_exn
+  let remove = Map.remove
 
   module Diff = struct
     type key = Key.t
