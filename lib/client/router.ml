@@ -1,4 +1,4 @@
-(* open Core *)
+open Core
 open Bonsai_web
 open Bonsai.Let_syntax
 module SC = Scene.Make (Defaults.C) (Defaults.S)
@@ -18,7 +18,48 @@ let not_found =
         [ Node.text "not_found" ])
 ;;
 
-let component =
+let fake_router =
+  let%sub a, b = Offline.component in
+  let%sub tab, set_tab =
+    Bonsai.state
+      [%here]
+      (module struct
+        type t =
+          [ `Offline
+          | `Online
+          ]
+        [@@deriving sexp, equal]
+      end)
+      ~default_model:`Offline
+  in
+  let%sub tab_click_offline =
+    let%arr set_tab = set_tab in
+    function
+    | `Offline -> Effect.Ignore
+    | `Online -> set_tab `Online
+  in
+  let%sub tab_click_online =
+    let%arr set_tab = set_tab in
+    function
+    | `Offline -> set_tab `Offline
+    | `Online -> Effect.Ignore
+  in
+  match%sub tab with
+  | `Offline ->
+    Bar.component
+      ~inner:(Bonsai.read a)
+      ~outer:(Bonsai.read b)
+      ~opened_tab:(Bonsai.Value.return `Offline)
+      ~tab_click:tab_click_offline
+  | `Online ->
+    Bar.component
+      ~inner:not_found
+      ~outer:(Bonsai.read b)
+      ~opened_tab:(Bonsai.Value.return `Online)
+      ~tab_click:tab_click_online
+;;
+
+let router =
   let%sub location = Location.use () in
   let%sub a, b = Offline.component in
   match%sub location with
@@ -41,15 +82,15 @@ let component =
         (Bonsai.Value.return (function
             | `Offline -> Effect.Ignore
             | `Online -> Location.push (Online.route 1 (Some "qwfqwf"))))
-  | [ "chapgame" ], _ ->
-    (* Gh pages *)
-    Bar.component
-      ~inner:(Bonsai.read a)
-      ~outer:(Bonsai.read b)
-      ~opened_tab:(Bonsai.Value.return `Offline)
-      ~tab_click:
-        (Bonsai.Value.return (function
-            | `Offline -> Effect.Ignore
-            | `Online -> Effect.Ignore))
   | _ -> not_found
+;;
+
+open Js_of_ocaml
+
+let component =
+  if Dom_html.document##.cookie
+     |> Js.to_string
+     |> String.is_substring ~substring:(fst Protocol.Cookie.chapgame_online_supported)
+  then router
+  else fake_router
 ;;

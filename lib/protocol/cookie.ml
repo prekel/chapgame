@@ -1,0 +1,1 @@
+let chapgame_online_supported = "chapgame-online-supported", "true"

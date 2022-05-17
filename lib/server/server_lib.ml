@@ -1,4 +1,5 @@
 open Core
+open Lwt.Let_syntax
 
 module Room =
   Room.Make (Defaults.C) (Defaults.S)
@@ -28,9 +29,19 @@ let main () =
        ; Dream.scope
            "/"
            [ Dream_encoding.compress ]
-           [ Dream.get "/client_bin.bc.js" (fun _ ->
+           [ Dream.get "/client_bin.bc.js" (fun _ -> Dream.empty `No_Content)
+           ; Dream.get "/asset/client_bin.bc.js" (fun _ ->
                  loader "client_bin.bc.js" ~content_type:`application_javascript)
-           ; Dream.get "/**" (fun _ -> loader "index.html" ~content_type:`text_html)
+           ; Dream.get "/**" (fun request ->
+                 let%map response = loader "index.html" ~content_type:`text_html in
+                 Dream.set_cookie
+                   ~http_only:false
+                   ~encrypt:false
+                   response
+                   request
+                   (fst Protocol.Cookie.chapgame_online_supported)
+                   (snd Protocol.Cookie.chapgame_online_supported);
+                 response)
            ]
        ]
 ;;
