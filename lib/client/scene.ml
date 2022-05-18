@@ -93,7 +93,8 @@ let timespeed_box ~title ~value ~buttons ~input =
   div
     ~attr:(many [ classes [ "box" ] ])
     [ div
-        ~attr:(many [ classes [ "columns"; "is-mobile"; "is-gapless" ] ])
+        ~attr:
+          (many [ classes [ "columns"; "is-mobile"; "is-gapless"; "nomarginbottom" ] ])
         [ div
             ~attr:(many [ classes [ "column"; "is-9" ] ])
             [ h5 ~attr:(many [ classes [ "title"; "is-5" ] ]) [ text title_ ] ]
@@ -467,6 +468,15 @@ module Make
       ]
   ;;
 
+  let box ~title:title_ inner =
+    let open Vdom in
+    let open Node in
+    let open Attr in
+    div
+      ~attr:(many [ classes [ "box"; "nopaddinglr" ] ])
+      [ h5 ~attr:(classes [ "is-5"; "title"; "paddinglr" ]) [ text title_ ]; inner ]
+  ;;
+
   let export_import_clear ~model ~set_model =
     let%sub modal_is_open, set_modal_is_open =
       Bonsai.state [%here] (module Bool) ~default_model:false
@@ -496,103 +506,105 @@ module Make
     let open Vdom in
     let open Node in
     let open Attr in
-    div
-      ~attr:(classes [ "columns"; "container"; "is-fluid"; "is-mobile" ])
-      [ div
-          ~attr:(classes [ "column" ])
-          [ button
-              ~attr:
-                (many
-                   [ classes [ "button"; "is-fullwidth" ]
-                   ; on_click (fun _ -> set_modal_is_open true)
-                   ])
-              [ text "Copy/Paste" ]
-          ]
-      ; div
-          ~attr:(classes [ "column" ])
-          [ button
-              ~attr:
-                (many
-                   [ classes [ "button"; "is-fullwidth" ]
-                   ; on_click (fun _ -> set_model @@ S.Model.init ~g:10.)
-                   ])
-              [ text "Clear" ]
-          ]
-      ; (if modal_is_open
-        then
-          div
-            ~attr:(classes [ "modal"; "is-active" ])
-            [ div
-                ~attr:
-                  (many
-                     [ class_ "modal-background"
-                     ; on_click (fun _ -> set_modal_is_open false)
-                     ])
-                []
-            ; div
-                ~attr:(many [ class_ "modal-card" ])
-                [ header
-                    ~attr:(many [ class_ "modal-card-head" ])
-                    [ p
-                        ~attr:(many [ class_ "modal-card-title" ])
-                        [ text "Current state as text:" ]
-                    ; button
-                        ~attr:
-                          (many
-                             [ class_ "delete"
-                             ; on_click (fun _ -> set_modal_is_open false)
-                             ])
-                        []
-                    ]
-                ; section
-                    ~attr:(class_ "modal-card-body")
-                    [ textarea
-                        ~attr:
-                          (many
-                             [ classes [ "textarea"; "is-small" ]
-                             ; on_focus
-                                 (Effect.of_sync_fun (fun event ->
-                                      let this =
-                                        event##.target
-                                        |> Js.Opt.to_option
-                                        |> Option.value_exn
-                                        |> Js_of_ocaml.Dom_html.CoerceTo.textarea
-                                        |> Js.Opt.to_option
-                                        |> Option.value_exn
+    box
+      ~title:"State"
+      (div
+         ~attr:(classes [ "columns"; "container"; "is-fluid"; "is-mobile" ])
+         [ div
+             ~attr:(classes [ "column" ])
+             [ button
+                 ~attr:
+                   (many
+                      [ classes [ "button"; "is-fullwidth" ]
+                      ; on_click (fun _ -> set_modal_is_open true)
+                      ])
+                 [ text "Copy/Paste" ]
+             ]
+         ; div
+             ~attr:(classes [ "column" ])
+             [ button
+                 ~attr:
+                   (many
+                      [ classes [ "button"; "is-fullwidth" ]
+                      ; on_click (fun _ -> set_model @@ S.Model.init ~g:10.)
+                      ])
+                 [ text "Clear" ]
+             ]
+         ; (if modal_is_open
+           then
+             div
+               ~attr:(classes [ "modal"; "is-active" ])
+               [ div
+                   ~attr:
+                     (many
+                        [ class_ "modal-background"
+                        ; on_click (fun _ -> set_modal_is_open false)
+                        ])
+                   []
+               ; div
+                   ~attr:(many [ class_ "modal-card" ])
+                   [ header
+                       ~attr:(many [ class_ "modal-card-head" ])
+                       [ p
+                           ~attr:(many [ class_ "modal-card-title" ])
+                           [ text "Current state as text:" ]
+                       ; button
+                           ~attr:
+                             (many
+                                [ class_ "delete"
+                                ; on_click (fun _ -> set_modal_is_open false)
+                                ])
+                           []
+                       ]
+                   ; section
+                       ~attr:(class_ "modal-card-body")
+                       [ textarea
+                           ~attr:
+                             (many
+                                [ classes [ "textarea"; "is-small" ]
+                                ; on_focus
+                                    (Effect.of_sync_fun (fun event ->
+                                         let this =
+                                           event##.target
+                                           |> Js.Opt.to_option
+                                           |> Option.value_exn
+                                           |> Js_of_ocaml.Dom_html.CoerceTo.textarea
+                                           |> Js.Opt.to_option
+                                           |> Option.value_exn
+                                         in
+                                         this##select))
+                                ; on_change (fun _ -> set_text_state)
+                                ])
+                           [ text text_state ]
+                       ]
+                   ; footer
+                       ~attr:(class_ "modal-card-foot")
+                       [ button
+                           ~attr:
+                             (many
+                                [ classes [ "button"; "is-success" ]
+                                ; on_click (fun _ ->
+                                      let%bind.Effect () =
+                                        text_state
+                                        |> Sexp.of_string
+                                        |> [%of_sexp: S.Model.t]
+                                        |> set_model
                                       in
-                                      this##select))
-                             ; on_change (fun _ -> set_text_state)
-                             ])
-                        [ text text_state ]
-                    ]
-                ; footer
-                    ~attr:(class_ "modal-card-foot")
-                    [ button
-                        ~attr:
-                          (many
-                             [ classes [ "button"; "is-success" ]
-                             ; on_click (fun _ ->
-                                   let%bind.Effect () =
-                                     text_state
-                                     |> Sexp.of_string
-                                     |> [%of_sexp: S.Model.t]
-                                     |> set_model
-                                   in
-                                   set_modal_is_open false)
-                             ])
-                        [ text "OK" ]
-                    ; button
-                        ~attr:
-                          (many
-                             [ classes [ "button" ]
-                             ; on_click (fun _ -> set_modal_is_open false)
-                             ])
-                        [ text "Cancel" ]
-                    ]
-                ]
-            ]
-        else none)
-      ]
+                                      set_modal_is_open false)
+                                ])
+                           [ text "OK" ]
+                       ; button
+                           ~attr:
+                             (many
+                                [ classes [ "button" ]
+                                ; on_click (fun _ -> set_modal_is_open false)
+                                ])
+                           [ text "Cancel" ]
+                       ]
+                   ]
+               ]
+           else none)
+         ])
   ;;
 
   let bodies_table ~scene ~time ~remove_body =
@@ -791,9 +803,9 @@ module Make
         ~set_time
         ~speed
     in
-    let%sub text_state, set_text_state =
+    (* let%sub text_state, set_text_state =
       Bonsai.state [%here] (module String) ~default_model:""
-    in
+    in *)
     let%sub body_click =
       let%arr time = time
       and timeoutd = timeoutd
@@ -871,14 +883,15 @@ module Make
           (Bonsai.Value.map scene ~f:(fun scene -> scene.points |> S.Points.to_list))
         ~remove_point
     in
-    let%arr time = time
-    and frame = frame
-    and dispatch = dispatch
+    (* let%arr  *)
+    (* time = time *)
+    let%arr  frame = frame
+    (* and dispatch = dispatch *)
     and time_panel = time_panel
-    and text_state = text_state
-    and set_text_state = set_text_state
-    and model = model
-    and timeoutd = timeoutd
+    (* and text_state = text_state *)
+    (* and set_text_state = set_text_state *)
+    (* and model = model *)
+    (* and timeoutd = timeoutd *)
     and speed_panel = speed_panel
     and export_import_clear = export_import_clear
     and bodies_table = bodies_table
@@ -895,90 +908,26 @@ module Make
         ; bodies_table
         ; lines_table
         ; points_table
-        ; br ()
-        ; button
-            ~attr:
-              (Attr.on_click (fun _ ->
-                   `Action
-                     { time
-                     ; action =
-                         S.Action.AddBody
-                           { id = Some (S.Body.Id.next ())
-                           ; x0 = 350.
-                           ; y0 = 350.
-                           ; r = 50.
-                           ; mu = 2.
-                           ; m = Float.(pi * 50. * 50.)
-                           }
-                     ; timeout = Some Float.(time + timeoutd)
-                     }
-                   |> dispatch))
-            [ Node.text "add " ]
-        ; Node.button
-            ~attr:
-              (Attr.on_click (fun _ ->
-                   `Action
-                     { time
-                     ; action =
-                         S.Action.AddBody
-                           { id = Some (S.Body.Id.next ())
-                           ; x0 = 800.
-                           ; y0 = 500.
-                           ; r = 75.
-                           ; mu = 2.
-                           ; m = Float.(pi * 75. * 75.)
-                           }
-                     ; timeout = Some Float.(time + timeoutd)
-                     }
-                   |> dispatch))
-            [ Node.text "add " ]
-        ; Node.button
-            ~attr:
-              (Attr.on_click (fun _ ->
-                   `Action
-                     { time
-                     ; action =
-                         S.Action.AddBody
-                           { id = Some (S.Body.Id.next ())
-                           ; x0 = 120.
-                           ; y0 = 500.
-                           ; r = 100.
-                           ; mu = 2.
-                           ; m = Float.(pi * 100. * 100.)
-                           }
-                     ; timeout = Some Float.(time + timeoutd)
-                     }
-                   |> dispatch))
-            [ Node.text "add " ]
-        ; Node.br ()
-        ; Node.button
-            ~attr:
-              (Attr.on_click (fun _ ->
-                   `Action
-                     { time
-                     ; action = S.Action.Empty
-                     ; timeout = Some Float.(time + timeoutd)
-                     }
-                   |> dispatch))
-            [ Node.text "timeout" ]
-        ; Node.button
-            ~attr:
-              (Attr.on_click (fun _ ->
-                   `Action { time; action = S.Action.Empty; timeout = None } |> dispatch))
-            [ Node.text "no timeout" ]
-        ; Node.br ()
-        ; Node.textarea
-            ~attr:
-              (Attr.many
-                 [ Attr.value_prop text_state; Attr.on_input (fun _ -> set_text_state) ])
-            []
-        ; Node.button
-            ~attr:
-              (Attr.many
-                 [ Attr.on_click (fun _ ->
-                       [%sexp (model : S.Model.t)] |> Sexp.to_string_hum |> set_text_state)
-                 ])
-            [ Node.text "to text" ]
+          (* ; br () ; button ~attr: (Attr.on_click (fun _ -> `Action { time ; action =
+             S.Action.AddBody { id = Some (S.Body.Id.next ()) ; x0 = 350. ; y0 = 350. ; r
+             = 50. ; mu = 2. ; m = Float.(pi * 50. * 50.) } ; timeout = Some Float.(time +
+             timeoutd) } |> dispatch)) [ Node.text "add " ] ; Node.button ~attr:
+             (Attr.on_click (fun _ -> `Action { time ; action = S.Action.AddBody { id =
+             Some (S.Body.Id.next ()) ; x0 = 800. ; y0 = 500. ; r = 75. ; mu = 2. ; m =
+             Float.(pi * 75. * 75.) } ; timeout = Some Float.(time + timeoutd) } |>
+             dispatch)) [ Node.text "add " ] ; Node.button ~attr: (Attr.on_click (fun _ ->
+             `Action { time ; action = S.Action.AddBody { id = Some (S.Body.Id.next ()) ;
+             x0 = 120. ; y0 = 500. ; r = 100. ; mu = 2. ; m = Float.(pi * 100. * 100.) } ;
+             timeout = Some Float.(time + timeoutd) } |> dispatch)) [ Node.text "add " ] ;
+             Node.br () ; Node.button ~attr: (Attr.on_click (fun _ -> `Action { time ;
+             action = S.Action.Empty ; timeout = Some Float.(time + timeoutd) } |>
+             dispatch)) [ Node.text "timeout" ] ; Node.button ~attr: (Attr.on_click (fun _
+             -> `Action { time; action = S.Action.Empty; timeout = None } |> dispatch)) [
+             Node.text "no timeout" ] ; Node.br () ; Node.textarea ~attr: (Attr.many [
+             Attr.value_prop text_state; Attr.on_input (fun _ -> set_text_state) ]) [] ;
+             Node.button ~attr: (Attr.many [ Attr.on_click (fun _ -> [%sexp (model :
+             S.Model.t)] |> Sexp.to_string_hum |> set_text_state) ]) [ Node.text "to text"
+             ] *)
         ]
     , frame )
   ;;
