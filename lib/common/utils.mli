@@ -43,6 +43,7 @@ end) : sig
   val of_sequence : In.t Sequence.t -> t
   val empty : t
   val add : t -> el:In.t -> t
+  val remove : t -> el:In.t -> t
 
   module Diff : AdvancedSetDiff with type tt = t and type value = In.t
 end

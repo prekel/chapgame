@@ -118,9 +118,27 @@
             padding-right: 0px;
         }
 
-        .paddinglp {
+        .paddinglr {
             padding-left: 1.25rem;
             padding-right: 1.25rem;
+        }
+
+        /*  */
+        .scroll-y {
+            overflow-y: scroll;
+            overflow-x: hidden;
+            height: calc(100vh - 100px);
+            direction: rtl;
+        }
+
+        .directionltr {
+            direction: ltr;
+        }
+
+        @media only screen and (max-width: 768px) {
+            .scroll-y {
+                height: 30vh;
+            }
         }
     </style>
     <script defer src="client_bin.bc.js"></script>

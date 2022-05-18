@@ -64,6 +64,7 @@ end) : sig
   val of_sequence : In.t Sequence.t -> t
   val empty : t
   val add : t -> el:In.t -> t
+  val remove : t -> el:In.t -> t
 
   module Diff : AdvancedSetDiff with type tt = t and type value = In.t
 end = struct
@@ -80,6 +81,7 @@ end = struct
   let of_sequence = Set.of_sequence (module In)
   let empty = Set.empty (module In)
   let add a ~el = Set.add a el
+  let remove s ~el = Set.remove s el
 
   module Diff = struct
     type tt = t

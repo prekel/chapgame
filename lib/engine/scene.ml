@@ -595,6 +595,11 @@ struct
         | PointAdded of Point.t
         | LineAdded of LineSegmentRay.t
         | BodyRemoved of Body.Id.t
+        | LineRemoved of LineSegmentRay.t
+        | PointRemoved of Point.t
+        | BodyUpdated of (Body.Id.t * Vars.t * N.t)
+        | PointUpdated of (Point.t * Point.t)
+        | LineUpdated of (LineSegmentRay.t * LineSegmentRay.t)
         | Empty
       [@@deriving sexp, equal, compare]
     end
@@ -735,6 +740,11 @@ struct
           ; v0 : N.t * N.t
           }
       | RemoveBody of Body.Id.t
+      | RemoveLine of LineSegmentRay.t
+      | RemovePoint of Point.t
+      | UpdateBody of (Body.Id.t * Vars.t * N.t)
+      | UpdateLine of LineSegmentRay.t * LineSegmentRay.t
+      | UpdatePoint of Point.t * Point.t
       | Empty
     [@@deriving sexp, equal]
 
@@ -1067,6 +1077,34 @@ struct
           ~bodies:(Scene.Figures.remove s.bodies id)
           ~cause:[ BodyRemoved id ]
           ~time
+      | RemoveLine line ->
+        Scene.update
+          s
+          ~cause:[ LineRemoved line ]
+          ~lines:(Lines.remove s.lines ~el:line)
+          ~time
+      | RemovePoint point ->
+        Scene.update
+          s
+          ~cause:[ PointRemoved point ]
+          ~points:(Points.remove s.points ~el:point)
+          ~time
+      | UpdateBody (id, var, value) ->
+        let body = Scene.Figures.get_by_id s.bodies ~id in
+        let body =
+          Body.{ body with values = Values.update_scalar body.values ~var ~value }
+        in
+        Scene.update
+          s
+          ~bodies:(Scene.Figures.update_by_id s.bodies ~id:body.id ~body)
+          ~cause:[ BodyUpdated (id, var, value) ]
+          ~time
+      | UpdateLine (old, new_) ->
+        let lines = s.lines |> Lines.remove ~el:old |> Lines.add ~el:new_ in
+        Scene.update s ~cause:[ LineUpdated (old, new_) ] ~lines ~time
+      | UpdatePoint (old, new_) ->
+        let points = s.points |> Points.remove ~el:old |> Points.add ~el:new_ in
+        Scene.update s ~cause:[ PointUpdated (old, new_) ] ~points ~time
       | Empty -> Scene.update s ~cause:[ Empty ] ~time
     ;;
 

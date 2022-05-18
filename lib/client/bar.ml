@@ -8,8 +8,7 @@ let tab_text = function
 ;;
 
 let component ~inner ~outer ~opened_tab ~tab_click =
-  (* let%sub inner = inner in
-  let%sub outer = outer in *)
+  (* let%sub inner = inner in let%sub outer = outer in *)
   let%arr inner = inner
   and outer = outer
   and opened_tab = opened_tab
@@ -82,7 +81,9 @@ let component ~inner ~outer ~opened_tab ~tab_click =
                         [ a [ Node.text (tab_text `Online) ] ]
                     ]
                 ]
-            ; Node.div ~attr:(many [ classes [] ]) [ inner ]
+            ; div
+                ~attr:(many [ classes [ "scroll-y" ] ])
+                [ div ~attr:(many [ classes [ "directionltr" ] ]) [ inner ] ]
             ]
         ]
     ; div ~attr:(many [ classes [ "column" ] ]) [ outer ]

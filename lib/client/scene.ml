@@ -648,7 +648,7 @@ module Make
     in
     div
       ~attr:(many [ classes [ "box"; "nopaddinglr" ] ])
-      [ h5 ~attr:(classes [ "is-5"; "title"; "paddinglp" ]) [ text "Bodies" ]
+      [ h5 ~attr:(classes [ "is-5"; "title"; "paddinglr" ]) [ text "Bodies" ]
       ; div
           ~attr:(many [ classes [ "table-container" ] ])
           [ table
@@ -677,6 +677,56 @@ module Make
                   |> Sequence.map ~f:snd
                   |> Sequence.map ~f:body_tr
                   |> Sequence.to_list)
+              ]
+          ]
+      ]
+  ;;
+
+  let lines_table ~lines ~remove_line =
+    let%arr lines = lines
+    and remove_line = remove_line in
+    let open Vdom in
+    let open Node in
+    let open Attr in
+    let line_tr line =
+      tr
+        [ td [ text (format_float line.S.LineSegmentRay.p1.x) ]
+        ; td [ text (format_float line.p1.y) ]
+        ; td [ text (format_float line.p2.x) ]
+        ; td [ text (format_float line.p2.y) ]
+        ; td
+            [ text
+                (match line.kind with
+                | `Segment -> "Segment"
+                | `Line -> "Line"
+                | `Ray -> "Ray")
+            ]
+        ; td
+            [ button
+                ~attr:(many [ class_ "delete"; on_click (fun _ -> remove_line line) ])
+                []
+            ]
+        ]
+    in
+    div
+      ~attr:(many [ classes [ "box"; "nopaddinglr" ] ])
+      [ h5 ~attr:(classes [ "is-5"; "title"; "paddinglr" ]) [ text "Lines" ]
+      ; div
+          ~attr:(many [ classes [ "table-container" ] ])
+          [ table
+              ~attr:(many [ classes [ "table"; "is-narrow"; "is-fullwidth" ] ])
+              [ thead
+                  [ tr
+                      [ th [ p [ text "P1"; Node.create "sub" [ text "x" ] ] ]
+                      ; th [ p [ text "P1"; Node.create "sub" [ text "y" ] ] ]
+                      ; th [ p [ text "P2"; Node.create "sub" [ text "x" ] ] ]
+                      ; th [ p [ text "P2"; Node.create "sub" [ text "y" ] ] ]
+                      ; th [ p [ text "kind" ] ]
+                      ; th []
+                      ]
+                  ]
+              ; Node.create "tfoot" []
+              ; tbody (lines |> List.map ~f:line_tr)
               ]
           ]
       ]
@@ -743,6 +793,24 @@ module Make
         |> dispatch
     in
     let%sub bodies_table = bodies_table ~scene ~time ~remove_body in
+    let%sub remove_line =
+      let%arr dispatch = dispatch
+      and time = time
+      and timeoutd = timeoutd in
+      fun line ->
+        `Action
+          S.Action.
+            { time
+            ; action = S.Action.RemoveLine line
+            ; timeout = Some Float.(time + timeoutd)
+            }
+        |> dispatch
+    in
+    let%sub lines_table =
+      lines_table
+        ~lines:(Bonsai.Value.map scene ~f:(fun scene -> scene.lines |> S.Lines.to_list))
+        ~remove_line
+    in
     let%arr time = time
     and frame = frame
     and dispatch = dispatch
@@ -753,100 +821,103 @@ module Make
     and timeoutd = timeoutd
     and speed_panel = speed_panel
     and export_import_clear = export_import_clear
-    and bodies_table = bodies_table in
-    Vdom.(
-      ( Node.div
-          [ export_import_clear
-          ; time_panel
-          ; speed_panel
-          ; bodies_table
-          ; Node.br ()
-          ; Node.button
-              ~attr:
-                (Attr.on_click (fun _ ->
-                     `Action
-                       { time
-                       ; action =
-                           S.Action.AddBody
-                             { id = Some (S.Body.Id.next ())
-                             ; x0 = 350.
-                             ; y0 = 350.
-                             ; r = 50.
-                             ; mu = 2.
-                             ; m = Float.(pi * 50. * 50.)
-                             }
-                       ; timeout = Some Float.(time + timeoutd)
-                       }
-                     |> dispatch))
-              [ Node.text "add " ]
-          ; Node.button
-              ~attr:
-                (Attr.on_click (fun _ ->
-                     `Action
-                       { time
-                       ; action =
-                           S.Action.AddBody
-                             { id = Some (S.Body.Id.next ())
-                             ; x0 = 800.
-                             ; y0 = 500.
-                             ; r = 75.
-                             ; mu = 2.
-                             ; m = Float.(pi * 75. * 75.)
-                             }
-                       ; timeout = Some Float.(time + timeoutd)
-                       }
-                     |> dispatch))
-              [ Node.text "add " ]
-          ; Node.button
-              ~attr:
-                (Attr.on_click (fun _ ->
-                     `Action
-                       { time
-                       ; action =
-                           S.Action.AddBody
-                             { id = Some (S.Body.Id.next ())
-                             ; x0 = 120.
-                             ; y0 = 500.
-                             ; r = 100.
-                             ; mu = 2.
-                             ; m = Float.(pi * 100. * 100.)
-                             }
-                       ; timeout = Some Float.(time + timeoutd)
-                       }
-                     |> dispatch))
-              [ Node.text "add " ]
-          ; Node.br ()
-          ; Node.button
-              ~attr:
-                (Attr.on_click (fun _ ->
-                     `Action
-                       { time
-                       ; action = S.Action.Empty
-                       ; timeout = Some Float.(time + timeoutd)
-                       }
-                     |> dispatch))
-              [ Node.text "timeout" ]
-          ; Node.button
-              ~attr:
-                (Attr.on_click (fun _ ->
-                     `Action { time; action = S.Action.Empty; timeout = None } |> dispatch))
-              [ Node.text "no timeout" ]
-          ; Node.br ()
-          ; Node.textarea
-              ~attr:
-                (Attr.many
-                   [ Attr.value_prop text_state; Attr.on_input (fun _ -> set_text_state) ])
-              []
-          ; Node.button
-              ~attr:
-                (Attr.many
-                   [ Attr.on_click (fun _ ->
-                         [%sexp (model : S.Model.t)]
-                         |> Sexp.to_string_hum
-                         |> set_text_state)
-                   ])
-              [ Node.text "to text" ]
-          ]
-      , frame ))
+    and bodies_table = bodies_table
+    and lines_table = lines_table in
+    let open Vdom in
+    let open Node in
+    let open Attr in
+    ( div
+        ~attr:(classes [])
+        [ export_import_clear
+        ; time_panel
+        ; speed_panel
+        ; bodies_table
+        ; lines_table
+        ; br ()
+        ; button
+            ~attr:
+              (Attr.on_click (fun _ ->
+                   `Action
+                     { time
+                     ; action =
+                         S.Action.AddBody
+                           { id = Some (S.Body.Id.next ())
+                           ; x0 = 350.
+                           ; y0 = 350.
+                           ; r = 50.
+                           ; mu = 2.
+                           ; m = Float.(pi * 50. * 50.)
+                           }
+                     ; timeout = Some Float.(time + timeoutd)
+                     }
+                   |> dispatch))
+            [ Node.text "add " ]
+        ; Node.button
+            ~attr:
+              (Attr.on_click (fun _ ->
+                   `Action
+                     { time
+                     ; action =
+                         S.Action.AddBody
+                           { id = Some (S.Body.Id.next ())
+                           ; x0 = 800.
+                           ; y0 = 500.
+                           ; r = 75.
+                           ; mu = 2.
+                           ; m = Float.(pi * 75. * 75.)
+                           }
+                     ; timeout = Some Float.(time + timeoutd)
+                     }
+                   |> dispatch))
+            [ Node.text "add " ]
+        ; Node.button
+            ~attr:
+              (Attr.on_click (fun _ ->
+                   `Action
+                     { time
+                     ; action =
+                         S.Action.AddBody
+                           { id = Some (S.Body.Id.next ())
+                           ; x0 = 120.
+                           ; y0 = 500.
+                           ; r = 100.
+                           ; mu = 2.
+                           ; m = Float.(pi * 100. * 100.)
+                           }
+                     ; timeout = Some Float.(time + timeoutd)
+                     }
+                   |> dispatch))
+            [ Node.text "add " ]
+        ; Node.br ()
+        ; Node.button
+            ~attr:
+              (Attr.on_click (fun _ ->
+                   `Action
+                     { time
+                     ; action = S.Action.Empty
+                     ; timeout = Some Float.(time + timeoutd)
+                     }
+                   |> dispatch))
+            [ Node.text "timeout" ]
+        ; Node.button
+            ~attr:
+              (Attr.on_click (fun _ ->
+                   `Action { time; action = S.Action.Empty; timeout = None } |> dispatch))
+            [ Node.text "no timeout" ]
+        ; Node.br ()
+        ; Node.textarea
+            ~attr:
+              (Attr.many
+                 [ Attr.value_prop text_state; Attr.on_input (fun _ -> set_text_state) ])
+            []
+        ; Node.button
+            ~attr:
+              (Attr.many
+                 [ Attr.on_click (fun _ ->
+                       [%sexp (model : S.Model.t)] |> Sexp.to_string_hum |> set_text_state)
+                 ])
+            [ Node.text "to text" ]
+        ]
+    , frame )
   ;;
 end
