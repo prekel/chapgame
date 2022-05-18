@@ -667,7 +667,7 @@ module Make
                       ; th [ p [ text "a"; Node.create "sub" [ text "x" ] ] ]
                       ; th [ p [ text "a"; Node.create "sub" [ text "y" ] ] ]
                       ; th [ p [ text "|a|" ] ]
-                      ; th []
+                      ; th ~attr:(class_ "deletetd") []
                       ]
                   ]
               ; Node.create "tfoot" []
@@ -722,11 +722,49 @@ module Make
                       ; th [ p [ text "P2"; Node.create "sub" [ text "x" ] ] ]
                       ; th [ p [ text "P2"; Node.create "sub" [ text "y" ] ] ]
                       ; th [ p [ text "kind" ] ]
-                      ; th []
+                      ; th ~attr:(class_ "deletetd") []
                       ]
                   ]
               ; Node.create "tfoot" []
               ; tbody (lines |> List.map ~f:line_tr)
+              ]
+          ]
+      ]
+  ;;
+
+  let points_table ~points ~remove_point =
+    let%arr points = points
+    and remove_point = remove_point in
+    let open Vdom in
+    let open Node in
+    let open Attr in
+    let point_tr point =
+      tr
+        [ td [ text (format_float point.S.Point.x) ]
+        ; td [ text (format_float point.y) ]
+        ; td
+            [ button
+                ~attr:(many [ class_ "delete"; on_click (fun _ -> remove_point point) ])
+                []
+            ]
+        ]
+    in
+    div
+      ~attr:(many [ classes [ "box"; "nopaddinglr" ] ])
+      [ h5 ~attr:(classes [ "is-5"; "title"; "paddinglr" ]) [ text "Points" ]
+      ; div
+          ~attr:(many [ classes [ "table-container" ] ])
+          [ table
+              ~attr:(many [ classes [ "table"; "is-narrow"; "is-fullwidth" ] ])
+              [ thead
+                  [ tr
+                      [ th [ p [ text "x" ] ]
+                      ; th [ p [ text "y" ] ]
+                      ; th ~attr:(class_ "deletetd") []
+                      ]
+                  ]
+              ; Node.create "tfoot" []
+              ; tbody (points |> List.map ~f:point_tr)
               ]
           ]
       ]
@@ -811,6 +849,25 @@ module Make
         ~lines:(Bonsai.Value.map scene ~f:(fun scene -> scene.lines |> S.Lines.to_list))
         ~remove_line
     in
+    let%sub remove_point =
+      let%arr dispatch = dispatch
+      and time = time
+      and timeoutd = timeoutd in
+      fun point ->
+        `Action
+          S.Action.
+            { time
+            ; action = S.Action.RemovePoint point
+            ; timeout = Some Float.(time + timeoutd)
+            }
+        |> dispatch
+    in
+    let%sub points_table =
+      points_table
+        ~points:
+          (Bonsai.Value.map scene ~f:(fun scene -> scene.points |> S.Points.to_list))
+        ~remove_point
+    in
     let%arr time = time
     and frame = frame
     and dispatch = dispatch
@@ -822,7 +879,8 @@ module Make
     and speed_panel = speed_panel
     and export_import_clear = export_import_clear
     and bodies_table = bodies_table
-    and lines_table = lines_table in
+    and lines_table = lines_table
+    and points_table = points_table in
     let open Vdom in
     let open Node in
     let open Attr in
@@ -833,6 +891,7 @@ module Make
         ; speed_panel
         ; bodies_table
         ; lines_table
+        ; points_table
         ; br ()
         ; button
             ~attr:
