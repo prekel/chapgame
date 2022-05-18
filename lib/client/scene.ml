@@ -695,11 +695,14 @@ module Make
         ; td [ text (format_float line.p2.x) ]
         ; td [ text (format_float line.p2.y) ]
         ; td
-            [ text
-                (match line.kind with
-                | `Segment -> "Segment"
-                | `Line -> "Line"
-                | `Ray -> "Ray")
+            [ p
+                ~attr:(many [ style (Css_gen.font_size (`Em_float 0.85)) ])
+                [ text
+                    (match line.kind with
+                    | `Segment -> "Segment"
+                    | `Line -> "Line"
+                    | `Ray -> "Ray")
+                ]
             ]
         ; td
             [ button
@@ -712,7 +715,7 @@ module Make
       ~attr:(many [ classes [ "box"; "nopaddinglr" ] ])
       [ h5 ~attr:(classes [ "is-5"; "title"; "paddinglr" ]) [ text "Lines" ]
       ; div
-          ~attr:(many [ classes [ "table-container" ] ])
+          ~attr:(many [ classes [] ])
           [ table
               ~attr:(many [ classes [ "table"; "is-narrow"; "is-fullwidth" ] ])
               [ thead

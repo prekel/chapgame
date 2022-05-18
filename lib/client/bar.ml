@@ -21,7 +21,7 @@ let component ~inner ~outer ~opened_tab ~tab_click =
     [ div
         ~attr:(many [ classes [ "column"; "is-narrow"; "bar-column" ] ])
         [ Node.div
-            ~attr:(many [ style (Css_gen.min_width (`Px 300)) ])
+            ~attr:(many [])
             [ Node.create
                 "nav"
                 ~attr:(many [ classes [ "navbar" ] ])
