@@ -348,6 +348,7 @@ module Make
     let x1, y1, x2, y2 = p1.x, p1.y, p2.x, p2.y in
     let dx, dy = x2 - x1, y2 - y1 in
     let x1, y1, x2, y2 =
+      (* TODO *)
       match kind with
       | `Line -> x1 - (dx * 100.), y1 - (dy * 100.), x2 + (dx * 100.), y2 + (dy * 100.)
       | `Segment -> x1, y1, x2, y2
@@ -802,7 +803,32 @@ module Make
           S.Action.
             { time = reached_timeout
             ; action = Empty
-            ; until = `Time Float.(reached_timeout + timeoutd)
+            ; until =
+                { time = Some Float.(reached_timeout + timeoutd)
+                ; quantity = None
+                ; stability = false
+                }
+            }
+        |> dispatch
+    in
+    let%sub replace =
+      let%arr dispatch = dispatch in
+      fun m -> `Replace m |> dispatch
+    in
+    let%sub dispatch =
+      let%arr dispatch = dispatch
+      and time = time
+      and timeoutd = timeoutd in
+      fun action ->
+        `Action
+          S.Action.
+            { time
+            ; action
+            ; until =
+                { time = Some Float.(time + timeoutd)
+                ; quantity = None
+                ; stability = false
+                }
             }
         |> dispatch
     in
@@ -815,18 +841,9 @@ module Make
         ~timeout_reached
     in
     let%sub body_click =
-      let%arr time = time
-      and timeoutd = timeoutd
-      and dispatch = dispatch in
+      let%arr dispatch = dispatch in
       fun id x y r ->
-        dispatch
-          (`Action
-            S.Action.
-              { time
-              ; action =
-                  S.Action.GiveVelocity { id; v0 = Float.(x / r * -200., y / r * -200.) }
-              ; until = `Time Float.(time + timeoutd)
-              })
+        dispatch (S.Action.GiveVelocity { id; v0 = Float.(x / r * -200., y / r * -200.) })
     in
     let%sub scene =
       let%arr model = model
@@ -834,38 +851,15 @@ module Make
       model.S.Model.scenes |> S.Scenes.before ~time |> snd
     in
     let%sub frame = scene_frame ~scene ~body_click ~time in
-    let%sub export_import_clear =
-      export_import_clear
-        ~model
-        ~set_model:
-          (Bonsai.Value.map dispatch ~f:(fun dispatch a -> `Replace a |> dispatch))
-    in
+    let%sub export_import_clear = export_import_clear ~model ~set_model:replace in
     let%sub remove_body =
-      let%arr dispatch = dispatch
-      and time = time
-      and timeoutd = timeoutd in
-      fun id ->
-        `Action
-          S.Action.
-            { time
-            ; action = S.Action.RemoveBody id
-            ; until = `Time  Float.(time + timeoutd)
-            }
-        |> dispatch
+      let%arr dispatch = dispatch in
+      fun id -> S.Action.RemoveBody id |> dispatch
     in
     let%sub bodies_table = bodies_table ~scene ~time ~remove_body in
     let%sub remove_line =
-      let%arr dispatch = dispatch
-      and time = time
-      and timeoutd = timeoutd in
-      fun line ->
-        `Action
-          S.Action.
-            { time
-            ; action = S.Action.RemoveLine line
-            ; until = `Time  Float.(time + timeoutd)
-            }
-        |> dispatch
+      let%arr dispatch = dispatch in
+      fun line -> S.Action.RemoveLine line |> dispatch
     in
     let%sub lines_table =
       lines_table
@@ -873,17 +867,8 @@ module Make
         ~remove_line
     in
     let%sub remove_point =
-      let%arr dispatch = dispatch
-      and time = time
-      and timeoutd = timeoutd in
-      fun point ->
-        `Action
-          S.Action.
-            { time
-            ; action = S.Action.RemovePoint point
-            ; until = `Time  Float.(time + timeoutd)
-            }
-        |> dispatch
+      let%arr dispatch = dispatch in
+      fun point -> S.Action.RemovePoint point |> dispatch
     in
     let%sub points_table =
       points_table

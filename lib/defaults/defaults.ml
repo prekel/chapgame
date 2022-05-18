@@ -87,7 +87,13 @@ module Replays = struct
     lazy
       (actions
       |> List.fold ~init:(S.Model.init ~g:10.) ~f:(fun acc action ->
-             S.Engine.recv ~action:{ time = 0.; action; until = `Stable } acc))
+             S.Engine.recv
+               ~action:
+                 { time = 0.
+                 ; action
+                 ; until = { time = None; quantity = None; stability = true }
+                 }
+               acc))
   ;;
 
   let replay = function

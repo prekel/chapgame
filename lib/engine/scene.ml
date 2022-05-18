@@ -748,10 +748,17 @@ struct
       | Empty
     [@@deriving sexp, equal]
 
+    type until =
+      { time : N.t option
+      ; quantity : int option
+      ; stability : bool
+      }
+    [@@deriving sexp, equal]
+
     type t =
       { time : N.t
       ; action : a
-      ; until : [ `Time of N.t | `Scenes of int | `Stable ]
+      ; until : until
       }
     [@@deriving sexp, equal]
   end
@@ -1108,13 +1115,10 @@ struct
       | Empty -> Scene.update s ~cause:[ Empty ] ~time
     ;;
 
-    let recv Model.{ scenes; _ } ~action:Action.{ time; action; until } =
-      let timeout =
-        match until with
-        | `Time timeout -> Some timeout
-        | `Stable -> None
-        | _ -> assert false
-      in
+    let recv
+        Model.{ scenes; _ }
+        ~action:Action.{ time; action; until = { time = timeout; _ } }
+      =
       let before, s = Scenes.before scenes ~time in
       let scenes = forward s ~time ~timeout in
       let scenes = Scenes.merge_with_list before scenes in
