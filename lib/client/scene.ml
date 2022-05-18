@@ -300,24 +300,22 @@ let speed_panel ~speed_changed_manually =
       ~input:interactve_input )
 ;;
 
-let calc_new_time_every ~timeout ~time ~set_time ~speed =
+let calc_new_time_every ~timeout ~time ~set_time ~speed ~timeout_reached =
   let%sub calc_new_time =
     let%arr speed = speed
     and timeout = timeout
     and time = time
-    and set_time = set_time in
+    and set_time = set_time
+    and timeout_reached = timeout_reached in
     let open Float in
-    let p =
+    let new_time =
       match time + (frame_time60 * speed) with
       | nt when nt < 0. -> 0.
       | nt -> nt
     in
-    let tm =
-      match timeout with
-      | Some timeout -> min timeout p
-      | None -> p
-    in
-    set_time tm
+    match timeout with
+    | Some timeout when Float.(timeout < new_time) -> timeout_reached timeout
+    | _ -> set_time new_time
   in
   Bonsai.Clock.every [%here] (Time_ns.Span.of_sec frame_time60) calc_new_time
 ;;
@@ -796,16 +794,26 @@ module Make
     in
     let%sub time, set_time, time_panel = time_panel ~time_changed_manually in
     let%sub speed, _, speed_panel = speed_panel ~speed_changed_manually in
+    let%sub timeout_reached =
+      let%arr dispatch = dispatch
+      and timeoutd = timeoutd in
+      fun reached_timeout ->
+        `Action
+          S.Action.
+            { time = reached_timeout
+            ; action = Empty
+            ; timeout = Some Float.(reached_timeout + timeoutd)
+            }
+        |> dispatch
+    in
     let%sub () =
       calc_new_time_every
         ~timeout:(Bonsai.Value.map model ~f:(fun { timeout; _ } -> timeout))
         ~time
         ~set_time
         ~speed
+        ~timeout_reached
     in
-    (* let%sub text_state, set_text_state =
-      Bonsai.state [%here] (module String) ~default_model:""
-    in *)
     let%sub body_click =
       let%arr time = time
       and timeoutd = timeoutd
@@ -883,15 +891,8 @@ module Make
           (Bonsai.Value.map scene ~f:(fun scene -> scene.points |> S.Points.to_list))
         ~remove_point
     in
-    (* let%arr  *)
-    (* time = time *)
-    let%arr  frame = frame
-    (* and dispatch = dispatch *)
+    let%arr frame = frame
     and time_panel = time_panel
-    (* and text_state = text_state *)
-    (* and set_text_state = set_text_state *)
-    (* and model = model *)
-    (* and timeoutd = timeoutd *)
     and speed_panel = speed_panel
     and export_import_clear = export_import_clear
     and bodies_table = bodies_table
@@ -908,26 +909,6 @@ module Make
         ; bodies_table
         ; lines_table
         ; points_table
-          (* ; br () ; button ~attr: (Attr.on_click (fun _ -> `Action { time ; action =
-             S.Action.AddBody { id = Some (S.Body.Id.next ()) ; x0 = 350. ; y0 = 350. ; r
-             = 50. ; mu = 2. ; m = Float.(pi * 50. * 50.) } ; timeout = Some Float.(time +
-             timeoutd) } |> dispatch)) [ Node.text "add " ] ; Node.button ~attr:
-             (Attr.on_click (fun _ -> `Action { time ; action = S.Action.AddBody { id =
-             Some (S.Body.Id.next ()) ; x0 = 800. ; y0 = 500. ; r = 75. ; mu = 2. ; m =
-             Float.(pi * 75. * 75.) } ; timeout = Some Float.(time + timeoutd) } |>
-             dispatch)) [ Node.text "add " ] ; Node.button ~attr: (Attr.on_click (fun _ ->
-             `Action { time ; action = S.Action.AddBody { id = Some (S.Body.Id.next ()) ;
-             x0 = 120. ; y0 = 500. ; r = 100. ; mu = 2. ; m = Float.(pi * 100. * 100.) } ;
-             timeout = Some Float.(time + timeoutd) } |> dispatch)) [ Node.text "add " ] ;
-             Node.br () ; Node.button ~attr: (Attr.on_click (fun _ -> `Action { time ;
-             action = S.Action.Empty ; timeout = Some Float.(time + timeoutd) } |>
-             dispatch)) [ Node.text "timeout" ] ; Node.button ~attr: (Attr.on_click (fun _
-             -> `Action { time; action = S.Action.Empty; timeout = None } |> dispatch)) [
-             Node.text "no timeout" ] ; Node.br () ; Node.textarea ~attr: (Attr.many [
-             Attr.value_prop text_state; Attr.on_input (fun _ -> set_text_state) ]) [] ;
-             Node.button ~attr: (Attr.many [ Attr.on_click (fun _ -> [%sexp (model :
-             S.Model.t)] |> Sexp.to_string_hum |> set_text_state) ]) [ Node.text "to text"
-             ] *)
         ]
     , frame )
   ;;
