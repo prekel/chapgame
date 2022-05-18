@@ -955,9 +955,9 @@ module Make
     let%sub speed, _, speed_panel = speed_panel ~speed_changed_manually in
     let%sub timeout_reached =
       let%arr dispatch = dispatch
-      and until = until in
-      fun reached_timeout ->
-        `Action S.Action.{ time = reached_timeout; action = Empty; until } |> dispatch
+      and until = until
+      and time = time in
+      fun _reached_timeout -> `Action S.Action.{ time; action = Empty; until } |> dispatch
     in
     let%sub replace =
       let%arr dispatch = dispatch in
