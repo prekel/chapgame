@@ -802,7 +802,7 @@ module Make
           S.Action.
             { time = reached_timeout
             ; action = Empty
-            ; timeout = Some Float.(reached_timeout + timeoutd)
+            ; until = `Time Float.(reached_timeout + timeoutd)
             }
         |> dispatch
     in
@@ -825,7 +825,7 @@ module Make
               { time
               ; action =
                   S.Action.GiveVelocity { id; v0 = Float.(x / r * -200., y / r * -200.) }
-              ; timeout = Some Float.(time + timeoutd)
+              ; until = `Time Float.(time + timeoutd)
               })
     in
     let%sub scene =
@@ -849,7 +849,7 @@ module Make
           S.Action.
             { time
             ; action = S.Action.RemoveBody id
-            ; timeout = Some Float.(time + timeoutd)
+            ; until = `Time  Float.(time + timeoutd)
             }
         |> dispatch
     in
@@ -863,7 +863,7 @@ module Make
           S.Action.
             { time
             ; action = S.Action.RemoveLine line
-            ; timeout = Some Float.(time + timeoutd)
+            ; until = `Time  Float.(time + timeoutd)
             }
         |> dispatch
     in
@@ -881,7 +881,7 @@ module Make
           S.Action.
             { time
             ; action = S.Action.RemovePoint point
-            ; timeout = Some Float.(time + timeoutd)
+            ; until = `Time  Float.(time + timeoutd)
             }
         |> dispatch
     in
