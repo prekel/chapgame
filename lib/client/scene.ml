@@ -795,16 +795,30 @@ module Make
         (module String)
         ~model:(`Given timespan_field_init)
     in
+    let%sub quantity_h, set_quantity_h =
+      Bonsai.state [%here] (module Int) ~default_model:100
+    in
+    let%sub quantity_field_init =
+      let%arr until = until
+      and quantity_h = quantity_h in
+      match until.quantity with
+      | Some q -> Int.to_string q
+      | None -> Int.to_string quantity_h
+    in
     let%sub quantity_field, set_quantity_field =
-      Bonsai.state_opt [%here] (module String)
+      Bonsai_extra.state_dynamic_model
+        [%here]
+        (module String)
+        ~model:(`Given quantity_field_init)
     in
     let%arr until = until
     and set_until = set_until
     and current = current
     and timespan_field = timespan_field
     and set_timespan_field = set_timespan_field
-    and _quantity_field = quantity_field
-    and _set_quantity_field = set_quantity_field
+    and quantity_field = quantity_field
+    and set_quantity_field = set_quantity_field
+    and set_quantity_h = set_quantity_h
     and set_timespan_h = set_timespan_h in
     let open Vdom in
     let open Node in
@@ -823,7 +837,7 @@ module Make
     in
     let row ~left ~right =
       div
-        ~attr:(many [ classes [ "columns"; "is-mobile"; "is-gapless" ] ])
+        ~attr:(many [ classes [ "columns"; "is-mobile"; "is-gapless"; "moderow" ] ])
         [ div ~attr:(many [ classes [ "column"; "is-9" ] ]) [ left ]
         ; div ~attr:(many [ classes [ "column"; "is-3" ] ]) [ right ]
         ]
@@ -841,7 +855,7 @@ module Make
               [ p
                   [ (match current with
                     | Some value_ -> text (format_float value_)
-                    | None -> none)
+                    | None -> text "∞")
                   ]
               ]
           ]
@@ -874,6 +888,51 @@ module Make
                   let%bind.Effect () = { until with timespan = Some s } |> set_until in
                   set_timespan_h s)
             | None -> none)
+      ; row
+          ~left:
+            (label
+               ~attr:(class_ "checkbox")
+               [ input
+                   ~attr:
+                     (many
+                        [ type_ "checkbox"
+                        ; (if Option.is_some until.quantity then checked else empty)
+                        ; on_click (fun _ ->
+                              { until with
+                                quantity =
+                                  (match until.quantity with
+                                  | None -> Some (Int.of_string quantity_field)
+                                  | Some _ -> None)
+                              }
+                              |> set_until)
+                        ])
+                   []
+               ; text " Quantity"
+               ])
+          ~right:
+            (match until.quantity with
+            | Some _ ->
+              inpt ~field:quantity_field ~set_field:set_quantity_field ~set:(fun s ->
+                  let s = Int.of_string s in
+                  let%bind.Effect () = { until with quantity = Some s } |> set_until in
+                  set_quantity_h s)
+            | None -> none)
+      ; row
+          ~left:
+            (label
+               ~attr:(class_ "checkbox")
+               [ input
+                   ~attr:
+                     (many
+                        [ type_ "checkbox"
+                        ; (if until.stability then checked else empty)
+                        ; on_click (fun _ ->
+                              { until with stability = not until.stability } |> set_until)
+                        ])
+                   []
+               ; text " Stability"
+               ])
+          ~right:none
       ]
   ;;
 
