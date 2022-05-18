@@ -42,5 +42,6 @@ module Make
             (Bonsai.Value.return (fun s ->
                  printf "%f\n" s;
                  Effect.Ignore))
+          ~init_until:S.Action.{ timespan = Some 10.; quantity = None; stability = false }
       ;;
     end

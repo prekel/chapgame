@@ -30,8 +30,8 @@ let svg_click_coords (evt : Dom_html.mouseEvent Js.t) =
         pt_ref := Some pt;
         pt
     in
-    (Obj.magic pt)##.x := evt##.clientX;
-    (Obj.magic pt)##.y := evt##.clientY;
+    (Js.Unsafe.coerce pt)##.x := evt##.clientX;
+    (Js.Unsafe.coerce pt)##.y := evt##.clientY;
     let cursorpt = pt##matrixTransform svg##getScreenCTM##inverse in
     let x = cursorpt##.x in
     let y = cursorpt##.y in
@@ -657,40 +657,38 @@ module Make
             ]
         ]
     in
-    div
-      ~attr:(many [ classes [ "box"; "nopaddinglr" ] ])
-      [ h5 ~attr:(classes [ "is-5"; "title"; "paddinglr" ]) [ text "Bodies" ]
-      ; div
-          ~attr:(many [ classes [ "table-container" ] ])
-          [ table
-              ~attr:(many [ classes [ "table"; "is-narrow"; "is-fullwidth" ] ])
-              [ thead
-                  [ tr
-                      [ th [ p [ text "id" ] ]
-                      ; th [ p [ text "x" ] ]
-                      ; th [ p [ text "y" ] ]
-                      ; th [ p [ text "μ" ] ]
-                      ; th [ p [ text "m" ] ]
-                      ; th [ p [ text "r" ] ]
-                      ; th [ p [ text "v"; Node.create "sub" [ text "x" ] ] ]
-                      ; th [ p [ text "v"; Node.create "sub" [ text "y" ] ] ]
-                      ; th [ p [ text "|v|" ] ]
-                      ; th [ p [ text "a"; Node.create "sub" [ text "x" ] ] ]
-                      ; th [ p [ text "a"; Node.create "sub" [ text "y" ] ] ]
-                      ; th [ p [ text "|a|" ] ]
-                      ; th ~attr:(class_ "deletetd") []
-                      ]
-                  ]
-              ; Node.create "tfoot" []
-              ; tbody
-                  (bodies
-                  |> S.Scene.Figures.to_sequence
-                  |> Sequence.map ~f:snd
-                  |> Sequence.map ~f:body_tr
-                  |> Sequence.to_list)
-              ]
-          ]
-      ]
+    box
+      ~title:"Bodies"
+      (div
+         ~attr:(many [ classes [ "table-container" ] ])
+         [ table
+             ~attr:(many [ classes [ "table"; "is-narrow"; "is-fullwidth" ] ])
+             [ thead
+                 [ tr
+                     [ th [ p [ text "id" ] ]
+                     ; th [ p [ text "x" ] ]
+                     ; th [ p [ text "y" ] ]
+                     ; th [ p [ text "μ" ] ]
+                     ; th [ p [ text "m" ] ]
+                     ; th [ p [ text "r" ] ]
+                     ; th [ p [ text "v"; Node.create "sub" [ text "x" ] ] ]
+                     ; th [ p [ text "v"; Node.create "sub" [ text "y" ] ] ]
+                     ; th [ p [ text "|v|" ] ]
+                     ; th [ p [ text "a"; Node.create "sub" [ text "x" ] ] ]
+                     ; th [ p [ text "a"; Node.create "sub" [ text "y" ] ] ]
+                     ; th [ p [ text "|a|" ] ]
+                     ; th ~attr:(class_ "deletetd") []
+                     ]
+                 ]
+             ; Node.create "tfoot" []
+             ; tbody
+                 (bodies
+                 |> S.Scene.Figures.to_sequence
+                 |> Sequence.map ~f:snd
+                 |> Sequence.map ~f:body_tr
+                 |> Sequence.to_list)
+             ]
+         ])
   ;;
 
   let lines_table ~lines ~remove_line =
@@ -722,28 +720,26 @@ module Make
             ]
         ]
     in
-    div
-      ~attr:(many [ classes [ "box"; "nopaddinglr" ] ])
-      [ h5 ~attr:(classes [ "is-5"; "title"; "paddinglr" ]) [ text "Lines" ]
-      ; div
-          ~attr:(many [ classes [] ])
-          [ table
-              ~attr:(many [ classes [ "table"; "is-narrow"; "is-fullwidth" ] ])
-              [ thead
-                  [ tr
-                      [ th [ p [ text "P1"; Node.create "sub" [ text "x" ] ] ]
-                      ; th [ p [ text "P1"; Node.create "sub" [ text "y" ] ] ]
-                      ; th [ p [ text "P2"; Node.create "sub" [ text "x" ] ] ]
-                      ; th [ p [ text "P2"; Node.create "sub" [ text "y" ] ] ]
-                      ; th [ p [ text "kind" ] ]
-                      ; th ~attr:(class_ "deletetd") []
-                      ]
-                  ]
-              ; Node.create "tfoot" []
-              ; tbody (lines |> List.map ~f:line_tr)
-              ]
-          ]
-      ]
+    box
+      ~title:"Lines"
+      (div
+         ~attr:(many [ classes [] ])
+         [ table
+             ~attr:(many [ classes [ "table"; "is-narrow"; "is-fullwidth" ] ])
+             [ thead
+                 [ tr
+                     [ th [ p [ text "P1"; Node.create "sub" [ text "x" ] ] ]
+                     ; th [ p [ text "P1"; Node.create "sub" [ text "y" ] ] ]
+                     ; th [ p [ text "P2"; Node.create "sub" [ text "x" ] ] ]
+                     ; th [ p [ text "P2"; Node.create "sub" [ text "y" ] ] ]
+                     ; th [ p [ text "kind" ] ]
+                     ; th ~attr:(class_ "deletetd") []
+                     ]
+                 ]
+             ; Node.create "tfoot" []
+             ; tbody (lines |> List.map ~f:line_tr)
+             ]
+         ])
   ;;
 
   let points_table ~points ~remove_point =
@@ -763,24 +759,104 @@ module Make
             ]
         ]
     in
+    box
+      ~title:"Points"
+      (div
+         ~attr:(many [ classes [ "table-container" ] ])
+         [ table
+             ~attr:(many [ classes [ "table"; "is-narrow"; "is-fullwidth" ] ])
+             [ thead
+                 [ tr
+                     [ th [ p [ text "x" ] ]
+                     ; th [ p [ text "y" ] ]
+                     ; th ~attr:(class_ "deletetd") []
+                     ]
+                 ]
+             ; Node.create "tfoot" []
+             ; tbody (points |> List.map ~f:point_tr)
+             ]
+         ])
+  ;;
+
+  let until_panel ~(until : S.Action.until Value.t) ~set_until ~current =
+    let%sub timespan_field, set_timespan_field =
+      Bonsai.state_opt [%here] (module String)
+    in
+    let%sub quantity_field, set_quantity_field =
+      Bonsai.state_opt [%here] (module String)
+    in
+    let%arr until = until
+    and set_until = set_until
+    and current = current
+    and timespan_field = timespan_field
+    and set_timespan_field = set_timespan_field
+    and _quantity_field = quantity_field
+    and _set_quantity_field = set_quantity_field in
+    let open Vdom in
+    let open Node in
+    let open Attr in
+    let inpt ~field ~set_field ~set =
+      input
+        ~attr:
+          (Attr.many
+             [ classes [ "input"; "is-small" ]
+             ; type_ "text"
+             ; on_input (fun _ -> set_field)
+             ; on_change (fun _ -> set)
+             ; value_prop field
+             ])
+        []
+    in
+    let row ~left ~right =
+      div
+        ~attr:(many [ classes [ "columns"; "is-mobile"; "is-gapless" ] ])
+        [ div ~attr:(many [ classes [ "column"; "is-9" ] ]) [ left ]
+        ; div ~attr:(many [ classes [ "column"; "is-3" ] ]) [ right ]
+        ]
+    in
     div
-      ~attr:(many [ classes [ "box"; "nopaddinglr" ] ])
-      [ h5 ~attr:(classes [ "is-5"; "title"; "paddinglr" ]) [ text "Points" ]
-      ; div
-          ~attr:(many [ classes [ "table-container" ] ])
-          [ table
-              ~attr:(many [ classes [ "table"; "is-narrow"; "is-fullwidth" ] ])
-              [ thead
-                  [ tr
-                      [ th [ p [ text "x" ] ]
-                      ; th [ p [ text "y" ] ]
-                      ; th ~attr:(class_ "deletetd") []
-                      ]
+      ~attr:(many [ classes [ "box" ] ])
+      [ div
+          ~attr:
+            (many [ classes [ "columns"; "is-mobile"; "is-gapless"; "nomarginbottom" ] ])
+          [ div
+              ~attr:(many [ classes [ "column"; "is-9" ] ])
+              [ h5 ~attr:(many [ classes [ "title"; "is-5" ] ]) [ text "Calculation" ] ]
+          ; div
+              ~attr:(many [ classes [ "column"; "is-3" ] ])
+              [ p
+                  [ (match current with
+                    | Some value_ -> text (format_float value_)
+                    | None -> none)
                   ]
-              ; Node.create "tfoot" []
-              ; tbody (points |> List.map ~f:point_tr)
               ]
           ]
+      ; row
+          ~left:
+            (label
+               ~attr:(class_ "checkbox")
+               [ input
+                   ~attr:
+                     (many
+                        [ type_ "checkbox"
+                        ; (if Option.is_some timespan_field then checked else empty)
+                        ; on_click (fun _ ->
+                              match timespan_field with
+                              | Some _ -> set_timespan_field None
+                              | None -> set_timespan_field (Some "10.00"))
+                        ])
+                   []
+               ; text " Time"
+               ])
+          ~right:
+            (match timespan_field with
+            | Some timespan_field ->
+              inpt
+                ~field:timespan_field
+                ~set_field:(fun a -> set_timespan_field (Some a))
+                ~set:(fun s ->
+                  { until with timespan = Some (Float.of_string s) } |> set_until)
+            | None -> none)
       ]
   ;;
 
@@ -789,27 +865,23 @@ module Make
       ~dispatch
       ~time_changed_manually
       ~speed_changed_manually
+      ~init_until
     =
-    let%sub timeoutd, _set_timeoutd =
-      Bonsai.state [%here] (module Float) ~default_model:10.
+    let%sub until, set_until =
+      Bonsai.state
+        [%here]
+        (module struct
+          type t = S.Action.until [@@deriving sexp, equal]
+        end)
+        ~default_model:init_until
     in
     let%sub time, set_time, time_panel = time_panel ~time_changed_manually in
     let%sub speed, _, speed_panel = speed_panel ~speed_changed_manually in
     let%sub timeout_reached =
       let%arr dispatch = dispatch
-      and timeoutd = timeoutd in
+      and until = until in
       fun reached_timeout ->
-        `Action
-          S.Action.
-            { time = reached_timeout
-            ; action = Empty
-            ; until =
-                { time = Some Float.(reached_timeout + timeoutd)
-                ; quantity = None
-                ; stability = false
-                }
-            }
-        |> dispatch
+        `Action S.Action.{ time = reached_timeout; action = Empty; until } |> dispatch
     in
     let%sub replace =
       let%arr dispatch = dispatch in
@@ -818,19 +890,8 @@ module Make
     let%sub dispatch =
       let%arr dispatch = dispatch
       and time = time
-      and timeoutd = timeoutd in
-      fun action ->
-        `Action
-          S.Action.
-            { time
-            ; action
-            ; until =
-                { time = Some Float.(time + timeoutd)
-                ; quantity = None
-                ; stability = false
-                }
-            }
-        |> dispatch
+      and until = until in
+      fun action -> `Action S.Action.{ time; action; until } |> dispatch
     in
     let%sub () =
       calc_new_time_every
@@ -876,13 +937,20 @@ module Make
           (Bonsai.Value.map scene ~f:(fun scene -> scene.points |> S.Points.to_list))
         ~remove_point
     in
+    let%sub until_panel =
+      until_panel
+        ~until
+        ~set_until
+        ~current:(Bonsai.Value.map model ~f:(fun model -> model.timeout))
+    in
     let%arr frame = frame
     and time_panel = time_panel
     and speed_panel = speed_panel
     and export_import_clear = export_import_clear
     and bodies_table = bodies_table
     and lines_table = lines_table
-    and points_table = points_table in
+    and points_table = points_table
+    and until_panel = until_panel in
     let open Vdom in
     let open Node in
     let open Attr in
@@ -890,6 +958,7 @@ module Make
         ~attr:(classes [])
         [ export_import_clear
         ; time_panel
+        ; until_panel
         ; speed_panel
         ; bodies_table
         ; lines_table

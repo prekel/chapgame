@@ -91,7 +91,7 @@ module Replays = struct
                ~action:
                  { time = 0.
                  ; action
-                 ; until = { time = None; quantity = None; stability = true }
+                 ; until = { timespan = None; quantity = None; stability = true }
                  }
                acc))
   ;;
