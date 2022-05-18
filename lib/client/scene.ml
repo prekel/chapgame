@@ -779,8 +779,21 @@ module Make
   ;;
 
   let until_panel ~(until : S.Action.until Value.t) ~set_until ~current =
+    let%sub timespan_h, set_timespan_h =
+      Bonsai.state [%here] (module Float) ~default_model:10.
+    in
+    let%sub timespan_field_init =
+      let%arr until = until
+      and timespan_h = timespan_h in
+      match until.timespan with
+      | Some timespan -> format_float timespan
+      | None -> format_float timespan_h
+    in
     let%sub timespan_field, set_timespan_field =
-      Bonsai.state_opt [%here] (module String)
+      Bonsai_extra.state_dynamic_model
+        [%here]
+        (module String)
+        ~model:(`Given timespan_field_init)
     in
     let%sub quantity_field, set_quantity_field =
       Bonsai.state_opt [%here] (module String)
@@ -791,7 +804,8 @@ module Make
     and timespan_field = timespan_field
     and set_timespan_field = set_timespan_field
     and _quantity_field = quantity_field
-    and _set_quantity_field = set_quantity_field in
+    and _set_quantity_field = set_quantity_field
+    and set_timespan_h = set_timespan_h in
     let open Vdom in
     let open Node in
     let open Attr in
@@ -839,23 +853,26 @@ module Make
                    ~attr:
                      (many
                         [ type_ "checkbox"
-                        ; (if Option.is_some timespan_field then checked else empty)
+                        ; (if Option.is_some until.timespan then checked else empty)
                         ; on_click (fun _ ->
-                              match timespan_field with
-                              | Some _ -> set_timespan_field None
-                              | None -> set_timespan_field (Some "10.00"))
+                              { until with
+                                timespan =
+                                  (match until.timespan with
+                                  | None -> Some (Float.of_string timespan_field)
+                                  | Some _ -> None)
+                              }
+                              |> set_until)
                         ])
                    []
                ; text " Time"
                ])
           ~right:
-            (match timespan_field with
-            | Some timespan_field ->
-              inpt
-                ~field:timespan_field
-                ~set_field:(fun a -> set_timespan_field (Some a))
-                ~set:(fun s ->
-                  { until with timespan = Some (Float.of_string s) } |> set_until)
+            (match until.timespan with
+            | Some _ ->
+              inpt ~field:timespan_field ~set_field:set_timespan_field ~set:(fun s ->
+                  let s = Float.of_string s in
+                  let%bind.Effect () = { until with timespan = Some s } |> set_until in
+                  set_timespan_h s)
             | None -> none)
       ]
   ;;
