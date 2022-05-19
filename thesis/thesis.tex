@@ -1,6 +1,83 @@
-\documentclass{article}
+\documentclass[oneside,draft,14pt]{extreport}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+
+\usepackage{vmargin}
+\setpapersize{A4}
+\setmarginsrb{30mm}{20mm}{10mm}{20mm}{0pt}{0mm}{0pt}{13mm}
+\usepackage{indentfirst}
+\sloppy
+\linespread{1.3}
+\setlength{\parindent}{1.25cm}
+\setlength{\parskip}{1em}
+
+
+\newcommand\Vvedenie[1]{
+\section*{\begin{normalsize}  \begin{center} \MakeUppercase{ #1 } \end{center} \end{normalsize}
+}
+\addcontentsline{toc}{section}{%
+#1}
+}
+
+\newcommand\Section[1]{
+\refstepcounter{section}
+\section*{\begin{normalsize}\raggedright
+\arabic{section} #1\end{normalsize}}
+\addcontentsline{toc}{section}{%
+\arabic{section} #1}
+}
+
+\newcommand\Subsection[1]{
+\refstepcounter{subsection}
+\subsection*{\begin{normalsize}\raggedright
+\arabic{section}.\arabic{subsection} #1
+\end{normalsize}}\addcontentsline{toc}{subsection}{%
+\arabic{section}.\arabic{subsection} #1}}
+
+\usepackage{titlesec}
+\titleformat
+{\chapter} % command
+[display] % shape
+{\bfseries\normalsize} % format
+{} % label
+{} % sep
+{
+    \vspace{1ex}
+    \centering \MakeUppercase
+} % before-code
+[
+] % after-code
 
 \begin{document}
-First document. This is a simple example, with no 
-extra parameters or packages included.
+
+\renewcommand\contentsname{Содержание}
+\renewcommand\figurename{Рисунок}
+\title{Practical Typesetting}
+\author{Name\\ Work}
+\date{December 2005}
+\maketitle
+
+\setcounter{page}{2}
+\tableofcontents
+\pagebreak
+
+\Vvedenie{Введение}
+ывафыа
+
+
+\Section{Предисловие}
+Этот текст будет на русском языке. Это демонстрация того, что символы кириллицы
+в сгенерированном документе (Compile to PDF) отображаются правильно.
+Для этого Вы должны установить нужный  язык (russian)
+и необходимую кодировку шрифта (T2A).
+
+\Section{Математические формулы}
+Кириллические символы также могут быть использованы в математическом режиме.
+
+\Subsection{Формула 1}
+\[\frac{1}{2}\]
+
 \end{document}
