@@ -1038,7 +1038,7 @@ struct
       in
       let filter_quantity =
         match quantity with
-        | Some quantity -> fun s -> Sequence.take s (quantity + 1)
+        | Some quantity -> fun s -> Sequence.take s quantity 
         | None -> Fn.id
       in
       let reversed =
