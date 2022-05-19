@@ -821,7 +821,7 @@ module Make
         ~model:(`Given timespan_field_init)
     in
     let%sub quantity_h, set_quantity_h =
-      Bonsai.state [%here] (module Int) ~default_model:15
+      Bonsai.state [%here] (module Int) ~default_model:25
     in
     let%sub quantity_field_init =
       let%arr until = until
