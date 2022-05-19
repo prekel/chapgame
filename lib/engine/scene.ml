@@ -571,6 +571,45 @@ struct
     ;;
   end
 
+  module Action = struct
+    type a =
+      | AddBody of
+          { id : Body.Id.t option
+          ; x0 : N.t
+          ; y0 : N.t
+          ; r : N.t
+          ; mu : N.t
+          ; m : N.t
+          }
+      | AddPoint of Point.t
+      | AddLine of LineSegmentRay.t
+      | GiveVelocity of
+          { id : Body.Id.t
+          ; v0 : N.t * N.t
+          }
+      | RemoveBody of Body.Id.t
+      | RemoveLine of LineSegmentRay.t
+      | RemovePoint of Point.t
+      | UpdateBody of (Body.Id.t * Vars.t * N.t)
+      | UpdateLine of LineSegmentRay.t * LineSegmentRay.t
+      | UpdatePoint of Point.t * Point.t
+      | UpdateGlobal of (Vars.t * N.t)
+    [@@deriving sexp, equal, compare]
+
+    type until =
+      { timespan : N.t option
+      ; quantity : int option
+      }
+    [@@deriving sexp, equal, compare]
+
+    type t =
+      { time : N.t
+      ; action : a
+      ; until : until
+      }
+    [@@deriving sexp, equal, compare]
+  end
+
   module Scene = struct
     module Cause = struct
       type t =
@@ -587,21 +626,6 @@ struct
             { id : Body.Id.t
             ; line : LineSegmentRay.t
             }
-        | VelocityGiven of
-            { id : Body.Id.t
-            ; v : N.t * N.t
-            }
-        | BodyAdded of { id : Body.Id.t }
-        | PointAdded of Point.t
-        | LineAdded of LineSegmentRay.t
-        | BodyRemoved of Body.Id.t
-        | LineRemoved of LineSegmentRay.t
-        | PointRemoved of Point.t
-        | BodyUpdated of (Body.Id.t * Vars.t * N.t)
-        | PointUpdated of (Point.t * Point.t)
-        | LineUpdated of (LineSegmentRay.t * LineSegmentRay.t)
-        | GlobalUpdated of (Vars.t * N.t)
-        (* | Empty *)
       [@@deriving sexp, equal, compare]
     end
 
@@ -643,7 +667,7 @@ struct
       ; points : Points.t
       ; lines : Lines.t
       ; global_values : Values.t
-      ; cause : Cause.t list
+      ; cause : [ `Action of Action.t | `Cause of Cause.t ] list
       }
     [@@deriving sexp, equal]
 
@@ -684,7 +708,7 @@ struct
       ; points = Points.empty
       ; lines = Lines.empty
       ; global_values = Values.of_alist [ `g, g ]
-      ; cause = [ Init ]
+      ; cause = [ `Cause Init ]
       }
     ;;
 
@@ -695,7 +719,7 @@ struct
         ; points_diff : Points.Diff.t
         ; lines_diff : Lines.Diff.t
         ; global_values_diff : Values.Diff.t
-        ; new_cause : Cause.t list
+        ; new_cause : [ `Action of Action.t | `Cause of Cause.t ] list
         }
       [@@deriving sexp, equal]
 
@@ -722,47 +746,6 @@ struct
         }
       ;;
     end
-  end
-
-  module Action = struct
-    type a =
-      | AddBody of
-          { id : Body.Id.t option
-          ; x0 : N.t
-          ; y0 : N.t
-          ; r : N.t
-          ; mu : N.t
-          ; m : N.t
-          }
-      | AddPoint of Point.t
-      | AddLine of LineSegmentRay.t
-      | GiveVelocity of
-          { id : Body.Id.t
-          ; v0 : N.t * N.t
-          }
-      | RemoveBody of Body.Id.t
-      | RemoveLine of LineSegmentRay.t
-      | RemovePoint of Point.t
-      | UpdateBody of (Body.Id.t * Vars.t * N.t)
-      | UpdateLine of LineSegmentRay.t * LineSegmentRay.t
-      | UpdatePoint of Point.t * Point.t
-      | UpdateGlobal of (Vars.t * N.t)
-      (* | Empty *)
-    [@@deriving sexp, equal]
-
-    type until =
-      { timespan : N.t option
-      ; quantity : int option
-      ; stability : bool
-      }
-    [@@deriving sexp, equal]
-
-    type t =
-      { time : N.t
-      ; action : a
-      ; until : until
-      }
-    [@@deriving sexp, equal]
   end
 
   module Scenes : sig
@@ -798,7 +781,10 @@ struct
             ~bodies:v2.bodies
             ~cause:
               (* TODO *)
-              (v2.cause @ v1.cause |> List.dedup_and_sort ~compare:Scene.Cause.compare)
+              (v2.cause @ v1.cause
+              |> List.dedup_and_sort
+                   ~compare:[%compare: [ `Action of Action.t | `Cause of Scene.Cause.t ]]
+              )
             ~points:v2.points
             ~lines:v2.lines
             ~time:key)
@@ -980,7 +966,7 @@ struct
                       |> Scene.Figures.update_by_id
                            ~id:id2
                            ~body:(Body.update_v0 body2 ~v:v2n ~rules:Rule.rules1))
-                    ~cause:[ Collision { id1; id2 } ]
+                    ~cause:[ `Cause (Collision { id1; id2 }) ]
                     ~time:N.(scene.time + t)
                     ~points:scene.points
                     ~lines:scene.lines
@@ -998,7 +984,7 @@ struct
                          q
                          ~id
                          ~body:(Body.update_v0 body ~v:v' ~rules:Rule.rules1))
-                    ~cause:[ CollisionWithPoint { id; point } ]
+                    ~cause:[ `Cause (CollisionWithPoint { id; point }) ]
                     ~time:new_time
                     ~points:scene.points
                     ~lines:scene.lines
@@ -1016,7 +1002,7 @@ struct
                          q
                          ~id
                          ~body:(Body.update_v0 body ~v:v' ~rules:Rule.rules1))
-                    ~cause:[ CollisionWithLine { id; line } ]
+                    ~cause:[ `Cause (CollisionWithLine { id; line }) ]
                     ~time:new_time
                     ~points:scene.points
                     ~lines:scene.lines
@@ -1080,42 +1066,20 @@ struct
         Scene.update
           s
           ~bodies:(Scene.add_figure s.Scene.bodies ~id ~x0 ~y0 ~r ~mu ~m)
-          ~cause:[ BodyAdded { id } ]
           ~time
-      | AddPoint point ->
-        Scene.update
-          s
-          ~cause:[ PointAdded point ]
-          ~points:(Points.add s.points ~el:point)
-          ~time
-      | AddLine line ->
-        Scene.update s ~cause:[ LineAdded line ] ~lines:(Lines.add s.lines ~el:line) ~time
+      | AddPoint point -> Scene.update s ~points:(Points.add s.points ~el:point) ~time
+      | AddLine line -> Scene.update s ~lines:(Lines.add s.lines ~el:line) ~time
       | GiveVelocity { id; v0 } ->
         let body = Scene.Figures.get_by_id s.bodies ~id in
         let body = Body.update_v0 body ~v:v0 ~rules:Rule.rules1 in
         Scene.update
           s
           ~bodies:(Scene.Figures.update_by_id s.bodies ~id:body.id ~body)
-          ~cause:[ VelocityGiven { id; v = v0 } ]
           ~time
-      | RemoveBody id ->
-        Scene.update
-          s
-          ~bodies:(Scene.Figures.remove s.bodies id)
-          ~cause:[ BodyRemoved id ]
-          ~time
-      | RemoveLine line ->
-        Scene.update
-          s
-          ~cause:[ LineRemoved line ]
-          ~lines:(Lines.remove s.lines ~el:line)
-          ~time
+      | RemoveBody id -> Scene.update s ~bodies:(Scene.Figures.remove s.bodies id) ~time
+      | RemoveLine line -> Scene.update s ~lines:(Lines.remove s.lines ~el:line) ~time
       | RemovePoint point ->
-        Scene.update
-          s
-          ~cause:[ PointRemoved point ]
-          ~points:(Points.remove s.points ~el:point)
-          ~time
+        Scene.update s ~points:(Points.remove s.points ~el:point) ~time
       | UpdateBody (id, var, value) ->
         let body = Scene.Figures.get_by_id s.bodies ~id in
         let body =
@@ -1124,31 +1088,25 @@ struct
         Scene.update
           s
           ~bodies:(Scene.Figures.update_by_id s.bodies ~id:body.id ~body)
-          ~cause:[ BodyUpdated (id, var, value) ]
           ~time
       | UpdateLine (old, new_) ->
         let lines = s.lines |> Lines.remove ~el:old |> Lines.add ~el:new_ in
-        Scene.update s ~cause:[ LineUpdated (old, new_) ] ~lines ~time
+        Scene.update s ~lines ~time
       | UpdatePoint (old, new_) ->
         let points = s.points |> Points.remove ~el:old |> Points.add ~el:new_ in
-        Scene.update s ~cause:[ PointUpdated (old, new_) ] ~points ~time
+        Scene.update s ~points ~time
       | UpdateGlobal (var, value) ->
-        Scene.
-          { s with
-            global_values = Values.update_scalar s.global_values ~var ~value
-          ; cause = [ GlobalUpdated (var, value) ]
-          }
-      (* | Empty -> Scene.update s ~cause:[ Empty ] ~time *)
+        Scene.{ s with global_values = Values.update_scalar s.global_values ~var ~value }
     ;;
 
-    let recv Model.{ scenes; _ } ~action:Action.{ time; action; until } =
+    let recv Model.{ scenes; _ } ~action:Action.({ time; action; until } as ac) =
       let timeout = Option.map until.timespan ~f:(fun t -> N.(time + t)) in
       let quantity = until.quantity in
       let before, s = Scenes.before scenes ~time in
       let _new_timeout, scenes = forward s ~time ~timeout:(Some time) ~quantity:None in
       let scenes = Scenes.merge_with_list before scenes in
       let before, s = Scenes.before scenes ~time in
-      let r = apply_action ~time s action in
+      let r = { (apply_action ~time s action) with cause = [ `Action ac ] } in
       let m = before |> Model.of_scenes ~time:r.time ~scene:r ~timeout in
       let new_timeout1, f = forward (Scenes.last_exn m.scenes) ~timeout ~quantity in
       Model.{ scenes = Scenes.merge_with_list m.scenes f; timeout = new_timeout1 }

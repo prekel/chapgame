@@ -821,7 +821,7 @@ module Make
         ~model:(`Given timespan_field_init)
     in
     let%sub quantity_h, set_quantity_h =
-      Bonsai.state [%here] (module Int) ~default_model:100
+      Bonsai.state [%here] (module Int) ~default_model:15
     in
     let%sub quantity_field_init =
       let%arr until = until
@@ -909,9 +909,12 @@ module Make
             (match until.timespan with
             | Some _ ->
               inpt ~field:timespan_field ~set_field:set_timespan_field ~set:(fun s ->
-                  let s = Float.of_string s in
-                  let%bind.Effect () = { until with timespan = Some s } |> set_until in
-                  set_timespan_h s)
+                  try
+                    let s = Float.of_string s in
+                    let%bind.Effect () = { until with timespan = Some s } |> set_until in
+                    set_timespan_h s
+                  with
+                  | _ -> Effect.Ignore)
             | None -> none)
       ; row
           ~left:
@@ -938,26 +941,13 @@ module Make
             (match until.quantity with
             | Some _ ->
               inpt ~field:quantity_field ~set_field:set_quantity_field ~set:(fun s ->
-                  let s = Int.of_string s in
-                  let%bind.Effect () = { until with quantity = Some s } |> set_until in
-                  set_quantity_h s)
+                  try
+                    let s = Int.of_string s in
+                    let%bind.Effect () = { until with quantity = Some s } |> set_until in
+                    set_quantity_h s
+                  with
+                  | _ -> Effect.Ignore)
             | None -> none)
-      ; row
-          ~left:
-            (label
-               ~attr:(class_ "checkbox")
-               [ input
-                   ~attr:
-                     (many
-                        [ type_ "checkbox"
-                        ; (if until.stability then checked else empty)
-                        ; on_click (fun _ ->
-                              { until with stability = not until.stability } |> set_until)
-                        ])
-                   []
-               ; text " Stability"
-               ])
-          ~right:none
       ]
   ;;
 

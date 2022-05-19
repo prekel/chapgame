@@ -26,13 +26,12 @@ module Make
             end)
             ~default_model:(R.replay "start")
             ~apply_action:(fun ~inject:_ ~schedule_event:_ model action ->
-              match action with
-              (* | `Action _ as action ->
-                let _, diff = S.Engine.recv_with_diff model ~action in
-                S.Engine.update model ~action:(`Diff diff) *)
-              | `Action _ as action -> S.Engine.update model ~action
-              | `Replace _ as action -> S.Engine.update model ~action
-              | `Prolong _ as action -> S.Engine.update model ~action)
+              S.Engine.update model ~action
+              (* match action with (* | `Action _ as action -> let _, diff =
+                 S.Engine.recv_with_diff model ~action in S.Engine.update model
+                 ~action:(`Diff diff) *) | `Action _ as action -> S.Engine.update model
+                 ~action | `Replace _ as action -> S.Engine.update model ~action |
+                 `Prolong _ as action -> S.Engine.update model ~action*))
         in
         SC.scene
           ~model
@@ -45,6 +44,6 @@ module Make
             (Bonsai.Value.return (fun s ->
                  printf "%f\n" s;
                  Effect.Ignore))
-          ~init_until:S.Action.{ timespan = Some 10.; quantity = None; stability = false }
+          ~init_until:S.Action.{ timespan = Some 10.; quantity = None }
       ;;
     end
