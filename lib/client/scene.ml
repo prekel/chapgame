@@ -325,13 +325,13 @@ let g_panel ~g ~g_changed_manually =
     ~input:interactve_input
 ;;
 
-let calc_new_time_every ~timeout ~time ~set_time ~speed ~timeout_reached =
+let calc_new_time_every ~timeout ~time ~set_time ~speed ~prolong =
   let%sub calc_new_time =
     let%arr speed = speed
     and timeout = timeout
     and time = time
     and set_time = set_time
-    and timeout_reached = timeout_reached in
+    and prolong = prolong in
     let open Float in
     let new_time =
       match time + (frame_time60 * speed) with
@@ -339,7 +339,7 @@ let calc_new_time_every ~timeout ~time ~set_time ~speed ~timeout_reached =
       | nt -> nt
     in
     match timeout with
-    | Some timeout when Float.(timeout < new_time) -> timeout_reached timeout
+    | Some timeout when Float.(timeout < new_time) -> prolong ()
     | _ -> set_time new_time
   in
   Bonsai.Clock.every [%here] (Time_ns.Span.of_sec frame_time60) calc_new_time
@@ -968,10 +968,10 @@ module Make
     in
     let%sub time, set_time, time_panel = time_panel ~time_changed_manually in
     let%sub speed, _, speed_panel = speed_panel ~speed_changed_manually in
-    let%sub timeout_reached =
+    let%sub prolong =
       let%arr dispatch = dispatch
       and until = until in
-      fun _reached_timeout -> `Prolong until |> dispatch
+      fun () -> `Prolong until |> dispatch
     in
     let%sub replace =
       let%arr dispatch = dispatch in
@@ -989,7 +989,7 @@ module Make
         ~time
         ~set_time
         ~speed
-        ~timeout_reached
+        ~prolong
     in
     let%sub body_click =
       let%arr dispatch = dispatch in
