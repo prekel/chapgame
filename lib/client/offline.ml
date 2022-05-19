@@ -20,16 +20,19 @@ module Make
               type t =
                 [ `Action of S.Action.t
                 | `Replace of S.Model.t
+                | `Prolong of S.Action.until
                 ]
               [@@deriving sexp, equal]
             end)
             ~default_model:(R.replay "start")
             ~apply_action:(fun ~inject:_ ~schedule_event:_ model action ->
               match action with
-              | `Replace _ as action -> S.Engine.update model ~action
-              | `Action _ as action ->
+              (* | `Action _ as action ->
                 let _, diff = S.Engine.recv_with_diff model ~action in
-                S.Engine.update model ~action:(`Diff diff))
+                S.Engine.update model ~action:(`Diff diff) *)
+              | `Action _ as action -> S.Engine.update model ~action
+              | `Replace _ as action -> S.Engine.update model ~action
+              | `Prolong _ as action -> S.Engine.update model ~action)
         in
         SC.scene
           ~model

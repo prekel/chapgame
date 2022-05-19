@@ -601,7 +601,7 @@ struct
         | PointUpdated of (Point.t * Point.t)
         | LineUpdated of (LineSegmentRay.t * LineSegmentRay.t)
         | GlobalUpdated of (Vars.t * N.t)
-        | Empty
+        (* | Empty *)
       [@@deriving sexp, equal, compare]
     end
 
@@ -747,7 +747,7 @@ struct
       | UpdateLine of LineSegmentRay.t * LineSegmentRay.t
       | UpdatePoint of Point.t * Point.t
       | UpdateGlobal of (Vars.t * N.t)
-      | Empty
+      (* | Empty *)
     [@@deriving sexp, equal]
 
     type until =
@@ -1044,13 +1044,30 @@ struct
             | None, None -> None))
     ;;
 
-    let forward ?time (scene : Scene.t) ~timeout =
-      forward_seq ?time scene
-      |> (timeout
-         |> Option.map ~f:(fun timeout ->
-                Sequence.take_while ~f:N.(fun s -> s.Scene.time <= timeout))
-         |> Option.value ~default:Fn.id)
-      |> Sequence.to_list
+    let forward ?time (scene : Scene.t) ~timeout ~quantity =
+      let filter_timeout =
+        match timeout with
+        | Some timeout -> Sequence.take_while ~f:N.(fun s -> s.Scene.time <= timeout)
+        | None -> Fn.id
+      in
+      let filter_quantity =
+        match quantity with
+        | Some quantity -> fun s -> Sequence.take s (quantity + 1)
+        | None -> Fn.id
+      in
+      let reversed =
+        forward_seq ?time scene
+        |> filter_timeout
+        |> filter_quantity
+        |> Sequence.to_list_rev
+      in
+      let timeout =
+        match timeout, quantity, List.hd reversed with
+        | _, Some _, Some last -> Some last.time
+        | Some timeout, _, _ -> Some timeout
+        | _ -> None
+      in
+      timeout, List.rev reversed
     ;;
 
     let apply_action s ~time = function
@@ -1121,19 +1138,33 @@ struct
             global_values = Values.update_scalar s.global_values ~var ~value
           ; cause = [ GlobalUpdated (var, value) ]
           }
-      | Empty -> Scene.update s ~cause:[ Empty ] ~time
+      (* | Empty -> Scene.update s ~cause:[ Empty ] ~time *)
     ;;
 
     let recv Model.{ scenes; _ } ~action:Action.{ time; action; until } =
       let timeout = Option.map until.timespan ~f:(fun t -> N.(time + t)) in
+      let quantity = until.quantity in
       let before, s = Scenes.before scenes ~time in
-      let scenes = forward s ~time ~timeout in
+      let _new_timeout, scenes = forward s ~time ~timeout:(Some time) ~quantity:None in
       let scenes = Scenes.merge_with_list before scenes in
       let before, s = Scenes.before scenes ~time in
       let r = apply_action ~time s action in
       let m = before |> Model.of_scenes ~time:r.time ~scene:r ~timeout in
-      let f = forward (Scenes.last_exn m.scenes) ~timeout in
-      { m with scenes = Scenes.merge_with_list m.scenes f }
+      let new_timeout1, f = forward (Scenes.last_exn m.scenes) ~timeout ~quantity in
+      Model.{ scenes = Scenes.merge_with_list m.scenes f; timeout = new_timeout1 }
+    ;;
+
+    let prolong (model : Model.t) (until : Action.until) =
+      let timeout =
+        let%bind.Option new_timespan = until.timespan in
+        let%map.Option old_timeout = model.timeout in
+        N.(old_timeout + new_timespan)
+      in
+      let quantity = until.quantity in
+      let new_timeout, after =
+        forward (Scenes.last_exn model.scenes) ~timeout ~quantity
+      in
+      Model.{ scenes = Scenes.merge_with_list model.scenes after; timeout = new_timeout }
     ;;
 
     let update model ~action =
@@ -1141,6 +1172,7 @@ struct
       | `Action a -> recv model ~action:a
       | `Replace m -> m
       | `Diff diff -> Model.Diff.apply_diff model ~diff
+      | `Prolong until -> prolong model until
     ;;
 
     let recv_with_diff model ~action =
