@@ -300,6 +300,31 @@ let speed_panel ~speed_changed_manually =
       ~input:interactve_input )
 ;;
 
+let g_panel ~g ~g_changed_manually =
+  let%sub interactve_input =
+    interactive_input ~value:g ~set_manually:g_changed_manually
+  in
+  let%arr g = g
+  and g_changed_manually = g_changed_manually
+  and interactve_input = interactve_input in
+  let open Vdom in
+  let open Node in
+  let open Attr in
+  timespeed_box
+    ~title:"g"
+    ~value:g
+    ~buttons:
+      [ button
+          ~attr:(many [ classes [ "button" ]; on_click (fun _ -> g_changed_manually 1.) ])
+          [ text "1" ]
+      ; button
+          ~attr:
+            (many [ classes [ "button" ]; on_click (fun _ -> g_changed_manually 9.8) ])
+          [ text "9.8" ]
+      ]
+    ~input:interactve_input
+;;
+
 let calc_new_time_every ~timeout ~time ~set_time ~speed ~timeout_reached =
   let%sub calc_new_time =
     let%arr speed = speed
@@ -525,7 +550,7 @@ module Make
                  ~attr:
                    (many
                       [ classes [ "button"; "is-fullwidth" ]
-                      ; on_click (fun _ -> set_model @@ S.Model.init ~g:10.)
+                      ; on_click (fun _ -> set_model @@ S.Model.init ~g:1.)
                       ])
                  [ text "Clear" ]
              ]
@@ -1019,6 +1044,17 @@ module Make
         ~set_until
         ~current:(Bonsai.Value.map model ~f:(fun model -> model.timeout))
     in
+    let%sub g_changed_manually =
+      let%arr dispatch = dispatch in
+      fun g -> dispatch (S.Action.UpdateGlobal (`g, g))
+    in
+    let%sub g_panel =
+      g_panel
+        ~g:
+          (Bonsai.Value.map scene ~f:(fun scene ->
+               S.Values.get_scalar_exn scene.global_values ~var:`g))
+        ~g_changed_manually
+    in
     let%arr frame = frame
     and time_panel = time_panel
     and speed_panel = speed_panel
@@ -1026,7 +1062,8 @@ module Make
     and bodies_table = bodies_table
     and lines_table = lines_table
     and points_table = points_table
-    and until_panel = until_panel in
+    and until_panel = until_panel
+    and g_panel = g_panel in
     let open Vdom in
     let open Node in
     let open Attr in
@@ -1039,6 +1076,7 @@ module Make
         ; bodies_table
         ; lines_table
         ; points_table
+        ; g_panel
         ]
     , frame )
   ;;

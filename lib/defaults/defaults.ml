@@ -16,7 +16,7 @@ module Replays = struct
         ; x0 = 425.
         ; y0 = 275.
         ; r = 2.
-        ; mu = 5.
+        ; mu = 50.
         ; m = Float.(pi * 2. * 2.)
         }
     ; S.Action.AddBody
@@ -24,7 +24,7 @@ module Replays = struct
         ; x0 = 450.
         ; y0 = 250.
         ; r = 10.
-        ; mu = 1.
+        ; mu = 10.
         ; m = Float.(pi * 10. * 10.)
         }
     ; S.Action.AddBody
@@ -32,7 +32,7 @@ module Replays = struct
         ; x0 = 600.
         ; y0 = 600.
         ; r = 50.
-        ; mu = 2.
+        ; mu = 20.
         ; m = Float.(pi * 50. * 50.)
         }
     ; S.Action.AddBody
@@ -40,7 +40,7 @@ module Replays = struct
         ; x0 = 500.
         ; y0 = 500.
         ; r = 60.
-        ; mu = 3.
+        ; mu = 30.
         ; m = Float.(pi * 60. * 60.)
         }
     ; S.Action.AddPoint { x = 400.; y = 200. }
@@ -86,7 +86,7 @@ module Replays = struct
   let start =
     lazy
       (actions
-      |> List.fold ~init:(S.Model.init ~g:10.) ~f:(fun acc action ->
+      |> List.fold ~init:(S.Model.init ~g:1.) ~f:(fun acc action ->
              S.Engine.recv
                ~action:
                  { time = 0.

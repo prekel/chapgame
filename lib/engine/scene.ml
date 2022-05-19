@@ -600,6 +600,7 @@ struct
         | BodyUpdated of (Body.Id.t * Vars.t * N.t)
         | PointUpdated of (Point.t * Point.t)
         | LineUpdated of (LineSegmentRay.t * LineSegmentRay.t)
+        | GlobalUpdated of (Vars.t * N.t)
         | Empty
       [@@deriving sexp, equal, compare]
     end
@@ -745,6 +746,7 @@ struct
       | UpdateBody of (Body.Id.t * Vars.t * N.t)
       | UpdateLine of LineSegmentRay.t * LineSegmentRay.t
       | UpdatePoint of Point.t * Point.t
+      | UpdateGlobal of (Vars.t * N.t)
       | Empty
     [@@deriving sexp, equal]
 
@@ -843,13 +845,14 @@ struct
       { scenes =
           Map.update (Scenes.to_map scenes) time ~f:(function
               | Some s ->
-                Scene.update
-                  s
-                  ~bodies:scene.Scene.bodies
-                  ~cause:(scene.cause @ s.Scene.cause)
-                  ~points:scene.points
-                  ~lines:scene.lines
-                  ~time
+                Scene.
+                  { bodies = scene.bodies
+                  ; cause = scene.cause @ s.Scene.cause
+                  ; points = scene.points
+                  ; lines = scene.lines
+                  ; global_values = scene.global_values
+                  ; time
+                  }
               | None -> scene)
           |> Scenes.of_map
       ; timeout
@@ -1112,6 +1115,12 @@ struct
       | UpdatePoint (old, new_) ->
         let points = s.points |> Points.remove ~el:old |> Points.add ~el:new_ in
         Scene.update s ~cause:[ PointUpdated (old, new_) ] ~points ~time
+      | UpdateGlobal (var, value) ->
+        Scene.
+          { s with
+            global_values = Values.update_scalar s.global_values ~var ~value
+          ; cause = [ GlobalUpdated (var, value) ]
+          }
       | Empty -> Scene.update s ~cause:[ Empty ] ~time
     ;;
 

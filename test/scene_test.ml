@@ -1,7 +1,7 @@
 (* open Core open Chapgame module SC = Scene.Make (Float) module SF = Solver.MakeSolver
    (Float)
 
-   let%expect_test "" = let eps = 1e-7 in let a = SC.Model.empty ~g:10. in let id1, id2 =
+   let%expect_test "" = let eps = 1e-7 in let a = SC.Model.empty ~g:1. in let id1, id2 =
    SC.Figure2.Id.(next (), next ()) in let a = SC.Engine.recv ~eps a ~action:{ time = 5. ;
    action = SC.Action.AddBody { id = id1; x0 = 1.; y0 = 1.; r = 1.; mu = 0.00001; m = 1. }
    } in let a = SC.Engine.recv ~eps a ~action:{ time = 10. ; action = SC.Action.AddBody {
@@ -28,7 +28,7 @@
    type scene1 = { time : float ; bodies : (int * SC.Values.t) Sequence.t ; global_values
    : SC.Values.t ; cause : SC.Scene.Cause.t list } [@@deriving sexp_of]
 
-   let%expect_test "test 2" = let eps = 1e-9 in let a = SC.Model.empty ~g:10. in let id1,
+   let%expect_test "test 2" = let eps = 1e-9 in let a = SC.Model.empty ~g:1. in let id1,
    id2 = 0, 1 in let recv_and_print a b = let ret = SC.Engine.recv ~eps a ~action:b in let
    r = ret |> List.rev |> Sequence.of_list |> Sequence.map ~f:(fun ({ time; _ } as scene)
    -> ( time , { time = scene.time ; bodies = scene.figures |> SC.Scene.Figures.to_map |>

@@ -181,7 +181,7 @@ module Scene = struct
                            ; x0 = 350.
                            ; y0 = 350.
                            ; r = 50.
-                           ; mu = 2.
+                           ; mu = 20.
                            ; m = Float.(pi * 50. * 50.)
                            }
                      ; timeout = Some Float.(time + timeoutd)
@@ -199,7 +199,7 @@ module Scene = struct
                            ; x0 = 800.
                            ; y0 = 500.
                            ; r = 75.
-                           ; mu = 2.
+                           ; mu = 20.
                            ; m = Float.(pi * 75. * 75.)
                            }
                      ; timeout = Some Float.(time + timeoutd)
@@ -217,7 +217,7 @@ module Scene = struct
                            ; x0 = 120.
                            ; y0 = 500.
                            ; r = 100.
-                           ; mu = 2.
+                           ; mu = 20.
                            ; m = Float.(pi * 100. * 100.)
                            }
                      ; timeout = Some Float.(time + timeoutd)
@@ -443,7 +443,7 @@ module Scene = struct
   ;;
 
   let online ~room_id =
-    let state_var = Bonsai.Var.create (S.Model.init ~g:10.) in
+    let state_var = Bonsai.Var.create (S.Model.init ~g:1.) in
     online123 ~state_var ~room_id
   ;;
 
@@ -460,7 +460,7 @@ module Scene = struct
           [@@deriving sexp, equal]
         end)
         ~default_model:
-          (S.Model.init ~g:10.
+          (S.Model.init ~g:1.
           |> S.Engine.recv
                ~action:
                  { time = 0.
@@ -470,7 +470,7 @@ module Scene = struct
                        ; x0 = 425.
                        ; y0 = 275.
                        ; r = 2.
-                       ; mu = 5.
+                       ; mu = 50.
                        ; m = Float.(pi * 2. * 2.)
                        }
                  ; timeout = None
@@ -484,7 +484,7 @@ module Scene = struct
                        ; x0 = 450.
                        ; y0 = 250.
                        ; r = 10.
-                       ; mu = 1.
+                       ; mu = 10.
                        ; m = Float.(pi * 10. * 10.)
                        }
                  ; timeout = None
@@ -498,7 +498,7 @@ module Scene = struct
                        ; x0 = 600.
                        ; y0 = 600.
                        ; r = 50.
-                       ; mu = 2.
+                       ; mu = 20.
                        ; m = Float.(pi * 50. * 50.)
                        }
                  ; timeout = None
@@ -512,7 +512,7 @@ module Scene = struct
                        ; x0 = 500.
                        ; y0 = 500.
                        ; r = 60.
-                       ; mu = 3.
+                       ; mu = 30.
                        ; m = Float.(pi * 60. * 60.)
                        }
                  ; timeout = None
