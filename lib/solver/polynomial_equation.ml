@@ -12,7 +12,7 @@ module Make
         match P.degree poly with
         | non_nat when non_nat <= 0 -> []
         | 1 -> poly |> LE.root_poly |> Option.to_list
-        | 2 -> poly |> QE.roots_poly
+        | 2 -> poly |> QE.roots_poly ~eps
         | _ ->
           poly
           |> P.derivative

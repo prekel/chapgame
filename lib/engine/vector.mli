@@ -15,4 +15,7 @@ module Make (N : Solver.Module_types.NUMBER) : sig
 
   (** [s ^* v] is [v] scaled by [s] *)
   val ( ^* ) : N.t -> t -> t
+
+  val ( = ) : t -> t -> bool
+  val unit : t -> t
 end

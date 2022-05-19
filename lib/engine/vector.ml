@@ -2,6 +2,7 @@ module Make (N : Solver.Module_types.NUMBER) = struct
   type t = N.t * N.t [@@deriving equal]
 
   let zero = N.zero, N.zero
+  let ( = ) = equal
 
   open N
 
@@ -20,4 +21,9 @@ module Make (N : Solver.Module_types.NUMBER) = struct
   let len a = N.(sqrt (len_sqr a))
   let ( *^ ) (a, b) c = N.(a * c, b * c)
   let ( ^* ) c (a, b) = N.(a * c, b * c)
+
+  let unit ((x, y) as v) =
+    let l = len v in
+    N.(x / l, y / l)
+  ;;
 end

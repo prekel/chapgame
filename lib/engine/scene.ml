@@ -558,15 +558,16 @@ struct
     ;;
 
     let calculate_new_v_with_line ~body ~line =
-      let a, b, c = LineSegmentRay.to_abc line in
+      let a, b, _ = LineSegmentRay.to_abc line in
       let v1 = Values.get_vector_exn body.Body.values ~var_x:`v0_x ~var_y:`v0_y in
       let m1 = Values.get_scalar_exn body.values ~var:`m in
       let x1 = Values.get_scalar_exn body.values ~var:`x0 in
       let y1 = Values.get_scalar_exn body.values ~var:`y0 in
+      let r = Values.get_scalar_exn body.values ~var:`r in
       let v2 = N.(zero, zero) in
       let m2 = N.infinity in
-      let x2 = N.(x1 - (a * c / (square a + square b))) in
-      let y2 = N.(y1 - (b * c / (square a + square b))) in
+      let module V = Vector in
+      let x2, y2 = V.((x1, y1) + (unit (a, b) *^ r)) in
       fst @@ collision_body ~v1 ~v2 ~m1 ~m2 ~x1 ~y1 ~x2 ~y2
     ;;
   end
@@ -1038,7 +1039,7 @@ struct
       in
       let filter_quantity =
         match quantity with
-        | Some quantity -> fun s -> Sequence.take s quantity 
+        | Some quantity -> fun s -> Sequence.take s quantity
         | None -> Fn.id
       in
       let reversed =
