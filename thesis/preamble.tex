@@ -5,21 +5,28 @@
 \usepackage{xltxtra}  % Верхние и нижние индексы
 \usepackage{pdfpages} % Вставка PDF
 
-\usepackage{listings} % Оформление исходного кода
-\lstset{
-    basicstyle=\small\ttfamily, % Размер и тип шрифта
-    breaklines=true,            % Перенос строк
-    tabsize=2,                  % Размер табуляции
-    frame=single,               % Рамка
-    literate={--}{{-{}-}}2,     % Корректно отображать двойной дефис
-    literate={---}{{-{}-{}-}}3  % Корректно отображать тройной дефис
-}
+% \usepackage{listings} % Оформление исходного кода
+% \lstset{
+%     basicstyle=\small\ttfamily, % Размер и тип шрифта
+%     breaklines=true,            % Перенос строк
+%     tabsize=2,                  % Размер табуляции
+%     frame=single,               % Рамка
+%     literate={--}{{-{}-}}2,     % Корректно отображать двойной дефис
+%     literate={---}{{-{}-{}-}}3  % Корректно отображать тройной дефис
+% }
 
 % Шрифты, xelatex
 \defaultfontfeatures{Ligatures=TeX}
 \setmainfont{Times New Roman} % Нормоконтроллеры хотят именно его
 \newfontfamily\cyrillicfont{Times New Roman}
 \setmonofont{FreeMono} % Моноширинный шрифт для оформления кода
+
+\usepackage{indentfirst}
+% \usepackage{parskip}
+\sloppy
+\linespread{1.3}
+\setlength{\parindent}{1.25cm}
+% \setlength{\parskip}{0pt}
 
 % Формулы
 \usepackage{mathtools,unicode-math} % Не совместим с amsmath
@@ -169,29 +176,52 @@
 % Оформление заголовков
 \usepackage[compact,explicit]{titlesec}
 \titleformat{\section}
-[block]{\vspace{1em}}{}{12.5mm}{
-    \bfseries\thesection~#1
-    \vspace{1em}
-}
+    {}
+    {\bfseries\thesection~#1}
+    {0pt}
+    {}
+    []
+\titlespacing*{\section}
+    {\parindent}
+    {1em}
+    {1em}
 \titleformat{\subsection}
-[block]{\vspace{1em}}{}{12.5mm}{
-    \bfseries\thesubsection~#1
-    \vspace{1em}
-}
+    {}
+    {\bfseries\thesubsection~#1}
+    {0pt}
+    {}
+    []
+\titlespacing*{\subsection}
+    {\parindent}
+    {1em}
+    {1em}
+
+% \titleformat{\subsection}
+% [block]{\vspace{1em}}{}{12.5mm}{
+%     \bfseries\thesubsection~#1
+% }
 % \titleformat{\subsubsection}
 % [block]{\vspace{1em}\normalsize}{}{12.5mm}{
 %     \bfseries\thesubsubsection~#1
 %     \vspace{1em}
 % }
-\titleformat{\paragraph}
-[block]{\vspace{1em}}{}{12.5mm}{
-    \bfseries\MakeTextUppercase{#1}
-}
+% \titleformat{\paragraph}
+% [block]{\vspace{1em}}{}{12.5mm}{
+%     \bfseries\MakeTextUppercase{#1}
+% }
 
 % Секции без номеров (введение, заключение...), вместо section*{}
-\newcommand{\anonsection}[1]{
+\newcommand{\AnonsectionNoToc}[1]{
+    \clearpage
     \phantomsection % Корректный переход по ссылкам в содержании
-    \paragraph{\bfseries\centerline{#1}}
+    \begin{center}
+        \bfseries\MakeTextUppercase{#1}
+    \end{center}
+    \par
+}
+% Секции без номеров (введение, заключение...), вместо section*{}
+\newcommand{\Anonsection}[1]{
+    \AnonsectionNoToc{#1}
     \addcontentsline{toc}{section}{#1}
 }
 
@@ -226,11 +256,3 @@
 
 \usepackage{lastpage} % Подсчет количества страниц
 % \setcounter{page}{3}  % Начало нумерации страниц
-
-
-\usepackage{indentfirst}
-\usepackage{parskip}
-\sloppy
-\linespread{1.3}
-\setlength{\parindent}{1.25cm}
-\setlength{\parskip}{1em}
