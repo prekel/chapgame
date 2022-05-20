@@ -492,13 +492,20 @@ module Make
       ]
   ;;
 
-  let box ~title:title_ inner =
+  let box ~title:title_ ?btn inner =
     let open Vdom in
     let open Node in
     let open Attr in
     div
       ~attr:(many [ classes [ "box"; "nopaddinglr" ] ])
-      [ h5 ~attr:(classes [ "is-5"; "title"; "paddinglr" ]) [ text title_ ]; inner ]
+      [ div
+          [ h5 ~attr:(classes [ "is-5"; "title"; "paddinglr" ]) [ text title_ ]
+          ; (match btn with
+            | Some btn -> btn
+            | None -> none)
+          ]
+      ; inner
+      ]
   ;;
 
   let export_import_clear ~model ~set_model =
@@ -684,6 +691,10 @@ module Make
     in
     box
       ~title:"Bodies"
+      ~btn:
+        (button
+           ~attr:(many [ class_ "button"; on_click (fun _ -> Effect.Ignore) ])
+           [ text "Add body" ])
       (div
          ~attr:(many [ classes [ "table-container" ] ])
          [ table
