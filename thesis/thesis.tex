@@ -19,6 +19,16 @@
 
 \usepackage{cite}
 
+\usepackage{polyglossia}
+\setmainlanguage[babelshorthands=true]{russian}
+\setmonofont{Courier New}                          % моноширинный шрифт
+\newfontfamily\cyrillicfonttt{Courier New}         % моноширинный шрифт для кириллицы
+\defaultfontfeatures{Ligatures=TeX}                % стандартные лигатуры TeX, замены нескольких дефисов на тире и т. п. Настройки моноширинного шрифта должны идти до этой строки, чтобы при врезках кода программ в коде не применялись лигатуры и замены дефисов
+\setmainfont{Times New Roman}                      % Шрифт с засечками
+\newfontfamily\cyrillicfont{Times New Roman}       % Шрифт с засечками для кириллицы
+\setsansfont{Arial}                                % Шрифт без засечек
+\newfontfamily\cyrillicfontsf{Arial}               % Шрифт без засечек для кириллицы
+
 \newcommand\PseudochapterNoTCO[1]{ 
     \begin{normalsize} 
         \bfseries 
@@ -124,7 +134,7 @@
 \[\frac{1}{3} \leqslant \frac{0}{0}\]
 
 \Section{Текст}
-Blablabla said Nobody ~\cite{Nobody06}.
+Blablabla said Nobody~\cite{Nobody06}.
 
 \addcontentsline{toc}{section}{\bibname}
 \bibliography{thesis}{}
