@@ -1,10 +1,17 @@
 \documentclass[oneside,draft,14pt]{extreport}
 
+\usepackage{fontspec}
+\usepackage{xunicode}
 \usepackage{xltxtra}
 
-\usepackage{vmargin}
-\setpapersize{A4}
-\setmarginsrb{30mm}{20mm}{10mm}{20mm}{0pt}{0mm}{0pt}{0mm}
+% \usepackage{pdfpages}
+% \usepackage{listings}
+
+\usepackage{geometry}
+\geometry{left=3cm}
+\geometry{right=1cm}
+\geometry{top=2cm}
+\geometry{bottom=2cm}
 
 \usepackage{indentfirst}
 \usepackage{parskip}
@@ -15,7 +22,6 @@
 
 \usepackage{polyglossia}
 \setmainlanguage{russian}
-\setotherlanguage{english}
 \setkeys{russian}{babelshorthands=true}
 \setmainfont{Times New Roman}
 \setromanfont{Times New Roman} 
@@ -28,154 +34,47 @@
 \makeatletter
 \addto\captionsrussian@modern{
     \renewcommand{\contentsname}{Содержание}
+    \renewcommand{\bibname}{Список использованых источников}
 }
 \makeatother
 
-\usepackage{csquotes}
+% \usepackage{mathtools,unicode-math}
+% \setmathfont{XITS Math}
+% \numberwithin{equation}{section}
 
-\usepackage[
-backend=biber,% движок
-bibencoding=utf8,% кодировка bib файла
-sorting=none,% настройка сортировки списка литературы
-style=gost-numeric,% стиль цитирования и библиографии (по ГОСТ)
-language=autobib,% получение языка из babel/polyglossia, default: autobib % если ставить autocite или auto, то цитаты в тексте с указанием страницы, получат указание страницы на языке оригинала
-autolang=other,% многоязычная библиография
-clearlang=true,% внутренний сброс поля language, если он совпадает с языком из babel/polyglossia
-defernumbers=true,% нумерация проставляется после двух компиляций, зато позволяет выцеплять библиографию по ключевым словам и нумеровать не из большего списка
-sortcites=true,% сортировать номера затекстовых ссылок при цитировании (если в квадратных скобках несколько ссылок, то отображаться будут отсортированно, а не абы как)
-doi=false,% Показывать или нет ссылки на DOI
-isbn=false,% Показывать или нет ISBN, ISSN, ISRN
-]{biblatex}
-\addbibresource{thesis.bib}
-\defbibenvironment{bibliography} % переопределяем окружение библиографии из gost-numeric.bbx пакета biblatex-gost
-{\list
-    {\printtext[labelnumberwidth]{%
-            \printfield{prefixnumber}%
-            \printfield{labelnumber}}}
-    {%
-        \setlength{\labelwidth}{\labelnumberwidth}%
-        \setlength{\leftmargin}{0pt}% default is \labelwidth
-        % \setlength{\labelsep}{\widthof{\ }}% Управляет длиной отступа после точки % default is \biblabelsep
-        \setlength{\itemsep}{\bibitemsep}% Управление дополнительным вертикальным разрывом между записями. \bibitemsep по умолчанию соответствует \itemsep списков в документе.
-        \setlength{\itemindent}{\bibhang}% Пользуемся тем, что \bibhang по умолчанию принимает значение \parindent (абзацного отступа), который переназначен в styles.tex
-        \addtolength{\itemindent}{\labelwidth}% Сдвигаем правее на величину номера с точкой
-        \addtolength{\itemindent}{\labelsep}% Сдвигаем ещё правее на отступ после точки
-        \setlength{\parsep}{\bibparsep}%
-    }%
-    \renewcommand*{\makelabel}[1]{\hss##1}%
-}
-{\endlist}
-{\item}
-%http://tex.stackexchange.com/a/141831/79756
-%There is a way to automatically map the language field to the langid field. The following lines in the preamble should be enough to do that.
-%This command will copy the language field into the langid field and will then delete the contents of the language field. The language field will only be deleted if it was successfully copied into the langid field.
-\DeclareSourcemap{ %модификация bib файла перед тем, как им займётся biblatex
-    \maps{
-        \map{% перекидываем значения полей language в поля langid, которыми пользуется biblatex
-            \step[fieldsource=language, fieldset=langid, origfieldval, final]
-            \step[fieldset=language, null]
+\usepackage{enumerate}   % Тонкая настройка списков
+\usepackage{indentfirst} % Красная строка после заголовка
+\usepackage{float}       % Расширенное управление плавающими объектами
+\usepackage{multirow}    % Сложные таблицы
+
+\usepackage{cite}
+
+% Оформление библиографии и подрисуночных записей через точку
+\makeatletter
+\renewcommand*{\@biblabel}[1]{\hfill#1.}
+\renewcommand*\l@section{\@dottedtocline{1}{1em}{1em}}
+\renewcommand{\thefigure}{\thesection.\arabic{figure}} % Формат рисунка секция.номер
+\renewcommand{\thetable}{\thesection.\arabic{table}}   % Формат таблицы секция.номер
+\def\redeflsection{\def\l@section{\@dottedtocline{1}{0em}{10em}}}
+\makeatother
+
+% Библиография: отступы и межстрочный интервал
+\makeatletter
+\renewenvironment{thebibliography}[1]
+    {\Pseudochapter{\bibname}
+        \list{\@biblabel{\@arabic\c@enumiv}}
+           {\settowidth\labelwidth{\@biblabel{#1}}
+            \leftmargin\labelsep
+            \itemindent 18.7mm
+            \@openbib@code
+            \usecounter{enumiv}
+            \let\p@enumiv\@empty
+            \renewcommand\theenumiv{\@arabic\c@enumiv}
         }
-        \map{% перекидываем значения полей numpages в поля pagetotal, которыми пользуется biblatex
-            \step[fieldsource=numpages, fieldset=pagetotal, origfieldval, final]
-            \step[fieldset=numpages, null]
-        }
-        \map{% перекидываем значения полей pagestotal в поля pagetotal, которыми пользуется biblatex
-            \step[fieldsource=pagestotal, fieldset=pagetotal, origfieldval, final]
-            \step[fieldset=pagestotal, null]
-        }
-        \map[overwrite]{% перекидываем значения полей shortjournal, если они есть, в поля journal, которыми пользуется biblatex
-            \step[fieldsource=shortjournal, final]
-            \step[fieldset=journal, origfieldval]
-            \step[fieldset=shortjournal, null]
-        }
-        \map[overwrite]{% перекидываем значения полей shortbooktitle, если они есть, в поля booktitle, которыми пользуется biblatex
-            \step[fieldsource=shortbooktitle, final]
-            \step[fieldset=booktitle, origfieldval]
-            \step[fieldset=shortbooktitle, null]
-        }
-        \map{% если в поле medium написано "Электронный ресурс", то устанавливаем поле media, которым пользуется biblatex, в значение eresource.
-            \step[fieldsource=medium,
-            match=\regexp{Электронный\s+ресурс},
-            final]
-            \step[fieldset=media, fieldvalue=eresource]
-            \step[fieldset=medium, null]
-        }
-        \map[overwrite]{% стираем значения всех полей issn
-            \step[fieldset=issn, null]
-        }
-        \map[overwrite]{% стираем значения всех полей abstract, поскольку ими не пользуемся, а там бывают "неприятные" латеху символы
-            \step[fieldsource=abstract]
-            \step[fieldset=abstract,null]
-        }
-        \map[overwrite]{ % переделка формата записи даты
-            \step[fieldsource=urldate,
-            match=\regexp{([0-9]{2})\.([0-9]{2})\.([0-9]{4})},
-            replace={$3-$2-$1$4}, % $4 вставлен исключительно ради нормальной работы программ подсветки синтаксиса, которые некорректно обрабатывают $ в таких конструкциях
-            final]
-        }
-        \map[overwrite]{ % стираем ключевые слова
-            \step[fieldsource=keywords]
-            \step[fieldset=keywords,null]
-        }
-        % реализация foreach различается для biblatex v3.12 и v3.13.
-        % Для версии v3.13 эта конструкция заменяет последующие 7 структур map
-        % \map[overwrite,foreach={authorvak,authorscopus,authorwos,authorconf,authorother,authorparent,authorprogram}]{ % записываем информацию о типе публикации в ключевые слова
-        %     \step[fieldsource=$MAPLOOP,final=true]
-        %     \step[fieldset=keywords,fieldvalue={,biblio$MAPLOOP},append=true]
-        % }
-        \map[overwrite]{ % записываем информацию о типе публикации в ключевые слова
-            \step[fieldsource=authorvak,final=true]
-            \step[fieldset=keywords,fieldvalue={,biblioauthorvak},append=true]
-        }
-        \map[overwrite]{ % записываем информацию о типе публикации в ключевые слова
-            \step[fieldsource=authorscopus,final=true]
-            \step[fieldset=keywords,fieldvalue={,biblioauthorscopus},append=true]
-        }
-        \map[overwrite]{ % записываем информацию о типе публикации в ключевые слова
-            \step[fieldsource=authorwos,final=true]
-            \step[fieldset=keywords,fieldvalue={,biblioauthorwos},append=true]
-        }
-        \map[overwrite]{ % записываем информацию о типе публикации в ключевые слова
-            \step[fieldsource=authorconf,final=true]
-            \step[fieldset=keywords,fieldvalue={,biblioauthorconf},append=true]
-        }
-        \map[overwrite]{ % записываем информацию о типе публикации в ключевые слова
-            \step[fieldsource=authorother,final=true]
-            \step[fieldset=keywords,fieldvalue={,biblioauthorother},append=true]
-        }
-        \map[overwrite]{ % записываем информацию о типе публикации в ключевые слова
-            \step[fieldsource=authorpatent,final=true]
-            \step[fieldset=keywords,fieldvalue={,biblioauthorpatent},append=true]
-        }
-        \map[overwrite]{ % записываем информацию о типе публикации в ключевые слова
-            \step[fieldsource=authorprogram,final=true]
-            \step[fieldset=keywords,fieldvalue={,biblioauthorprogram},append=true]
-        }
-        \map[overwrite]{ % добавляем ключевые слова, чтобы различать источники
-            \perdatasource{biblio/external.bib}
-            \step[fieldset=keywords, fieldvalue={,biblioexternal},append=true]
-        }
-        \map[overwrite]{ % добавляем ключевые слова, чтобы различать источники
-            \perdatasource{biblio/author.bib}
-            \step[fieldset=keywords, fieldvalue={,biblioauthor},append=true]
-        }
-        \map[overwrite]{ % добавляем ключевые слова, чтобы различать источники
-            \perdatasource{biblio/registered.bib}
-            \step[fieldset=keywords, fieldvalue={,biblioregistered},append=true]
-        }
-        \map[overwrite]{ % добавляем ключевые слова, чтобы различать источники
-            \step[fieldset=keywords, fieldvalue={,bibliofull},append=true]
-        }
-%        \map[overwrite]{% стираем значения всех полей series
-%            \step[fieldset=series, null]
-%        }
-        \map[overwrite]{% перекидываем значения полей howpublished в поля organization для типа online
-            \step[typesource=online, typetarget=online, final]
-            \step[fieldsource=howpublished, fieldset=organization, origfieldval]
-            \step[fieldset=howpublished, null]
-        }
+        \setlength{\itemsep}{0pt}
     }
-}
+\makeatother
+
 
 \newcommand\PseudochapterNoTCO[1]{ 
     \begin{normalsize} 
@@ -236,16 +135,13 @@ isbn=false,% Показывать или нет ISBN, ISSN, ISRN
 {} % sep
 {\centering \MakeUppercase} % before-code
 [] % after-code
-
-\titlespacing*{\chapter}{0pt}{-40pt}{10pt}
-
+\titlespacing*{\chapter}{0pt}{-40pt}{0pt}
 
 \title{thesis}
 \author{Владислав Прекель}
 \date{Май 2022}
 \maketitle
 \pagebreak
-
 \setcounter{page}{2}
 
 \PseudochapterNoTCO{Реферат}
@@ -258,7 +154,6 @@ isbn=false,% Показывать или нет ISBN, ISSN, ISRN
 \Pseudochapter{Введение}
 Это введение представляет собой простой пример применения паракоманды \titleformat.
 Почему? Да потому что в прошлом мы просто применяли парамочему не просто?
-
 \newpage
 
 \Section{Предисловие}
@@ -271,16 +166,23 @@ isbn=false,% Показывать или нет ISBN, ISSN, ISRN
 Кириллические символы также могут быть использованы в математическом режиме.
 
 \Subsection{Формула 1}
-Привет Мир! \foreignlanguage{english}{Hello world!}~\cite{eresource1}
-
-\begin{english}
-    Hello world!
-\end{english}
+Привет Мир!~\cite{qwf2}
 
 \Section{Текст}
-Blablabla said Nobody~\cite{qwf}.
+Фваыфвфы~\cite{qwf1}.
 
-\addcontentsline{toc}{section}{Список использованых источников}
-\printbibliography[title=Список использованых источников]
+\clearpage
+\begin{thebibliography}{00}
+    \bibitem{qwf1} qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1
+    qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1
+
+    \bibitem{qwf2} qwfqwf2qwf qwf2qwfqwf2qwfqwf2 qwfqwf2qwfqwf2qwfqw
+    f2qwfqwf2qwfqwf2qwf qwf2qwfqwf2qwfqwf2qwfqwf2qwf qwf2qwfqwf2qwfqwf2
+
+    \bibitem{qwf3} qwfqwf2qwfqwf 2qwfqwf2qwfqw f2qwfqwf 2qwfqwf2qwfqw
+    f2qwfqwf2qwf qwf2qwfq wf2qwfqwf2qwf qwf2qwfqwf2qwfqwf2 qwfqwf2qwfqwf2
+
+\end{thebibliography}
+\par
 
 \end{document}
