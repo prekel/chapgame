@@ -1,188 +1,52 @@
-\documentclass[oneside,draft,14pt]{extreport}
+%!TEX TS-program = xelatex
 
-\usepackage{fontspec}
-\usepackage{xunicode}
-\usepackage{xltxtra}
+% Author: Amet Umerov (admin@amet13.name)
+% https://github.com/Amet13/master-thesis
 
-% \usepackage{pdfpages}
-% \usepackage{listings}
+\documentclass[xetex,a4paper,14pt]{extarticle} % 14й шрифт
+\input{preamble} % Подключаем преамбулу
 
-\usepackage{geometry}
-\geometry{left=3cm}
-\geometry{right=1cm}
-\geometry{top=2cm}
-\geometry{bottom=2cm}
-
-\usepackage{indentfirst}
-\usepackage{parskip}
-\sloppy
-\linespread{1.3}
-\setlength{\parindent}{1.25cm}
-\setlength{\parskip}{1em}
-
-\usepackage{polyglossia}
-\setmainlanguage{russian}
-\setkeys{russian}{babelshorthands=true}
-\setmainfont{Times New Roman}
-\setromanfont{Times New Roman} 
-\setsansfont{Arial} 
-\setmonofont{Courier New} 
-\newfontfamily{\cyrillicfont}{Times New Roman} 
-\newfontfamily{\cyrillicfontrm}{Times New Roman}
-\newfontfamily{\cyrillicfonttt}{Courier New}
-\newfontfamily{\cyrillicfontsf}{Arial}
-\makeatletter
-\addto\captionsrussian@modern{
-    \renewcommand{\contentsname}{Содержание}
-    \renewcommand{\bibname}{Список использованых источников}
-}
-\makeatother
-
-% \usepackage{mathtools,unicode-math}
-% \setmathfont{XITS Math}
-% \numberwithin{equation}{section}
-
-\usepackage{enumerate}   % Тонкая настройка списков
-\usepackage{indentfirst} % Красная строка после заголовка
-\usepackage{float}       % Расширенное управление плавающими объектами
-\usepackage{multirow}    % Сложные таблицы
-
-\usepackage{cite}
-
-% Оформление библиографии и подрисуночных записей через точку
-\makeatletter
-\renewcommand*{\@biblabel}[1]{\hfill#1.}
-\renewcommand*\l@section{\@dottedtocline{1}{1em}{1em}}
-\renewcommand{\thefigure}{\thesection.\arabic{figure}} % Формат рисунка секция.номер
-\renewcommand{\thetable}{\thesection.\arabic{table}}   % Формат таблицы секция.номер
-\def\redeflsection{\def\l@section{\@dottedtocline{1}{0em}{10em}}}
-\makeatother
-
-% Библиография: отступы и межстрочный интервал
-\makeatletter
-\renewenvironment{thebibliography}[1]
-    {\Pseudochapter{\bibname}
-        \list{\@biblabel{\@arabic\c@enumiv}}
-           {\settowidth\labelwidth{\@biblabel{#1}}
-            \leftmargin\labelsep
-            \itemindent 18.7mm
-            \@openbib@code
-            \usecounter{enumiv}
-            \let\p@enumiv\@empty
-            \renewcommand\theenumiv{\@arabic\c@enumiv}
-        }
-        \setlength{\itemsep}{0pt}
-    }
-\makeatother
-
-
-\newcommand\PseudochapterNoTCO[1]{ 
-    \begin{normalsize} 
-        \bfseries 
-        \begin{center} 
-            \MakeUppercase{ #1 } 
-        \end{center} 
-    \par
-    \end{normalsize}
-}
-
-\newcommand\Pseudochapter[1]{
-    \begin{normalsize} 
-        \bfseries 
-        \begin{center} 
-            \MakeUppercase{ #1 } 
-        \end{center}
-    \end{normalsize}
-    \par
-    \addcontentsline{toc}{section}{#1}
-}
-
-\newcommand\Section[1]{
-    \refstepcounter{section}
-    \par{
-        \bfseries
-        \begin{normalsize}
-            \raggedright
-            \arabic{section} #1
-        \end{normalsize}
-    }
-    \par
-    \addcontentsline{toc}{section}{\arabic{section} #1}
-}
-
-\newcommand\Subsection[1]{
-    \refstepcounter{subsection}
-    \par{
-        \bfseries
-        \begin{normalsize}
-            \raggedright
-            \arabic{section}.\arabic{subsection} #1
-        \end{normalsize}
-    }
-    \par
-    \addcontentsline{toc}{subsection}{\arabic{section}.\arabic{subsection} #1}
-}
-
-\usepackage{titlesec}
-
+%%% Начало документа
 \begin{document}
 
-\titleformat
-{\chapter} % command
-[display] % shape
-{\bfseries\normalsize} % format
-{} % label
-{} % sep
-{\centering \MakeUppercase} % before-code
-[] % after-code
-\titlespacing*{\chapter}{0pt}{-40pt}{0pt}
+% 1 страница
+% \includepdf{extra/pz} % Пояснительная записка
 
-\title{thesis}
-\author{Владислав Прекель}
-\date{Май 2022}
-\maketitle
-\pagebreak
+% 2 страница (не нумеруется, но учитывается)
+% \includepdf[pages={1,2}]{extra/task} % Задание на ВКР печатается на одном листе с двух сторон
+
+% Помимо ПЗ и задания, в ВКР также вкладываются:
+% * отзыв руководителя (otzyv.pdf), на 1 странице с двух сторон
+% * рецензия (review.pdf), на 1 странице с двух сторон
+% * отчет по антиплагиату (antiplagiat.pdf)
+
+% 3 страница
+% \input{inc/0-annotation} % Аннотация
+
+
+\input{inc/0-title}
+
 \setcounter{page}{2}
 
-\PseudochapterNoTCO{Реферат}
-Здесь реферат
-\newpage
-
-\tableofcontents
-\newpage
-
-\Pseudochapter{Введение}
-Это введение представляет собой простой пример применения паракоманды \titleformat.
-Почему? Да потому что в прошлом мы просто применяли парамочему не просто?
-\newpage
-
-\Section{Предисловие}
-Этот текст будет на русском языке. Это демонстрация того, что символы кириллицы
-в сгенерированном документе (Compile to PDF) отображаются правильно.
-Для этого Вы должны установить нужный  язык (russian)
-и необходимую кодировку шрифта (T2A).
-
-\Section{Математические формулы}
-Кириллические символы также могут быть использованы в математическом режиме.
-
-\Subsection{Формула 1}
-Привет Мир!~\cite{qwf2}
-
-\Section{Текст}
-Фваыфвфы~\cite{qwf1}.
-
+\tableofcontents % Содержание 
 \clearpage
-\begin{thebibliography}{00}
-    \bibitem{qwf1} qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1
-    qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1 qwfqwf1
 
-    \bibitem{qwf2} qwfqwf2qwf qwf2qwfqwf2qwfqwf2 qwfqwf2qwfqwf2qwfqw
-    f2qwfqwf2qwfqwf2qwf qwf2qwfqwf2qwfqwf2qwfqwf2qwf qwf2qwfqwf2qwfqwf2
+\input{inc/0-intro}        % Введение
+\input{inc/1-main}        % Основная часть
 
-    \bibitem{qwf3} qwfqwf2qwfqwf 2qwfqwf2qwfqw f2qwfqwf 2qwfqwf2qwfqw
-    f2qwfqwf2qwf qwf2qwfq wf2qwfqwf2qwf qwf2qwfqwf2qwfqwf2 qwfqwf2qwfqwf2
+% \input{inc/1-pz}           % Постановка задачи
+% \input{inc/2-literature}   % Обзор литературных источников
+% \input{inc/3-sysanalyz}    % Системный анализ
+% \input{inc/4-varanalyz}    % Вариантный анализ
+% \input{inc/5-description}  % Описание системы информационной безопасности облачной среды
+% \input{inc/6-experiment}   % Экспериментальные исследования
+% \input{inc/7-results}      % Анализ полученных результатов
+% \input{inc/0-conclusion}   % Заключение
+% \input{inc/0-glossary}     % Перечень сокращений и условных обозначений
+\input{inc/0-bibliography} % Библиографический список
 
-\end{thebibliography}
-\par
+% Приложения
+% \input{inc/a-app} % Программа мониторинга уязвимостей в программном обеспечении
 
 \end{document}
+%%% Конец документа
