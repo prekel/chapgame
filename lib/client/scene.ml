@@ -638,10 +638,137 @@ module Make
          ])
   ;;
 
-  let bodies_table ~scene ~time ~remove_body =
+  let edit_body_modal body ~close ~set_values =
+    let%sub x, set_x = Bonsai.state_opt [%here] (module Float) in
+    let%sub y, set_y = Bonsai.state_opt [%here] (module Float) in
+    let%sub vx, set_vx = Bonsai.state_opt [%here] (module Float) in
+    let%sub vy, set_vy = Bonsai.state_opt [%here] (module Float) in
+    let%sub m, set_m = Bonsai.state_opt [%here] (module Float) in
+    let%sub mu, set_mu = Bonsai.state_opt [%here] (module Float) in
+    let%sub r, set_r = Bonsai.state_opt [%here] (module Float) in
+    let%arr x = x
+    and set_x = set_x
+    and y = y
+    and set_y = set_y
+    and vx = vx
+    and set_vx = set_vx
+    and vy = vy
+    and set_vy = set_vy
+    and m = m
+    and set_m = set_m
+    and mu = mu
+    and set_mu = set_mu
+    and r = r
+    and set_r = set_r
+    and body_ = body
+    and close = close
+    and set_values = set_values in
+    let open Vdom in
+    let open Node in
+    let open Attr in
+    let col ~val_ ~set_val =
+      div
+        ~attr:(classes [ "field"; "column" ])
+        [ label ~attr:(class_ "label") [ text "x" ]
+        ; div
+            ~attr:(class_ "control")
+            [ input
+                ~attr:
+                  (many
+                     [ class_ "input"
+                     ; type_ "text"
+                     ; on_change (fun _ new_val ->
+                           try set_val (Some (Float.of_string new_val)) with
+                           | _ -> Effect.Ignore)
+                     ; value (format_float val_)
+                     ])
+                []
+            ]
+        ]
+    in
+    div
+      ~attr:(classes [ "modal"; "is-active" ])
+      [ div ~attr:(many [ class_ "modal-background"; on_click (fun _ -> close ()) ]) []
+      ; div
+          ~attr:(many [ class_ "modal-card" ])
+          [ header
+              ~attr:(many [ class_ "modal-card-head" ])
+              [ p ~attr:(many [ class_ "modal-card-title" ]) [ text "Edit body" ]
+              ; button ~attr:(many [ class_ "delete"; on_click (fun _ -> close ()) ]) []
+              ]
+          ; section
+              ~attr:(classes [ "modal-card-body"; "columns" ])
+              [ col
+                  ~val_:(S.Values.get_scalar_exn body_.S.Body.values ~var:`x0)
+                  ~set_val:set_x
+              ; col
+                  ~val_:(S.Values.get_scalar_exn body_.S.Body.values ~var:`y0)
+                  ~set_val:set_y
+              ; col
+                  ~val_:(S.Values.get_scalar_exn body_.S.Body.values ~var:`v0_x)
+                  ~set_val:set_vx
+              ; col
+                  ~val_:(S.Values.get_scalar_exn body_.S.Body.values ~var:`v0_y)
+                  ~set_val:set_vy
+              ; col
+                  ~val_:(S.Values.get_scalar_exn body_.S.Body.values ~var:`mu)
+                  ~set_val:set_mu
+              ; col
+                  ~val_:(S.Values.get_scalar_exn body_.S.Body.values ~var:`r)
+                  ~set_val:set_r
+              ; col
+                  ~val_:(S.Values.get_scalar_exn body_.S.Body.values ~var:`m)
+                  ~set_val:set_m
+              ]
+          ; footer
+              ~attr:(class_ "modal-card-foot")
+              [ button
+                  ~attr:
+                    (many
+                       [ classes [ "button"; "is-success" ]
+                       ; on_click (fun _ ->
+                             let values =
+                               [ `x0, x
+                               ; `y0, y
+                               ; `v0_x, vx
+                               ; `v0_y, vy
+                               ; `mu, mu
+                               ; `r, r
+                               ; `m, m
+                               ]
+                               |> List.filter_map ~f:(fun (k, v) ->
+                                      Option.map v ~f:(fun v -> k, v))
+                             in
+                             let%bind.Effect () = set_values body_.id values in
+                             close ())
+                       ])
+                  [ text "OK" ]
+              ; button
+                  ~attr:(many [ classes [ "button" ]; on_click (fun _ -> close ()) ])
+                  [ text "Cancel" ]
+              ]
+          ]
+      ]
+  ;;
+
+  let bodies_table ~scene ~time ~remove_body ~set_values =
+    let%sub modal_body, set_modal_body = Bonsai.state_opt [%here] (module S.Body) in
+    let%sub edit_body_modal =
+      match%sub modal_body with
+      | Some body ->
+        let%sub close =
+          let%arr set_modal_body = set_modal_body in
+          fun () -> set_modal_body None
+        in
+        edit_body_modal body ~close ~set_values
+      | None -> Bonsai.Computation.return Vdom.Node.none
+    in
     let%arr scene = scene
     and time = time
-    and remove_body = remove_body in
+    and remove_body = remove_body
+    (* and modal_body = modal_body *)
+    and set_modal_body = set_modal_body
+    and edit_body_modal = edit_body_modal in
     let bodies =
       scene.S.Scene.bodies
       |> S.Scene.Figures.calc ~t:(time -. scene.time) ~global_values:scene.global_values
@@ -683,48 +810,57 @@ module Make
         ; td [ text (format_float a_y) ]
         ; td [ text (format_float a_len) ]
         ; td
+            [ span
+                ~attr:
+                  (many [ class_ "icon"; on_click (fun _ -> set_modal_body (Some body)) ])
+                [ Node.create "i" ~attr:(classes [ "fas"; "fa-edit" ]) [] ]
+            ]
+        ; td
             [ button
                 ~attr:(many [ class_ "delete"; on_click (fun _ -> remove_body body.id) ])
                 []
             ]
         ]
     in
-    box
-      ~title:"Bodies"
-      ~btn:
-        (button
-           ~attr:(many [ class_ "button"; on_click (fun _ -> Effect.Ignore) ])
-           [ text "Add body" ])
-      (div
-         ~attr:(many [ classes [ "table-container" ] ])
-         [ table
-             ~attr:(many [ classes [ "table"; "is-narrow"; "is-fullwidth" ] ])
-             [ thead
-                 [ tr
-                     [ th [ p [ text "id" ] ]
-                     ; th [ p [ text "x" ] ]
-                     ; th [ p [ text "y" ] ]
-                     ; th [ p [ text "μ" ] ]
-                     ; th [ p [ text "m" ] ]
-                     ; th [ p [ text "r" ] ]
-                     ; th [ p [ text "v"; Node.create "sub" [ text "x" ] ] ]
-                     ; th [ p [ text "v"; Node.create "sub" [ text "y" ] ] ]
-                     ; th [ p [ text "|v|" ] ]
-                     ; th [ p [ text "a"; Node.create "sub" [ text "x" ] ] ]
-                     ; th [ p [ text "a"; Node.create "sub" [ text "y" ] ] ]
-                     ; th [ p [ text "|a|" ] ]
-                     ; th ~attr:(class_ "deletetd") []
+    div
+      [ box
+          ~title:"Bodies"
+          ~btn:
+            (button
+               ~attr:(many [ class_ "button"; on_click (fun _ -> Effect.Ignore) ])
+               [ text "Add body" ])
+          (div
+             ~attr:(many [ classes [ "table-container" ] ])
+             [ table
+                 ~attr:(many [ classes [ "table"; "is-narrow"; "is-fullwidth" ] ])
+                 [ thead
+                     [ tr
+                         [ th [ p [ text "id" ] ]
+                         ; th [ p [ text "x" ] ]
+                         ; th [ p [ text "y" ] ]
+                         ; th [ p [ text "μ" ] ]
+                         ; th [ p [ text "m" ] ]
+                         ; th [ p [ text "r" ] ]
+                         ; th [ p [ text "v"; Node.create "sub" [ text "x" ] ] ]
+                         ; th [ p [ text "v"; Node.create "sub" [ text "y" ] ] ]
+                         ; th [ p [ text "|v|" ] ]
+                         ; th [ p [ text "a"; Node.create "sub" [ text "x" ] ] ]
+                         ; th [ p [ text "a"; Node.create "sub" [ text "y" ] ] ]
+                         ; th [ p [ text "|a|" ] ]
+                         ; th ~attr:(class_ "deletetd") []
+                         ; th ~attr:(class_ "deletetd") []
+                         ]
                      ]
+                 ; tbody
+                     (bodies
+                     |> S.Scene.Figures.to_sequence
+                     |> Sequence.map ~f:snd
+                     |> Sequence.map ~f:body_tr
+                     |> Sequence.to_list)
                  ]
-             ; Node.create "tfoot" []
-             ; tbody
-                 (bodies
-                 |> S.Scene.Figures.to_sequence
-                 |> Sequence.map ~f:snd
-                 |> Sequence.map ~f:body_tr
-                 |> Sequence.to_list)
-             ]
-         ])
+             ])
+      ; edit_body_modal
+      ]
   ;;
 
   let lines_table ~lines ~remove_line =
@@ -1018,7 +1154,11 @@ module Make
       let%arr dispatch = dispatch in
       fun id -> S.Action.RemoveBody id |> dispatch
     in
-    let%sub bodies_table = bodies_table ~scene ~time ~remove_body in
+    let%sub set_values =
+      let%arr dispatch = dispatch in
+      fun id values -> S.Action.UpdateBody (id, values) |> dispatch
+    in
+    let%sub bodies_table = bodies_table ~scene ~time ~remove_body ~set_values in
     let%sub remove_line =
       let%arr dispatch = dispatch in
       fun line -> S.Action.RemoveLine line |> dispatch

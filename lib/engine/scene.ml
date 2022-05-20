@@ -591,7 +591,7 @@ struct
       | RemoveBody of Body.Id.t
       | RemoveLine of LineSegmentRay.t
       | RemovePoint of Point.t
-      | UpdateBody of (Body.Id.t * Vars.t * N.t)
+      | UpdateBody of (Body.Id.t * (Vars.t * N.t) list)
       | UpdateLine of LineSegmentRay.t * LineSegmentRay.t
       | UpdatePoint of Point.t * Point.t
       | UpdateGlobal of (Vars.t * N.t)
@@ -1081,10 +1081,14 @@ struct
       | RemoveLine line -> Scene.update s ~lines:(Lines.remove s.lines ~el:line) ~time
       | RemovePoint point ->
         Scene.update s ~points:(Points.remove s.points ~el:point) ~time
-      | UpdateBody (id, var, value) ->
+      | UpdateBody (id, updated) ->
         let body = Scene.Figures.get_by_id s.bodies ~id in
+        let values =
+          List.fold updated ~init:body.values ~f:(fun acc (var, value) ->
+              Values.update_scalar acc ~var ~value)
+        in
         let body =
-          Body.{ body with values = Values.update_scalar body.values ~var ~value }
+          Body.{ body with values }
         in
         Scene.update
           s
