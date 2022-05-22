@@ -991,28 +991,30 @@ module Make
       ]
   ;;
 
+  let set_modal_open_and_pause ~set_modal_open ~set_pause =
+    let%sub was_paused, set_was_paused =
+      Bonsai.state [%here] (module Bool) ~default_model:false
+    in
+    let%arr set_modal_open = set_modal_open
+    and set_pause = set_pause
+    and was_paused = was_paused
+    and set_was_paused = set_was_paused in
+    function
+    | true ->
+      let%bind.Effect was = set_pause true in
+      let%bind.Effect () = set_was_paused was in
+      set_modal_open true
+    | false ->
+      let%bind.Effect _ = set_pause was_paused in
+      set_modal_open false
+  ;;
+
   let bodies_table ~scene ~time ~remove_body ~set_values ~set_pause =
     let%sub modal_body, set_modal_body = Bonsai.state_opt [%here] (module S.Body) in
     let%sub modal_open, set_modal_open =
       Bonsai.state [%here] (module Bool) ~default_model:false
     in
-    let%sub was_paused, set_was_paused =
-      Bonsai.state [%here] (module Bool) ~default_model:false
-    in
-    let%sub set_modal_open =
-      let%arr set_modal_open = set_modal_open
-      and set_pause = set_pause
-      and was_paused = was_paused
-      and set_was_paused = set_was_paused in
-      function
-      | true ->
-        let%bind.Effect was = set_pause true in
-        let%bind.Effect () = set_was_paused was in
-        set_modal_open true
-      | false ->
-        let%bind.Effect _ = set_pause was_paused in
-        set_modal_open false
-    in
+    let%sub set_modal_open = set_modal_open_and_pause ~set_modal_open ~set_pause in
     let%sub edit_body_modal =
       match%sub modal_open with
       | true ->
@@ -1135,9 +1137,15 @@ module Make
       ]
   ;;
 
-  let lines_table ~lines ~remove_line =
+  let lines_table ~lines ~remove_line ~add_line:_ ~set_pause =
+    let%sub modal_open, set_modal_open =
+      Bonsai.state [%here] (module Bool) ~default_model:false
+    in
+    let%sub set_modal_open = set_modal_open_and_pause ~set_modal_open ~set_pause in
     let%arr lines = lines
-    and remove_line = remove_line in
+    and remove_line = remove_line
+    and modal_open = modal_open
+    and set_modal_open = set_modal_open in
     let open Vdom in
     let open Node in
     let open Attr in
@@ -1164,31 +1172,90 @@ module Make
             ]
         ]
     in
-    box
-      ~title:"Lines"
-      (div
-         ~attr:(many [ classes [] ])
-         [ table
-             ~attr:(many [ classes [ "table"; "is-narrow"; "is-fullwidth" ] ])
-             [ thead
-                 [ tr
-                     [ th [ p [ text "P1"; Node.create "sub" [ text "x" ] ] ]
-                     ; th [ p [ text "P1"; Node.create "sub" [ text "y" ] ] ]
-                     ; th [ p [ text "P2"; Node.create "sub" [ text "x" ] ] ]
-                     ; th [ p [ text "P2"; Node.create "sub" [ text "y" ] ] ]
-                     ; th [ p [ text "kind" ] ]
-                     ; th ~attr:(class_ "deletetd") []
+    div
+      [ box
+          ~title:"Lines"
+          ~btn:
+            (button
+               ~attr:
+                 (many
+                    [ classes [ "button"; "is-small" ]
+                    ; on_click (fun _ -> set_modal_open true)
+                    ])
+               [ text "Add" ])
+          (div
+             ~attr:(many [ classes [] ])
+             [ table
+                 ~attr:(many [ classes [ "table"; "is-narrow"; "is-fullwidth" ] ])
+                 [ thead
+                     [ tr
+                         [ th [ p [ text "P1"; Node.create "sub" [ text "x" ] ] ]
+                         ; th [ p [ text "P1"; Node.create "sub" [ text "y" ] ] ]
+                         ; th [ p [ text "P2"; Node.create "sub" [ text "x" ] ] ]
+                         ; th [ p [ text "P2"; Node.create "sub" [ text "y" ] ] ]
+                         ; th [ p [ text "kind" ] ]
+                         ; th ~attr:(class_ "deletetd") []
+                         ]
                      ]
+                 ; Node.create "tfoot" []
+                 ; tbody (lines |> List.map ~f:line_tr)
                  ]
-             ; Node.create "tfoot" []
-             ; tbody (lines |> List.map ~f:line_tr)
-             ]
-         ])
+             ])
+      ; (if modal_open
+        then
+          div
+            ~attr:(classes [ "modal"; "is-active" ])
+            [ div
+                ~attr:
+                  (many
+                     [ class_ "modal-background"
+                     ; on_click (fun _ -> set_modal_open false)
+                     ])
+                []
+            ; div
+                ~attr:(many [ class_ "modal-card" ])
+                [ header
+                    ~attr:(many [ class_ "modal-card-head" ])
+                    [ p ~attr:(many [ class_ "modal-card-title" ]) [ text "Add line" ]
+                    ; button
+                        ~attr:
+                          (many
+                             [ class_ "delete"; on_click (fun _ -> set_modal_open false) ])
+                        []
+                    ]
+                ; section ~attr:(class_ "modal-card-body") []
+                ; footer
+                    ~attr:(class_ "modal-card-foot")
+                    [ button
+                        ~attr:
+                          (many
+                             [ classes [ "button"; "is-success" ]
+                             ; on_click (fun _ -> set_modal_open false)
+                             ])
+                        [ text "OK" ]
+                    ; button
+                        ~attr:
+                          (many
+                             [ classes [ "button" ]
+                             ; on_click (fun _ -> set_modal_open false)
+                             ])
+                        [ text "Cancel" ]
+                    ]
+                ]
+            ]
+        else none)
+      ]
   ;;
 
-  let points_table ~points ~remove_point =
+  let points_table ~points ~remove_point ~set_pause =
+    let%sub modal_open, set_modal_open =
+      Bonsai.state [%here] (module Bool) ~default_model:false
+    in
+    let%sub set_modal_open = set_modal_open_and_pause ~set_modal_open ~set_pause in
     let%arr points = points
-    and remove_point = remove_point in
+    and remove_point = remove_point
+    and modal_open = modal_open
+    and set_modal_open = set_modal_open in
     let open Vdom in
     let open Node in
     let open Attr in
@@ -1203,23 +1270,76 @@ module Make
             ]
         ]
     in
-    box
-      ~title:"Points"
-      (div
-         ~attr:(many [ classes [ "table-container" ] ])
-         [ table
-             ~attr:(many [ classes [ "table"; "is-narrow"; "is-fullwidth" ] ])
-             [ thead
-                 [ tr
-                     [ th [ p [ text "x" ] ]
-                     ; th [ p [ text "y" ] ]
-                     ; th ~attr:(class_ "deletetd") []
+    div
+      [ box
+          ~title:"Points"
+          ~btn:
+            (button
+               ~attr:
+                 (many
+                    [ classes [ "button"; "is-small" ]
+                    ; on_click (fun _ -> set_modal_open true)
+                    ])
+               [ text "Add" ])
+          (div
+             ~attr:(many [ classes [ "table-container" ] ])
+             [ table
+                 ~attr:(many [ classes [ "table"; "is-narrow"; "is-fullwidth" ] ])
+                 [ thead
+                     [ tr
+                         [ th [ p [ text "x" ] ]
+                         ; th [ p [ text "y" ] ]
+                         ; th ~attr:(class_ "deletetd") []
+                         ]
                      ]
+                 ; Node.create "tfoot" []
+                 ; tbody (points |> List.map ~f:point_tr)
                  ]
-             ; Node.create "tfoot" []
-             ; tbody (points |> List.map ~f:point_tr)
-             ]
-         ])
+             ])
+      ; (if modal_open
+        then
+          div
+            ~attr:(classes [ "modal"; "is-active" ])
+            [ div
+                ~attr:
+                  (many
+                     [ class_ "modal-background"
+                     ; on_click (fun _ -> set_modal_open false)
+                     ])
+                []
+            ; div
+                ~attr:(many [ class_ "modal-card" ])
+                [ header
+                    ~attr:(many [ class_ "modal-card-head" ])
+                    [ p ~attr:(many [ class_ "modal-card-title" ]) [ text "Add point" ]
+                    ; button
+                        ~attr:
+                          (many
+                             [ class_ "delete"; on_click (fun _ -> set_modal_open false) ])
+                        []
+                    ]
+                ; section ~attr:(class_ "modal-card-body") []
+                ; footer
+                    ~attr:(class_ "modal-card-foot")
+                    [ button
+                        ~attr:
+                          (many
+                             [ classes [ "button"; "is-success" ]
+                             ; on_click (fun _ -> set_modal_open false)
+                             ])
+                        [ text "OK" ]
+                    ; button
+                        ~attr:
+                          (many
+                             [ classes [ "button" ]
+                             ; on_click (fun _ -> set_modal_open false)
+                             ])
+                        [ text "Cancel" ]
+                    ]
+                ]
+            ]
+        else none)
+      ]
   ;;
 
   let until_panel ~(until : S.Action.until Value.t) ~set_until ~current =
@@ -1442,10 +1562,16 @@ module Make
       let%arr dispatch = dispatch in
       fun line -> S.Action.RemoveLine line |> dispatch
     in
+    let%sub add_line =
+      let%arr dispatch = dispatch in
+      fun line -> S.Action.AddLine line |> dispatch
+    in
     let%sub lines_table =
       lines_table
         ~lines:(Bonsai.Value.map scene ~f:(fun scene -> scene.lines |> S.Lines.to_list))
         ~remove_line
+        ~add_line
+        ~set_pause
     in
     let%sub remove_point =
       let%arr dispatch = dispatch in
@@ -1456,6 +1582,7 @@ module Make
         ~points:
           (Bonsai.Value.map scene ~f:(fun scene -> scene.points |> S.Points.to_list))
         ~remove_point
+        ~set_pause
     in
     let%sub until_panel =
       until_panel
