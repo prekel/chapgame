@@ -135,7 +135,7 @@ let set_value_manually ~value_changed_manually ~set_value =
     set_value new_value
 ;;
 
-let interactive_input ~value ~set_manually =
+let interactive_input ~value ~set_manually ~wheel_step =
   let%sub init = Bonsai_extra.freeze [%here] (module Float) value in
   let%sub field, set_field =
     Bonsai_extra.state_dynamic_model
@@ -157,6 +157,7 @@ let interactive_input ~value ~set_manually =
   let%arr field = field
   and set_field = set_field
   and set_is_focused = set_is_focused
+  and is_focused = is_focused
   and set_manually = set_manually in
   let open Vdom in
   let open Node in
@@ -167,11 +168,28 @@ let interactive_input ~value ~set_manually =
          [ classes [ "input"; "is-small" ]
          ; type_ "text"
          ; on_focus (fun _ -> set_is_focused true)
-         ; on_blur (fun _ -> set_is_focused false)
-         ; on_input (fun _ s -> set_field s)
-         ; on_change (fun _ a ->
-               try a |> Float.of_string |> set_manually with
+         ; on_blur (fun _ ->
+               let%bind.Effect () = set_is_focused false in
+               try
+                 let new_val = field |> Float.of_string in
+                 new_val |> set_manually
+               with
                | _ -> Effect.Ignore)
+         ; on_input (fun _ s -> set_field s)
+         ; on_wheel (fun event ->
+               if is_focused
+               then (
+                 let delta =
+                   let open Float in
+                   if (Js.Unsafe.coerce event)##.deltaY > 0.
+                   then -wheel_step
+                   else wheel_step
+                 in
+                 let curr_val = Float.of_string field in
+                 let new_val = curr_val +. delta in
+                 let%bind.Effect () = new_val |> format_float |> set_field in
+                 Effect.Prevent_default)
+               else Effect.Ignore)
          ; value_prop field
          ])
     []
@@ -187,7 +205,7 @@ let time_panel ~time_changed_manually =
     set_value_manually ~value_changed_manually:time_changed_manually ~set_value:set_time
   in
   let%sub interactve_input =
-    interactive_input ~value:time ~set_manually:set_time_manually
+    interactive_input ~value:time ~set_manually:set_time_manually ~wheel_step:0.5
   in
   let%arr time = time
   and set_time = set_time
@@ -231,7 +249,7 @@ let speed_panel ~speed_changed_manually =
   in
   let%sub paused_speed, set_paused_speed = Bonsai.state_opt [%here] (module Float) in
   let%sub interactve_input =
-    interactive_input ~value:speed ~set_manually:set_speed_manually
+    interactive_input ~value:speed ~set_manually:set_speed_manually ~wheel_step:0.1
   in
   let%sub toggle_pause =
     let%arr speed = speed
@@ -317,7 +335,7 @@ let speed_panel ~speed_changed_manually =
 
 let g_panel ~g ~g_changed_manually =
   let%sub interactve_input =
-    interactive_input ~value:g ~set_manually:g_changed_manually
+    interactive_input ~value:g ~set_manually:g_changed_manually ~wheel_step:0.1
   in
   let%arr g = g
   and g_changed_manually = g_changed_manually
