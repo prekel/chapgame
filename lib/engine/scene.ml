@@ -593,6 +593,7 @@ struct
       | AddBodyOfValues of (Body.Id.t option * (Vars.t * N.t) list)
       | AddPoint of Point.t
       | AddLine of LineSegmentRay.t
+      | AddLineWithPoints of LineSegmentRay.t
       | GiveVelocity of
           { id : Body.Id.t
           ; v0 : N.t * N.t
@@ -1086,6 +1087,15 @@ struct
           ~time
       | AddPoint point -> Scene.update s ~points:(Points.add s.points ~el:point) ~time
       | AddLine line -> Scene.update s ~lines:(Lines.add s.lines ~el:line) ~time
+      | AddLineWithPoints line ->
+        let lines = Lines.add s.lines ~el:line in
+        let points =
+          match line.kind with
+          | `Segment -> s.points |> Points.add ~el:line.p1 |> Points.add ~el:line.p2
+          | `Ray -> s.points |> Points.add ~el:line.p1
+          | `Line -> s.points
+        in
+        Scene.update s ~lines ~time ~points
       | GiveVelocity { id; v0 } ->
         let body = Scene.Figures.get_by_id s.bodies ~id in
         let body = Body.update_v0 body ~v:v0 ~rules:Rule.rules1 in

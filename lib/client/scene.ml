@@ -1137,14 +1137,213 @@ module Make
       ]
   ;;
 
-  let lines_table ~lines ~remove_line ~add_line:_ ~set_pause =
+  let modal ~set_pause ~title:title_ =
     let%sub modal_open, set_modal_open =
       Bonsai.state [%here] (module Bool) ~default_model:false
     in
     let%sub set_modal_open = set_modal_open_and_pause ~set_modal_open ~set_pause in
+    let%arr modal_open = modal_open
+    and set_modal_open = set_modal_open in
+    let open Vdom in
+    let open Node in
+    let open Attr in
+    ( set_modal_open
+    , fun inner ~on_ok ->
+        if modal_open
+        then
+          div
+            ~attr:(classes [ "modal"; "is-active" ])
+            [ div
+                ~attr:
+                  (many
+                     [ class_ "modal-background"
+                     ; on_click (fun _ -> set_modal_open false)
+                     ])
+                []
+            ; div
+                ~attr:(many [ class_ "modal-card" ])
+                [ header
+                    ~attr:(many [ class_ "modal-card-head" ])
+                    [ p ~attr:(many [ class_ "modal-card-title" ]) [ text title_ ]
+                    ; button
+                        ~attr:
+                          (many
+                             [ class_ "delete"; on_click (fun _ -> set_modal_open false) ])
+                        []
+                    ]
+                ; section ~attr:(class_ "modal-card-body") [ inner ]
+                ; footer
+                    ~attr:(class_ "modal-card-foot")
+                    [ button
+                        ~attr:
+                          (many
+                             [ classes [ "button"; "is-success" ]
+                             ; on_click (fun _ ->
+                                   match%bind.Effect on_ok () with
+                                   | true -> set_modal_open false
+                                   | false -> Effect.Ignore)
+                             ])
+                        [ text "OK" ]
+                    ; button
+                        ~attr:
+                          (many
+                             [ classes [ "button" ]
+                             ; on_click (fun _ -> set_modal_open false)
+                             ])
+                        [ text "Cancel" ]
+                    ]
+                ]
+            ]
+        else none )
+  ;;
+
+  let line_add_modal ~add_line ~set_pause =
+    let%sub set_modal_open, modal = modal ~set_pause ~title:"Add line" in
+    let%sub p1x, set_p1x = Bonsai.state_opt [%here] (module Float) in
+    let%sub p1y, set_p1y = Bonsai.state_opt [%here] (module Float) in
+    let%sub p2x, set_p2x = Bonsai.state_opt [%here] (module Float) in
+    let%sub p2y, set_p2y = Bonsai.state_opt [%here] (module Float) in
+    let%sub kind, set_kind =
+      Bonsai.state_opt
+        [%here]
+        (module struct
+          type t = S.LineSegmentRay.kind [@@deriving sexp, equal]
+        end)
+        ~default_model:`Segment
+    in
+    let%arr add_line = add_line
+    and modal = modal
+    and set_modal_open = set_modal_open
+    and p1x = p1x
+    and p1y = p1y
+    and p2x = p2x
+    and p2y = p2y
+    and kind = kind
+    and set_p1x = set_p1x
+    and set_p1y = set_p1y
+    and set_p2x = set_p2x
+    and set_p2y = set_p2y
+    and set_kind = set_kind in
+    let open Vdom in
+    let open Node in
+    let open Attr in
+    let field ~value:value_ ~set_value ~label:label_ =
+      div
+        ~attr:(class_ "field")
+        [ label ~attr:(class_ "label") [ label_ ]
+        ; div
+            ~attr:(class_ "control")
+            [ input
+                ~attr:
+                  (many
+                     [ class_ "input"
+                     ; type_ "text"
+                     ; on_change (fun _ new_val ->
+                           try set_value (Some (Float.of_string new_val)) with
+                           | _ -> set_value None)
+                     ; value
+                         (match value_ with
+                         | Some v -> format_float v
+                         | None -> "")
+                     ])
+                []
+            ]
+        ]
+    in
+    ( set_modal_open
+    , modal
+        ~on_ok:(fun () ->
+          match p1x, p1y, p2x, p2y, kind with
+          | Some p1x, Some p1y, Some p2x, Some p2y, Some kind ->
+            let%bind.Effect () =
+              add_line
+                S.LineSegmentRay.
+                  { p1 = { x = p1x; y = p1y }; p2 = { x = p2x; y = p2y }; kind }
+            in
+            Effect.return true
+          | _ -> Effect.return false)
+        (div
+           [ div
+               ~attr:(classes [ "columns" ])
+               [ div
+                   ~attr:(classes [ "column" ])
+                   [ field
+                       ~value:p1x
+                       ~set_value:set_p1x
+                       ~label:(p [ text "P1"; Node.create "sub" [ text "x" ] ])
+                   ]
+               ; div
+                   ~attr:(classes [ "column" ])
+                   [ field
+                       ~value:p1y
+                       ~set_value:set_p1y
+                       ~label:(p [ text "P1"; Node.create "sub" [ text "y" ] ])
+                   ]
+               ]
+           ; div
+               ~attr:(classes [ "columns" ])
+               [ div
+                   ~attr:(classes [ "column" ])
+                   [ field
+                       ~value:p2x
+                       ~set_value:set_p2x
+                       ~label:(p [ text "P2"; Node.create "sub" [ text "x" ] ])
+                   ]
+               ; div
+                   ~attr:(classes [ "column" ])
+                   [ field
+                       ~value:p2y
+                       ~set_value:set_p2y
+                       ~label:(p [ text "P2"; Node.create "sub" [ text "y" ] ])
+                   ]
+               ]
+           ; div
+               ~attr:(classes [])
+               [ div
+                   ~attr:(class_ "field")
+                   [ label ~attr:(class_ "label") [ text "kind" ]
+                   ; div
+                       ~attr:(class_ "control")
+                       [ div
+                           ~attr:(class_ "select")
+                           [ select
+                               ~attr:
+                                 (many
+                                    [ on_change (fun _ s ->
+                                          Sexp.of_string s
+                                          |> [%of_sexp: S.LineSegmentRay.kind]
+                                          |> Option.some
+                                          |> set_kind)
+                                    ])
+                               [ option
+                                   [ text
+                                       (Sexp.to_string
+                                          [%sexp (`Line : S.LineSegmentRay.kind)])
+                                   ]
+                               ; option
+                                   ~attr:selected
+                                   [ text
+                                       (Sexp.to_string
+                                          [%sexp (`Segment : S.LineSegmentRay.kind)])
+                                   ]
+                               ; option
+                                   [ text
+                                       (Sexp.to_string
+                                          [%sexp (`Ray : S.LineSegmentRay.kind)])
+                                   ]
+                               ]
+                           ]
+                       ]
+                   ]
+               ]
+           ]) )
+  ;;
+
+  let lines_table ~lines ~remove_line ~add_line ~set_pause =
+    let%sub set_modal_open, modal = line_add_modal ~add_line ~set_pause in
     let%arr lines = lines
     and remove_line = remove_line
-    and modal_open = modal_open
+    and modal = modal
     and set_modal_open = set_modal_open in
     let open Vdom in
     let open Node in
@@ -1201,49 +1400,7 @@ module Make
                  ; tbody (lines |> List.map ~f:line_tr)
                  ]
              ])
-      ; (if modal_open
-        then
-          div
-            ~attr:(classes [ "modal"; "is-active" ])
-            [ div
-                ~attr:
-                  (many
-                     [ class_ "modal-background"
-                     ; on_click (fun _ -> set_modal_open false)
-                     ])
-                []
-            ; div
-                ~attr:(many [ class_ "modal-card" ])
-                [ header
-                    ~attr:(many [ class_ "modal-card-head" ])
-                    [ p ~attr:(many [ class_ "modal-card-title" ]) [ text "Add line" ]
-                    ; button
-                        ~attr:
-                          (many
-                             [ class_ "delete"; on_click (fun _ -> set_modal_open false) ])
-                        []
-                    ]
-                ; section ~attr:(class_ "modal-card-body") []
-                ; footer
-                    ~attr:(class_ "modal-card-foot")
-                    [ button
-                        ~attr:
-                          (many
-                             [ classes [ "button"; "is-success" ]
-                             ; on_click (fun _ -> set_modal_open false)
-                             ])
-                        [ text "OK" ]
-                    ; button
-                        ~attr:
-                          (many
-                             [ classes [ "button" ]
-                             ; on_click (fun _ -> set_modal_open false)
-                             ])
-                        [ text "Cancel" ]
-                    ]
-                ]
-            ]
-        else none)
+      ; modal
       ]
   ;;
 
@@ -1564,7 +1721,7 @@ module Make
     in
     let%sub add_line =
       let%arr dispatch = dispatch in
-      fun line -> S.Action.AddLine line |> dispatch
+      fun line -> S.Action.AddLineWithPoints line |> dispatch
     in
     let%sub lines_table =
       lines_table

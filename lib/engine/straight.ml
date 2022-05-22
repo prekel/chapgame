@@ -5,10 +5,17 @@ module Make
     (Point : module type of Point.Make (N)) =
     struct
   module T = struct
+    type kind =
+      [ `Line
+      | `Segment
+      | `Ray
+      ]
+    [@@deriving sexp, equal, compare]
+
     type t =
       { p1 : Point.t
       ; p2 : Point.t
-      ; kind : [ `Line | `Segment | `Ray ]
+      ; kind : kind
       }
     [@@deriving sexp, equal, compare]
   end

@@ -1,13 +1,20 @@
 open Core
 
 module Make (N : Solver.Module_types.NUMBER) (Point : module type of Point.Make (N)) : sig
+  type kind =
+    [ `Line
+    | `Segment
+    | `Ray
+    ]
+  [@@deriving sexp, equal, compare]
+
   type t =
     { p1 : Point.t
     ; p2 : Point.t
-    ; kind : [ `Line | `Segment | `Ray ]
+    ; kind : kind
     }
+  [@@deriving sexp]
 
-  include Sexpable.S with type t := t
   include Comparable.S with type t := t
 
   val of_points : p1:Point.t -> p2:Point.t -> kind:[ `Line | `Ray | `Segment ] -> t
