@@ -17,7 +17,7 @@ module Replays = struct
         ; y0 = 275.
         ; r = 2.
         ; mu = 50.
-        ; m = Float.(pi * 2. * 2.)
+        ; m = Float.(3. * 2. * 2.)
         }
     ; S.Action.AddBody
         { id = Some (S.Body.Id.next ())
@@ -25,7 +25,7 @@ module Replays = struct
         ; y0 = 250.
         ; r = 10.
         ; mu = 10.
-        ; m = Float.(pi * 10. * 10.)
+        ; m = Float.(3. * 10. * 10.)
         }
     ; S.Action.AddBody
         { id = Some (S.Body.Id.next ())
@@ -33,7 +33,7 @@ module Replays = struct
         ; y0 = 600.
         ; r = 50.
         ; mu = 20.
-        ; m = Float.(pi * 50. * 50.)
+        ; m = Float.(3. * 50. * 50.)
         }
     ; S.Action.AddBody
         { id = Some (S.Body.Id.next ())
@@ -41,7 +41,7 @@ module Replays = struct
         ; y0 = 500.
         ; r = 60.
         ; mu = 30.
-        ; m = Float.(pi * 60. * 60.)
+        ; m = Float.(3. * 60. * 60.)
         }
     ; S.Action.AddPoint { x = 400.; y = 200. }
     ; S.Action.AddPoint { x = 1100.; y = 100. }
@@ -88,11 +88,7 @@ module Replays = struct
       (actions
       |> List.fold ~init:(S.Model.init ~g:1.) ~f:(fun acc action ->
              S.Engine.recv
-               ~action:
-                 { time = 0.
-                 ; action
-                 ; until = { timespan = None; quantity = None }
-                 }
+               ~action:{ time = 0.; action; until = { timespan = None; quantity = None } }
                acc))
   ;;
 

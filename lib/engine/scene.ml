@@ -582,6 +582,7 @@ struct
           ; mu : N.t
           ; m : N.t
           }
+      | AddBodyOfValues of (Body.Id.t option * (Vars.t * N.t) list)
       | AddPoint of Point.t
       | AddLine of LineSegmentRay.t
       | GiveVelocity of
@@ -682,25 +683,17 @@ struct
       }
     ;;
 
+    let add_figure_values figures ~id ~values =
+      Figures.add figures ~id ~body:Body.{ id; values; rules = Rule.rules0 }
+    ;;
+
     let add_figure figures ~id ~x0 ~y0 ~r ~mu ~m =
-      Figures.add
+      add_figure_values
         figures
         ~id
-        ~body:
-          Body.
-            { id
-            ; values =
-                Values.of_alist
-                  [ `x0, x0
-                  ; `y0, y0
-                  ; `v0_x, N.zero
-                  ; `v0_y, N.zero
-                  ; `r, r
-                  ; `mu, mu
-                  ; `m, m
-                  ]
-            ; rules = Rule.rules0
-            }
+        ~values:
+          (Values.of_alist
+             [ `x0, x0; `y0, y0; `v0_x, N.zero; `v0_y, N.zero; `r, r; `mu, mu; `m, m ])
     ;;
 
     let init ~g =
@@ -1068,6 +1061,18 @@ struct
           s
           ~bodies:(Scene.add_figure s.Scene.bodies ~id ~x0 ~y0 ~r ~mu ~m)
           ~time
+      | AddBodyOfValues (id, values) ->
+        Scene.update
+          s
+          ~bodies:
+            (Scene.add_figure_values
+               s.Scene.bodies
+               ~id:
+                 (match id with
+                 | Some id -> id
+                 | None -> Body.Id.next ())
+               ~values:(Values.of_alist values))
+          ~time
       | AddPoint point -> Scene.update s ~points:(Points.add s.points ~el:point) ~time
       | AddLine line -> Scene.update s ~lines:(Lines.add s.lines ~el:line) ~time
       | GiveVelocity { id; v0 } ->
@@ -1087,9 +1092,7 @@ struct
           List.fold updated ~init:body.values ~f:(fun acc (var, value) ->
               Values.update_scalar acc ~var ~value)
         in
-        let body =
-          Body.{ body with values }
-        in
+        let body = Body.{ body with values } in
         Scene.update
           s
           ~bodies:(Scene.Figures.update_by_id s.bodies ~id:body.id ~body)

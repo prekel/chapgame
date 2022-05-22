@@ -499,10 +499,16 @@ module Make
     div
       ~attr:(many [ classes [ "box"; "nopaddinglr" ] ])
       [ div
-          [ h5 ~attr:(classes [ "is-5"; "title"; "paddinglr" ]) [ text title_ ]
-          ; (match btn with
-            | Some btn -> btn
-            | None -> none)
+          ~attr:(many [ classes [ "columns"; "paddinglr" ] ])
+          [ div
+              ~attr:(many [ classes [ "column"; "is-9"; "nopaddingbottom" ] ])
+              [ h5 ~attr:(classes [ "is-5"; "title" ]) [ text title_ ] ]
+          ; div
+              ~attr:(many [ classes [ "column"; "is-3"; "nopaddingbottom" ] ])
+              [ (match btn with
+                | Some btn -> btn
+                | None -> none)
+              ]
           ]
       ; inner
       ]
@@ -529,11 +535,15 @@ module Make
         let%bind.Effect () = set_text_state "" in
         set_modal_is_open false
     in
+    let%sub stats_modal, set_stats_modal = Bonsai.state_opt [%here] (module S.Model) in
     let%arr modal_is_open = modal_is_open
     and set_modal_is_open = set_modal_is_open
     and text_state = text_state
     and set_text_state = set_text_state
-    and set_model = set_model in
+    and set_model = set_model
+    and stats_modal = stats_modal
+    and set_stats_modal = set_stats_modal
+    and model = model in
     let open Vdom in
     let open Node in
     let open Attr in
@@ -560,6 +570,16 @@ module Make
                       ; on_click (fun _ -> set_model @@ S.Model.init ~g:1.)
                       ])
                  [ text "Clear" ]
+             ]
+         ; div
+             ~attr:(classes [ "column" ])
+             [ button
+                 ~attr:
+                   (many
+                      [ classes [ "button"; "is-fullwidth" ]
+                      ; on_click (fun _ -> set_stats_modal (Some model))
+                      ])
+                 [ text "Stats" ]
              ]
          ; (if modal_is_open
            then
@@ -635,6 +655,36 @@ module Make
                    ]
                ]
            else none)
+         ; (match stats_modal with
+           | Some _model ->
+             div
+               ~attr:(classes [ "modal"; "is-active" ])
+               [ div
+                   ~attr:
+                     (many
+                        [ class_ "modal-background"
+                        ; on_click (fun _ -> set_stats_modal None)
+                        ])
+                   []
+               ; div
+                   ~attr:(many [ class_ "modal-card" ])
+                   [ header
+                       ~attr:(many [ class_ "modal-card-head" ])
+                       [ p
+                           ~attr:(many [ class_ "modal-card-title" ])
+                           [ text "Statistics" ]
+                       ; button
+                           ~attr:
+                             (many
+                                [ class_ "delete"
+                                ; on_click (fun _ -> set_stats_modal None)
+                                ])
+                           []
+                       ]
+                   ; section ~attr:(class_ "modal-card-body") []
+                   ]
+               ]
+           | None -> none)
          ])
   ;;
 
@@ -646,6 +696,63 @@ module Make
     let%sub m, set_m = Bonsai.state_opt [%here] (module Float) in
     let%sub mu, set_mu = Bonsai.state_opt [%here] (module Float) in
     let%sub r, set_r = Bonsai.state_opt [%here] (module Float) in
+    let%sub reset_fields =
+      let%arr set_x = set_x
+      and set_y = set_y
+      and set_vx = set_vx
+      and set_vy = set_vy
+      and set_m = set_m
+      and set_mu = set_mu
+      and set_r = set_r in
+      function
+      | Some _ ->
+        let%bind.Effect () = set_x None in
+        let%bind.Effect () = set_y None in
+        let%bind.Effect () = set_vx None in
+        let%bind.Effect () = set_vy None in
+        let%bind.Effect () = set_m None in
+        let%bind.Effect () = set_mu None in
+        let%bind.Effect () = set_r None in
+        Effect.Ignore
+      | None -> Effect.Ignore
+    in
+    let%sub () =
+      Bonsai.Edge.on_change
+        [%here]
+        (module struct
+          type t = S.Body.t option [@@deriving sexp, equal]
+        end)
+        body
+        ~callback:reset_fields
+    in
+    let%sub values =
+      let%arr body = body in
+      match body with
+      | Some body ->
+        let x = S.Values.get_scalar_exn body.values ~var:`x0 in
+        let y = S.Values.get_scalar_exn body.values ~var:`y0 in
+        let vx = S.Values.get_scalar_exn body.values ~var:`v0_x in
+        let vy = S.Values.get_scalar_exn body.values ~var:`v0_y in
+        let mu = S.Values.get_scalar_exn body.values ~var:`mu in
+        let m = S.Values.get_scalar_exn body.values ~var:`m in
+        let r = S.Values.get_scalar_exn body.values ~var:`r in
+        Some body.id, Some x, Some y, Some vx, Some vy, Some mu, Some m, Some r
+      | None -> None, None, None, None, None, None, None, None
+    in
+    let%sub is_acceptable =
+      let%arr x = x
+      and y = y
+      and vx = vx
+      and vy = vy
+      and m = m
+      and mu = mu
+      and r = r
+      and body = body in
+      match body, x, y, vx, vy, m, mu, r with
+      | None, Some _, Some _, Some _, Some _, Some _, Some _, Some _ -> true
+      | None, _, _, _, _, _, _, _ -> false
+      | _ -> true
+    in
     let%arr x = x
     and set_x = set_x
     and y = y
@@ -660,16 +767,17 @@ module Make
     and set_mu = set_mu
     and r = r
     and set_r = set_r
-    and body_ = body
+    and body_id, x', y', vx', vy', mu', m', r' = values
     and close = close
-    and set_values = set_values in
+    and set_values = set_values
+    and is_acceptable = is_acceptable in
     let open Vdom in
     let open Node in
     let open Attr in
-    let col ~val_ ~set_val =
+    let col ~value:val_ ~set_val ~label:label_ =
       div
         ~attr:(classes [ "field"; "column" ])
-        [ label ~attr:(class_ "label") [ text "x" ]
+        [ label ~attr:(class_ "label") [ label_ ]
         ; div
             ~attr:(class_ "control")
             [ input
@@ -679,8 +787,11 @@ module Make
                      ; type_ "text"
                      ; on_change (fun _ new_val ->
                            try set_val (Some (Float.of_string new_val)) with
-                           | _ -> Effect.Ignore)
-                     ; value (format_float val_)
+                           | _ -> set_val None)
+                     ; value
+                         (match val_ with
+                         | Some v -> format_float v
+                         | None -> "")
                      ])
                 []
             ]
@@ -693,32 +804,36 @@ module Make
           ~attr:(many [ class_ "modal-card" ])
           [ header
               ~attr:(many [ class_ "modal-card-head" ])
-              [ p ~attr:(many [ class_ "modal-card-title" ]) [ text "Edit body" ]
+              [ p
+                  ~attr:(many [ class_ "modal-card-title" ])
+                  [ text
+                      (match body_id with
+                      | Some _ -> "Edit body"
+                      | None -> "Add body")
+                  ]
               ; button ~attr:(many [ class_ "delete"; on_click (fun _ -> close ()) ]) []
               ]
           ; section
-              ~attr:(classes [ "modal-card-body"; "columns" ])
-              [ col
-                  ~val_:(S.Values.get_scalar_exn body_.S.Body.values ~var:`x0)
-                  ~set_val:set_x
-              ; col
-                  ~val_:(S.Values.get_scalar_exn body_.S.Body.values ~var:`y0)
-                  ~set_val:set_y
-              ; col
-                  ~val_:(S.Values.get_scalar_exn body_.S.Body.values ~var:`v0_x)
-                  ~set_val:set_vx
-              ; col
-                  ~val_:(S.Values.get_scalar_exn body_.S.Body.values ~var:`v0_y)
-                  ~set_val:set_vy
-              ; col
-                  ~val_:(S.Values.get_scalar_exn body_.S.Body.values ~var:`mu)
-                  ~set_val:set_mu
-              ; col
-                  ~val_:(S.Values.get_scalar_exn body_.S.Body.values ~var:`r)
-                  ~set_val:set_r
-              ; col
-                  ~val_:(S.Values.get_scalar_exn body_.S.Body.values ~var:`m)
-                  ~set_val:set_m
+              ~attr:(classes [ "modal-card-body" ])
+              [ div
+                  ~attr:(classes [ "columns" ])
+                  [ col ~label:(p [ text "x" ]) ~value:x' ~set_val:set_x
+                  ; col ~label:(p [ text "y" ]) ~value:y' ~set_val:set_y
+                  ; col
+                      ~label:(p [ text "v"; Node.create "sub" [ text "x" ] ])
+                      ~value:vx'
+                      ~set_val:set_vx
+                  ; col
+                      ~label:(p [ text "v"; Node.create "sub" [ text "y" ] ])
+                      ~value:vy'
+                      ~set_val:set_vy
+                  ]
+              ; div
+                  ~attr:(classes [ "columns" ])
+                  [ col ~label:(p [ text "μ" ]) ~value:mu' ~set_val:set_mu
+                  ; col ~label:(p [ text "r" ]) ~value:r' ~set_val:set_r
+                  ; col ~label:(p [ text "m" ]) ~value:m' ~set_val:set_m
+                  ]
               ]
           ; footer
               ~attr:(class_ "modal-card-foot")
@@ -726,6 +841,7 @@ module Make
                   ~attr:
                     (many
                        [ classes [ "button"; "is-success" ]
+                       ; (if is_acceptable then empty else disabled)
                        ; on_click (fun _ ->
                              let values =
                                [ `x0, x
@@ -739,7 +855,7 @@ module Make
                                |> List.filter_map ~f:(fun (k, v) ->
                                       Option.map v ~f:(fun v -> k, v))
                              in
-                             let%bind.Effect () = set_values body_.id values in
+                             let%bind.Effect () = set_values body_id values in
                              close ())
                        ])
                   [ text "OK" ]
@@ -753,20 +869,23 @@ module Make
 
   let bodies_table ~scene ~time ~remove_body ~set_values =
     let%sub modal_body, set_modal_body = Bonsai.state_opt [%here] (module S.Body) in
+    let%sub modal_open, set_modal_open =
+      Bonsai.state [%here] (module Bool) ~default_model:false
+    in
     let%sub edit_body_modal =
-      match%sub modal_body with
-      | Some body ->
+      match%sub modal_open with
+      | true ->
         let%sub close =
-          let%arr set_modal_body = set_modal_body in
-          fun () -> set_modal_body None
+          let%arr set_modal_open = set_modal_open in
+          fun () -> set_modal_open false
         in
-        edit_body_modal body ~close ~set_values
-      | None -> Bonsai.Computation.return Vdom.Node.none
+        edit_body_modal modal_body ~close ~set_values
+      | false -> Bonsai.Computation.return Vdom.Node.none
     in
     let%arr scene = scene
     and time = time
     and remove_body = remove_body
-    (* and modal_body = modal_body *)
+    and set_modal_open = set_modal_open
     and set_modal_body = set_modal_body
     and edit_body_modal = edit_body_modal in
     let bodies =
@@ -798,6 +917,18 @@ module Make
       tr
         ~key:id
         [ td [ text id ]
+        ; td
+            ~attr:(class_ "deletetd")
+            [ button
+                ~attr:
+                  (many
+                     [ classes [ "button"; "is-small" ]
+                     ; on_click (fun _ ->
+                           let%bind.Effect () = set_modal_body (Some body) in
+                           set_modal_open true)
+                     ])
+                [ Node.create "i" ~attr:(classes [ "fas"; "fa-edit" ]) [] ]
+            ]
         ; td [ text (format_float x) ]
         ; td [ text (format_float y) ]
         ; td [ text (format_float mu) ]
@@ -810,12 +941,6 @@ module Make
         ; td [ text (format_float a_y) ]
         ; td [ text (format_float a_len) ]
         ; td
-            [ span
-                ~attr:
-                  (many [ class_ "icon"; on_click (fun _ -> set_modal_body (Some body)) ])
-                [ Node.create "i" ~attr:(classes [ "fas"; "fa-edit" ]) [] ]
-            ]
-        ; td
             [ button
                 ~attr:(many [ class_ "delete"; on_click (fun _ -> remove_body body.id) ])
                 []
@@ -827,8 +952,12 @@ module Make
           ~title:"Bodies"
           ~btn:
             (button
-               ~attr:(many [ class_ "button"; on_click (fun _ -> Effect.Ignore) ])
-               [ text "Add body" ])
+               ~attr:
+                 (many
+                    [ classes [ "button"; "is-small" ]
+                    ; on_click (fun _ -> set_modal_open true)
+                    ])
+               [ text "Add" ])
           (div
              ~attr:(many [ classes [ "table-container" ] ])
              [ table
@@ -836,6 +965,7 @@ module Make
                  [ thead
                      [ tr
                          [ th [ p [ text "id" ] ]
+                         ; th ~attr:(class_ "deletetd") []
                          ; th [ p [ text "x" ] ]
                          ; th [ p [ text "y" ] ]
                          ; th [ p [ text "μ" ] ]
@@ -847,7 +977,6 @@ module Make
                          ; th [ p [ text "a"; Node.create "sub" [ text "x" ] ] ]
                          ; th [ p [ text "a"; Node.create "sub" [ text "y" ] ] ]
                          ; th [ p [ text "|a|" ] ]
-                         ; th ~attr:(class_ "deletetd") []
                          ; th ~attr:(class_ "deletetd") []
                          ]
                      ]
@@ -1156,7 +1285,10 @@ module Make
     in
     let%sub set_values =
       let%arr dispatch = dispatch in
-      fun id values -> S.Action.UpdateBody (id, values) |> dispatch
+      fun id values ->
+        match id with
+        | Some id -> S.Action.UpdateBody (id, values) |> dispatch
+        | None -> S.Action.AddBodyOfValues (None, values) |> dispatch
     in
     let%sub bodies_table = bodies_table ~scene ~time ~remove_body ~set_values in
     let%sub remove_line =
