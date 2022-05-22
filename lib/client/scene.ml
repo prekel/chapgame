@@ -257,9 +257,14 @@ let speed_panel ~speed_changed_manually =
   let open Attr in
   let set_pause p =
     match p, paused_speed with
-    | true, None -> toggle_pause
-    | false, Some _ -> toggle_pause
-    | _, _ -> Effect.Ignore
+    | true, None ->
+      let%bind.Effect () = toggle_pause in
+      Effect.return false
+    | false, Some _ ->
+      let%bind.Effect () = toggle_pause in
+      Effect.return true
+    | _, None -> Effect.return false
+    | _, Some _ -> Effect.return true
   in
   ( speed
   , set_speed
@@ -531,30 +536,43 @@ module Make
     let%sub text_state, set_text_state =
       Bonsai.state [%here] (module String) ~default_model:""
     in
+    let%sub was_paused, set_was_paused =
+      Bonsai.state [%here] (module Bool) ~default_model:false
+    in
     let%sub set_modal_is_open =
       let%arr set_text_state = set_text_state
       and set_modal_is_open = set_modal_is_open
       and model = model
-      and set_pause = set_pause in
+      and set_pause = set_pause
+      and was_paused = was_paused
+      and set_was_paused = set_was_paused in
       function
       | true ->
         let%bind.Effect () =
           model |> [%sexp_of: S.Model.t] |> Sexp.to_string_hum ~indent:2 |> set_text_state
         in
-        let%bind.Effect () = set_pause true in
+        let%bind.Effect was = set_pause true in
+        let%bind.Effect () = set_was_paused was in
         set_modal_is_open true
       | false ->
         let%bind.Effect () = set_text_state "" in
-        let%bind.Effect () = set_pause false in
+        let%bind.Effect _ = set_pause was_paused in
         set_modal_is_open false
     in
     let%sub stats_modal, set_stats_modal = Bonsai.state_opt [%here] (module S.Model) in
     let%sub set_stats_modal =
       let%arr set_stats_modal = set_stats_modal
-      and set_pause = set_pause in
-      fun m ->
-        let%bind.Effect () = set_pause (Option.is_some m) in
+      and set_pause = set_pause
+      and was_paused = was_paused
+      and set_was_paused = set_was_paused in
+      function
+      | Some _ as m ->
+        let%bind.Effect was = set_pause true in
+        let%bind.Effect () = set_was_paused was in
         set_stats_modal m
+      | None ->
+        let%bind.Effect _ = set_pause was_paused in
+        set_stats_modal None
     in
     let%arr modal_is_open = modal_is_open
     and set_modal_is_open = set_modal_is_open
@@ -955,10 +973,27 @@ module Make
       ]
   ;;
 
-  let bodies_table ~scene ~time ~remove_body ~set_values =
+  let bodies_table ~scene ~time ~remove_body ~set_values ~set_pause =
     let%sub modal_body, set_modal_body = Bonsai.state_opt [%here] (module S.Body) in
     let%sub modal_open, set_modal_open =
       Bonsai.state [%here] (module Bool) ~default_model:false
+    in
+    let%sub was_paused, set_was_paused =
+      Bonsai.state [%here] (module Bool) ~default_model:false
+    in
+    let%sub set_modal_open =
+      let%arr set_modal_open = set_modal_open
+      and set_pause = set_pause
+      and was_paused = was_paused
+      and set_was_paused = set_was_paused in
+      function
+      | true ->
+        let%bind.Effect was = set_pause true in
+        let%bind.Effect () = set_was_paused was in
+        set_modal_open true
+      | false ->
+        let%bind.Effect _ = set_pause was_paused in
+        set_modal_open false
     in
     let%sub edit_body_modal =
       match%sub modal_open with
@@ -1380,7 +1415,9 @@ module Make
         | Some id -> S.Action.UpdateBody (id, values) |> dispatch
         | None -> S.Action.AddBodyOfValues (None, values) |> dispatch
     in
-    let%sub bodies_table = bodies_table ~scene ~time ~remove_body ~set_values in
+    let%sub bodies_table =
+      bodies_table ~scene ~time ~remove_body ~set_values ~set_pause
+    in
     let%sub remove_line =
       let%arr dispatch = dispatch in
       fun line -> S.Action.RemoveLine line |> dispatch
