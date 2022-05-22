@@ -1,25 +1,12 @@
 open Core
 open Bonsai_web
 open Bonsai.Let_syntax
+open Js_of_ocaml
 module SC = Scene.Make (Defaults.C) (Defaults.S)
 module Offline = Offline.Make (Defaults.C) (Defaults.S) (SC) (Defaults.Replays)
 module Online = Online.Make (Defaults.C) (Defaults.S)
 
-let main_page =
-  Bonsai.const
-    Vdom.(Node.button ~attr:(Attr.on_click (fun _ -> Location.push Offline.route)) [])
-;;
-
-let not_found =
-  Bonsai.const
-    Vdom.(
-      Node.button
-        ~attr:(Attr.on_click (fun _ -> Location.back ()))
-        [ Node.text "not_found" ])
-;;
-
 let fake_router =
-  let%sub a, b = Offline.component in
   let%sub tab, set_tab =
     Bonsai.state
       [%here]
@@ -32,61 +19,69 @@ let fake_router =
       end)
       ~default_model:`Offline
   in
-  let%sub tab_click_offline =
-    let%arr set_tab = set_tab in
-    function
-    | `Offline -> Effect.Ignore
-    | `Online -> set_tab `Online
-  in
-  let%sub tab_click_online =
-    let%arr set_tab = set_tab in
-    function
-    | `Offline -> set_tab `Offline
-    | `Online -> Effect.Ignore
-  in
   match%sub tab with
   | `Offline ->
-    Bar.component
-      ~inner:a
-      ~outer:b
-      ~opened_tab:(Bonsai.Value.return `Offline)
-      ~tab_click:tab_click_offline
+    let%sub tab_click =
+      let%arr set_tab = set_tab in
+      function
+      | `Offline -> Effect.Ignore
+      | `Online -> set_tab `Online
+    in
+    let%sub inner, outer = Offline.component in
+    Bar.component ~inner ~outer ~opened_tab:`Offline ~tab_click
   | `Online ->
-    let%sub not_found = not_found in
+    let%sub tab_click =
+      let%arr set_tab = set_tab in
+      function
+      | `Offline -> set_tab `Offline
+      | `Online -> Effect.Ignore
+    in
     Bar.component
-      ~inner:not_found
-      ~outer:b
-      ~opened_tab:(Bonsai.Value.return `Online)
-      ~tab_click:tab_click_online
+      ~inner:(Bonsai.Value.return Error_pages.tbd)
+      ~outer:(Bonsai.Value.return Vdom.Node.none)
+      ~opened_tab:`Online
+      ~tab_click
 ;;
 
 let router =
   let%sub location = Location.use () in
   match%sub location with
-  | [ "online"; room_id ], _ ->
-    let%sub c = Online.component ~room_id ~token:(Bonsai.Value.return None) in
+  | [ "" ], _ ->
+    let%sub inner, outer = Offline.component in
     Bar.component
-      ~inner:c
-      ~outer:c
-      ~opened_tab:(Bonsai.Value.return `Online)
+      ~inner
+      ~outer
+      ~opened_tab:`Offline
+      ~tab_click:
+        (Bonsai.Value.return (function
+            | `Offline -> Effect.Ignore
+            | `Online -> Location.push (Online.route 1 None)))
+  | [ "online"; room_id ], token ->
+    let%sub inner, outer =
+      Online.component
+        ~room_id
+        ~token:
+          (Bonsai.Value.map token ~f:(fun token ->
+               List.Assoc.find ~equal:String.equal token "token"))
+    in
+    Bar.component
+      ~inner
+      ~outer
+      ~opened_tab:`Online
       ~tab_click:
         (Bonsai.Value.return (function
             | `Offline -> Location.push Offline.route
             | `Online -> Effect.Ignore))
-  | [ "" ], _ ->
-    let%sub a, b = Offline.component in
+  | _ ->
     Bar.component
-      ~inner:a
-      ~outer:b
-      ~opened_tab:(Bonsai.Value.return `Offline)
+      ~inner:(Bonsai.Value.return Error_pages.not_found)
+      ~outer:(Bonsai.Value.return Vdom.Node.none)
+      ~opened_tab:`Not_found
       ~tab_click:
         (Bonsai.Value.return (function
-            | `Offline -> Effect.Ignore
-            | `Online -> Location.push (Online.route 1 (Some "qwfqwf"))))
-  | _ -> not_found
+            | `Offline -> Location.push Offline.route
+            | `Online -> Location.push (Online.route 1 None)))
 ;;
-
-open Js_of_ocaml
 
 let component =
   if Dom_html.document##.cookie

@@ -1758,7 +1758,8 @@ module Make
         ~points:
           (Bonsai.Value.map scene ~f:(fun scene -> scene.points |> S.Points.to_list))
         ~remove_point
-        ~set_pause ~add_point
+        ~set_pause
+        ~add_point
     in
     let%sub until_panel =
       until_panel

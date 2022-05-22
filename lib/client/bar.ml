@@ -8,10 +8,8 @@ let tab_text = function
 ;;
 
 let component ~inner ~outer ~opened_tab ~tab_click =
-  (* let%sub inner = inner in let%sub outer = outer in *)
   let%arr inner = inner
   and outer = outer
-  and opened_tab = opened_tab
   and tab_click = tab_click in
   let open Vdom in
   let open Node in

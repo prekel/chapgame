@@ -14,14 +14,13 @@ module Make
   ;;
 
   let component ~room_id ~token =
-    let%arr room_id = room_id
-    and token = token in
-    Vdom.(
-      Node.div
-        [ Node.text room_id
-        ; (match token with
-          | Some token -> Node.text token
-          | None -> Node.none)
-        ])
+    let%arr _room_id = room_id
+    and _token = token in
+    let open Vdom in
+    let open Node in
+    (* let open Attr in *)
+    let inner = Error_pages.tbd in
+    let outer = none in
+    inner, outer
   ;;
 end
