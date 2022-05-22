@@ -741,11 +741,11 @@ module Make
                         model.scenes |> S.Scenes.to_map |> Map.to_sequence
                       in
                       let total_count =
-                        ( "Total scene changes"
+                        ( "Scene changes"
                         , model.scenes |> S.Scenes.to_map |> Map.length |> Int.to_string )
                       in
                       let cause_count =
-                        ( "Total causes of scene changes"
+                        ( "Causes of the scene change"
                         , scenes_seq
                           |> Sequence.map ~f:(fun (_, scene) -> List.length scene.cause)
                           |> Sequence.sum (module Int) ~f:Fn.id
@@ -778,23 +778,40 @@ module Make
                         |> Sequence.sum (module Int) ~f:Fn.id
                       in
                       let collision_count =
-                        ( "Total collisions"
+                        ( "Collisions"
                         , collisions_with_body
                           + collisions_with_line
                           + collisions_with_point
                           |> Int.to_string )
                       in
                       let collision_body_count =
-                        ( "Total collisions with body"
-                        , collisions_with_body |> Int.to_string )
+                        "Collisions with body", collisions_with_body |> Int.to_string
                       in
                       let collision_line_count =
-                        ( "Total collisions with line"
-                        , collisions_with_line |> Int.to_string )
+                        "Collisions with line", collisions_with_line |> Int.to_string
                       in
                       let collision_point_count =
-                        ( "Total collisions with point"
-                        , collisions_with_point |> Int.to_string )
+                        "Collisions with point", collisions_with_point |> Int.to_string
+                      in
+                      let actions =
+                        ( "Actions"
+                        , scenes_seq
+                          |> Sequence.map ~f:(fun (_, scene) ->
+                                 List.count scene.cause ~f:(function
+                                     | `Action _ -> true
+                                     | _ -> false))
+                          |> Sequence.sum (module Int) ~f:Fn.id
+                          |> Int.to_string )
+                      in
+                      let timeout =
+                        ( "Scene changes calculeted up to"
+                        , match model.timeout with
+                          | Some timeout -> format_float timeout
+                          | None -> "∞" )
+                      in
+                      let last_scene_time =
+                        ( "Last scene change time"
+                        , (model.scenes |> S.Scenes.last_exn).time |> format_float )
                       in
                       let show (label, value) =
                         p [ text label; text ": "; strong [ text value ] ]
@@ -807,6 +824,9 @@ module Make
                         ; show collision_body_count
                         ; show collision_line_count
                         ; show collision_point_count
+                        ; show actions
+                        ; show timeout
+                        ; show last_scene_time
                         ])
                    ]
                ]
