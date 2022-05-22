@@ -1096,7 +1096,9 @@ module Make
                ~attr:
                  (many
                     [ classes [ "button"; "is-small" ]
-                    ; on_click (fun _ -> set_modal_open true)
+                    ; on_click (fun _ ->
+                          let%bind.Effect () = set_modal_body None in
+                          set_modal_open true)
                     ])
                [ text "Add" ])
           (div
