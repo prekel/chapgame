@@ -799,8 +799,8 @@ struct
 
   module Model : sig
     type t =
-      { scenes : Scenes.t
-      ; timeout : N.t option
+      { timeout : N.t option
+      ; scenes : Scenes.t
       }
     [@@deriving sexp, equal]
 
@@ -820,8 +820,8 @@ struct
     end
   end = struct
     type t =
-      { scenes : Scenes.t
-      ; timeout : N.t option
+      { timeout : N.t option
+      ; scenes : Scenes.t
       }
     [@@deriving sexp, equal]
 
