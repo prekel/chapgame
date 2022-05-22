@@ -141,6 +141,14 @@ struct
       | Sexp.Atom "rules0 - 0" -> rules0_0
       | _ -> assert false
     ;;
+
+    let of_values values =
+      let open N in
+      if Values.get_scalar_exn values ~var:`v0_x = zero
+         && Values.get_scalar_exn values ~var:`v0_y = zero
+      then rules0
+      else rules1
+    ;;
   end
 
   module Body = struct
@@ -683,8 +691,8 @@ struct
       }
     ;;
 
-    let add_figure_values figures ~id ~values =
-      Figures.add figures ~id ~body:Body.{ id; values; rules = Rule.rules0 }
+    let add_figure_values figures ~id ~values ~rules =
+      Figures.add figures ~id ~body:Body.{ id; values; rules }
     ;;
 
     let add_figure figures ~id ~x0 ~y0 ~r ~mu ~m =
@@ -694,6 +702,7 @@ struct
         ~values:
           (Values.of_alist
              [ `x0, x0; `y0, y0; `v0_x, N.zero; `v0_y, N.zero; `r, r; `mu, mu; `m, m ])
+        ~rules:Rule.rules0
     ;;
 
     let init ~g =
@@ -1062,6 +1071,7 @@ struct
           ~bodies:(Scene.add_figure s.Scene.bodies ~id ~x0 ~y0 ~r ~mu ~m)
           ~time
       | AddBodyOfValues (id, values) ->
+        let values = Values.of_alist values in
         Scene.update
           s
           ~bodies:
@@ -1071,7 +1081,8 @@ struct
                  (match id with
                  | Some id -> id
                  | None -> Body.Id.next ())
-               ~values:(Values.of_alist values))
+               ~values
+               ~rules:(Rule.of_values values))
           ~time
       | AddPoint point -> Scene.update s ~points:(Points.add s.points ~el:point) ~time
       | AddLine line -> Scene.update s ~lines:(Lines.add s.lines ~el:line) ~time
@@ -1092,7 +1103,7 @@ struct
           List.fold updated ~init:body.values ~f:(fun acc (var, value) ->
               Values.update_scalar acc ~var ~value)
         in
-        let body = Body.{ body with values } in
+        let body = Body.{ body with values; rules = Rule.of_values values } in
         Scene.update
           s
           ~bodies:(Scene.Figures.update_by_id s.bodies ~id:body.id ~body)
