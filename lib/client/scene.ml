@@ -233,17 +233,38 @@ let speed_panel ~speed_changed_manually =
   let%sub interactve_input =
     interactive_input ~value:speed ~set_manually:set_speed_manually
   in
+  let%sub toggle_pause =
+    let%arr speed = speed
+    and set_speed_manually = set_speed_manually
+    and paused_speed = paused_speed
+    and set_paused_speed = set_paused_speed in
+    match paused_speed with
+    | Some paused_speed when Float.(speed = 0.) ->
+      let%bind.Effect () = set_paused_speed None in
+      set_speed_manually paused_speed
+    | _ ->
+      let%bind.Effect () = set_paused_speed (Some speed) in
+      set_speed_manually 0.
+  in
   let%arr speed = speed
   and set_speed = set_speed
   and set_speed_manually = set_speed_manually
   and paused_speed = paused_speed
-  and set_paused_speed = set_paused_speed
+  and toggle_pause = toggle_pause
   and interactve_input = interactve_input in
   let open Vdom in
   let open Node in
   let open Attr in
+  let set_pause p =
+    match p, paused_speed with
+    | true, None -> toggle_pause
+    | false, Some _ -> toggle_pause
+    | _, _ -> Effect.Ignore
+  in
   ( speed
   , set_speed
+  , set_speed_manually
+  , set_pause
   , timespeed_box
       ~title:"Speed"
       ~value:speed
@@ -261,18 +282,7 @@ let speed_panel ~speed_changed_manually =
                  [ classes [ "button" ]; on_click (fun _ -> set_speed_manually (-1.)) ])
             [ text "-1x" ]
         ; button
-            ~attr:
-              (many
-                 [ classes [ "button" ]
-                 ; on_click (fun _ ->
-                       match paused_speed with
-                       | Some paused_speed when Float.(speed = 0.) ->
-                         let%bind.Effect () = set_paused_speed None in
-                         set_speed_manually paused_speed
-                       | _ ->
-                         let%bind.Effect () = set_paused_speed (Some speed) in
-                         set_speed_manually 0.)
-                 ])
+            ~attr:(many [ classes [ "button" ]; on_click (fun _ -> toggle_pause) ])
             [ span
                 ~attr:(class_ "icon")
                 [ Node.create
@@ -514,7 +524,7 @@ module Make
       ]
   ;;
 
-  let export_import_clear ~model ~set_model =
+  let export_import_clear ~model ~set_model ~set_pause =
     let%sub modal_is_open, set_modal_is_open =
       Bonsai.state [%here] (module Bool) ~default_model:false
     in
@@ -524,18 +534,28 @@ module Make
     let%sub set_modal_is_open =
       let%arr set_text_state = set_text_state
       and set_modal_is_open = set_modal_is_open
-      and model = model in
+      and model = model
+      and set_pause = set_pause in
       function
       | true ->
         let%bind.Effect () =
           model |> [%sexp_of: S.Model.t] |> Sexp.to_string_hum ~indent:2 |> set_text_state
         in
+        let%bind.Effect () = set_pause true in
         set_modal_is_open true
       | false ->
         let%bind.Effect () = set_text_state "" in
+        let%bind.Effect () = set_pause false in
         set_modal_is_open false
     in
     let%sub stats_modal, set_stats_modal = Bonsai.state_opt [%here] (module S.Model) in
+    let%sub set_stats_modal =
+      let%arr set_stats_modal = set_stats_modal
+      and set_pause = set_pause in
+      fun m ->
+        let%bind.Effect () = set_pause (Option.is_some m) in
+        set_stats_modal m
+    in
     let%arr modal_is_open = modal_is_open
     and set_modal_is_open = set_modal_is_open
     and text_state = text_state
@@ -598,7 +618,7 @@ module Make
                        ~attr:(many [ class_ "modal-card-head" ])
                        [ p
                            ~attr:(many [ class_ "modal-card-title" ])
-                           [ text "Current state as text:" ]
+                           [ text "Current state as text" ]
                        ; button
                            ~attr:
                              (many
@@ -656,7 +676,7 @@ module Make
                ]
            else none)
          ; (match stats_modal with
-           | Some _model ->
+           | Some model ->
              div
                ~attr:(classes [ "modal"; "is-active" ])
                [ div
@@ -681,7 +701,75 @@ module Make
                                 ])
                            []
                        ]
-                   ; section ~attr:(class_ "modal-card-body") []
+                   ; (let scenes_seq =
+                        model.scenes |> S.Scenes.to_map |> Map.to_sequence
+                      in
+                      let total_count =
+                        ( "Total scene changes"
+                        , model.scenes |> S.Scenes.to_map |> Map.length |> Int.to_string )
+                      in
+                      let cause_count =
+                        ( "Total causes of scene changes"
+                        , scenes_seq
+                          |> Sequence.map ~f:(fun (_, scene) -> List.length scene.cause)
+                          |> Sequence.sum (module Int) ~f:Fn.id
+                          |> Int.to_string )
+                      in
+                      let collisions_with_body =
+                        scenes_seq
+                        |> Sequence.map ~f:(fun (_, scene) ->
+                               List.count scene.cause ~f:(function
+                                   | `Cause (S.Scene.Cause.Collision _) -> true
+                                   | _ -> false))
+                        |> Sequence.sum (module Int) ~f:Fn.id
+                      in
+                      let collisions_with_line =
+                        scenes_seq
+                        |> Sequence.map ~f:(fun (_, scene) ->
+                               List.count scene.cause ~f:(function
+                                   | `Cause (S.Scene.Cause.CollisionWithLine _) -> true
+                                   | _ -> false))
+                        |> Sequence.sum (module Int) ~f:Fn.id
+                      in
+                      let collisions_with_point =
+                        scenes_seq
+                        |> Sequence.map ~f:(fun (_, scene) ->
+                               List.count scene.cause ~f:(function
+                                   | `Cause (S.Scene.Cause.CollisionWithPoint _) -> true
+                                   | _ -> false))
+                        |> Sequence.sum (module Int) ~f:Fn.id
+                      in
+                      let collision_count =
+                        ( "Total collisions"
+                        , collisions_with_body
+                          + collisions_with_line
+                          + collisions_with_point
+                          |> Int.to_string )
+                      in
+                      let collision_body_count =
+                        ( "Total collisions with body"
+                        , collisions_with_body |> Int.to_string )
+                      in
+                      let collision_line_count =
+                        ( "Total collisions with line"
+                        , collisions_with_line |> Int.to_string )
+                      in
+                      let collision_point_count =
+                        ( "Total collisions with point"
+                        , collisions_with_point |> Int.to_string )
+                      in
+                      let show (label, value) =
+                        p [ text label; text ": "; strong [ text value ] ]
+                      in
+                      section
+                        ~attr:(class_ "modal-card-body")
+                        [ show total_count
+                        ; show cause_count
+                        ; show collision_count
+                        ; show collision_body_count
+                        ; show collision_line_count
+                        ; show collision_point_count
+                        ])
                    ]
                ]
            | None -> none)
@@ -1243,7 +1331,7 @@ module Make
         ~default_model:init_until
     in
     let%sub time, set_time, time_panel = time_panel ~time_changed_manually in
-    let%sub speed, _, speed_panel = speed_panel ~speed_changed_manually in
+    let%sub speed, _, _, set_pause, speed_panel = speed_panel ~speed_changed_manually in
     let%sub prolong =
       let%arr dispatch = dispatch
       and until = until in
@@ -1278,7 +1366,9 @@ module Make
       model.S.Model.scenes |> S.Scenes.before ~time |> snd
     in
     let%sub frame = scene_frame ~scene ~body_click ~time in
-    let%sub export_import_clear = export_import_clear ~model ~set_model:replace in
+    let%sub export_import_clear =
+      export_import_clear ~model ~set_model:replace ~set_pause
+    in
     let%sub remove_body =
       let%arr dispatch = dispatch in
       fun id -> S.Action.RemoveBody id |> dispatch
