@@ -763,7 +763,8 @@ module Make
                         scenes_seq
                         |> Sequence.map ~f:(fun (_, scene) ->
                                List.count scene.cause ~f:(function
-                                   | `Collision (S.Scene.Collision.CollisionWithLine _) -> true
+                                   | `Collision (S.Scene.Collision.CollisionWithLine _) ->
+                                     true
                                    | _ -> false))
                         |> Sequence.sum (module Int) ~f:Fn.id
                       in
@@ -771,7 +772,8 @@ module Make
                         scenes_seq
                         |> Sequence.map ~f:(fun (_, scene) ->
                                List.count scene.cause ~f:(function
-                                   | `Collision (S.Scene.Collision.CollisionWithPoint _) -> true
+                                   | `Collision (S.Scene.Collision.CollisionWithPoint _)
+                                     -> true
                                    | _ -> false))
                         |> Sequence.sum (module Int) ~f:Fn.id
                       in
@@ -1404,14 +1406,69 @@ module Make
       ]
   ;;
 
-  let points_table ~points ~remove_point ~set_pause =
-    let%sub modal_open, set_modal_open =
-      Bonsai.state [%here] (module Bool) ~default_model:false
+  let point_add_modal ~add_point ~set_pause =
+    let%sub set_modal_open, modal = modal ~set_pause ~title:"Add point" in
+    let%sub x, set_x = Bonsai.state_opt [%here] (module Float) in
+    let%sub y, set_y = Bonsai.state_opt [%here] (module Float) in
+    let%arr add_point = add_point
+    and modal = modal
+    and set_modal_open = set_modal_open
+    and x = x
+    and y = y
+    and set_x = set_x
+    and set_y = set_y in
+    let open Vdom in
+    let open Node in
+    let open Attr in
+    let field ~value:value_ ~set_value ~label:label_ =
+      div
+        ~attr:(class_ "field")
+        [ label ~attr:(class_ "label") [ label_ ]
+        ; div
+            ~attr:(class_ "control")
+            [ input
+                ~attr:
+                  (many
+                     [ class_ "input"
+                     ; type_ "text"
+                     ; on_change (fun _ new_val ->
+                           try set_value (Some (Float.of_string new_val)) with
+                           | _ -> set_value None)
+                     ; value
+                         (match value_ with
+                         | Some v -> format_float v
+                         | None -> "")
+                     ])
+                []
+            ]
+        ]
     in
-    let%sub set_modal_open = set_modal_open_and_pause ~set_modal_open ~set_pause in
+    ( set_modal_open
+    , modal
+        ~on_ok:(fun () ->
+          match x, y with
+          | Some x, Some y ->
+            let%bind.Effect () = add_point S.Point.{ x; y } in
+            Effect.return true
+          | _ -> Effect.return false)
+        (div
+           [ div
+               ~attr:(classes [ "columns" ])
+               [ div
+                   ~attr:(classes [ "column" ])
+                   [ field ~value:x ~set_value:set_x ~label:(p [ text "x" ]) ]
+               ; div
+                   ~attr:(classes [ "column" ])
+                   [ field ~value:y ~set_value:set_y ~label:(p [ text "y" ]) ]
+               ]
+           ]) )
+  ;;
+
+  let points_table ~points ~remove_point ~set_pause ~add_point =
+    let%sub set_modal_open, modal = point_add_modal ~add_point ~set_pause in
     let%arr points = points
     and remove_point = remove_point
-    and modal_open = modal_open
+    and modal = modal
     and set_modal_open = set_modal_open in
     let open Vdom in
     let open Node in
@@ -1453,49 +1510,7 @@ module Make
                  ; tbody (points |> List.map ~f:point_tr)
                  ]
              ])
-      ; (if modal_open
-        then
-          div
-            ~attr:(classes [ "modal"; "is-active" ])
-            [ div
-                ~attr:
-                  (many
-                     [ class_ "modal-background"
-                     ; on_click (fun _ -> set_modal_open false)
-                     ])
-                []
-            ; div
-                ~attr:(many [ class_ "modal-card" ])
-                [ header
-                    ~attr:(many [ class_ "modal-card-head" ])
-                    [ p ~attr:(many [ class_ "modal-card-title" ]) [ text "Add point" ]
-                    ; button
-                        ~attr:
-                          (many
-                             [ class_ "delete"; on_click (fun _ -> set_modal_open false) ])
-                        []
-                    ]
-                ; section ~attr:(class_ "modal-card-body") []
-                ; footer
-                    ~attr:(class_ "modal-card-foot")
-                    [ button
-                        ~attr:
-                          (many
-                             [ classes [ "button"; "is-success" ]
-                             ; on_click (fun _ -> set_modal_open false)
-                             ])
-                        [ text "OK" ]
-                    ; button
-                        ~attr:
-                          (many
-                             [ classes [ "button" ]
-                             ; on_click (fun _ -> set_modal_open false)
-                             ])
-                        [ text "Cancel" ]
-                    ]
-                ]
-            ]
-        else none)
+      ; modal
       ]
   ;;
 
@@ -1734,12 +1749,16 @@ module Make
       let%arr dispatch = dispatch in
       fun point -> S.Action.RemovePoint point |> dispatch
     in
+    let%sub add_point =
+      let%arr dispatch = dispatch in
+      fun point -> S.Action.AddPoint point |> dispatch
+    in
     let%sub points_table =
       points_table
         ~points:
           (Bonsai.Value.map scene ~f:(fun scene -> scene.points |> S.Points.to_list))
         ~remove_point
-        ~set_pause
+        ~set_pause ~add_point
     in
     let%sub until_panel =
       until_panel
