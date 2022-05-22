@@ -755,7 +755,7 @@ module Make
                         scenes_seq
                         |> Sequence.map ~f:(fun (_, scene) ->
                                List.count scene.cause ~f:(function
-                                   | `Cause (S.Scene.Cause.Collision _) -> true
+                                   | `Collision (S.Scene.Collision.Collision _) -> true
                                    | _ -> false))
                         |> Sequence.sum (module Int) ~f:Fn.id
                       in
@@ -763,7 +763,7 @@ module Make
                         scenes_seq
                         |> Sequence.map ~f:(fun (_, scene) ->
                                List.count scene.cause ~f:(function
-                                   | `Cause (S.Scene.Cause.CollisionWithLine _) -> true
+                                   | `Collision (S.Scene.Collision.CollisionWithLine _) -> true
                                    | _ -> false))
                         |> Sequence.sum (module Int) ~f:Fn.id
                       in
@@ -771,7 +771,7 @@ module Make
                         scenes_seq
                         |> Sequence.map ~f:(fun (_, scene) ->
                                List.count scene.cause ~f:(function
-                                   | `Cause (S.Scene.Cause.CollisionWithPoint _) -> true
+                                   | `Collision (S.Scene.Collision.CollisionWithPoint _) -> true
                                    | _ -> false))
                         |> Sequence.sum (module Int) ~f:Fn.id
                       in

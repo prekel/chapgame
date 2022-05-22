@@ -622,9 +622,8 @@ struct
   end
 
   module Scene = struct
-    module Cause = struct
+    module Collision = struct
       type t =
-        | Init
         | Collision of
             { id1 : Body.Id.t
             ; id2 : Body.Id.t
@@ -637,6 +636,15 @@ struct
             { id : Body.Id.t
             ; line : LineSegmentRay.t
             }
+      [@@deriving sexp, equal, compare]
+    end
+
+    module Cause = struct
+      type t =
+        [ `Init
+        | `Action of Action.t
+        | `Collision of Collision.t
+        ]
       [@@deriving sexp, equal, compare]
     end
 
@@ -678,7 +686,7 @@ struct
       ; points : Points.t
       ; lines : Lines.t
       ; global_values : Values.t
-      ; cause : [ `Action of Action.t | `Cause of Cause.t ] list
+      ; cause : Cause.t list
       }
     [@@deriving sexp, equal]
 
@@ -712,7 +720,7 @@ struct
       ; points = Points.empty
       ; lines = Lines.empty
       ; global_values = Values.of_alist [ `g, g ]
-      ; cause = [ `Cause Init ]
+      ; cause = [ `Init ]
       }
     ;;
 
@@ -723,7 +731,7 @@ struct
         ; points_diff : Points.Diff.t
         ; lines_diff : Lines.Diff.t
         ; global_values_diff : Values.Diff.t
-        ; new_cause : [ `Action of Action.t | `Cause of Cause.t ] list
+        ; new_cause : Cause.t list
         }
       [@@deriving sexp, equal]
 
@@ -786,9 +794,7 @@ struct
             ~cause:
               (* TODO *)
               (v2.cause @ v1.cause
-              |> List.dedup_and_sort
-                   ~compare:[%compare: [ `Action of Action.t | `Cause of Scene.Cause.t ]]
-              )
+              |> List.dedup_and_sort ~compare:[%compare: Scene.Cause.t])
             ~points:v2.points
             ~lines:v2.lines
             ~time:key)
@@ -970,7 +976,7 @@ struct
                       |> Scene.Figures.update_by_id
                            ~id:id2
                            ~body:(Body.update_v0 body2 ~v:v2n ~rules:Rule.rules1))
-                    ~cause:[ `Cause (Collision { id1; id2 }) ]
+                    ~cause:[ `Collision (Collision { id1; id2 }) ]
                     ~time:N.(scene.time + t)
                     ~points:scene.points
                     ~lines:scene.lines
@@ -988,7 +994,7 @@ struct
                          q
                          ~id
                          ~body:(Body.update_v0 body ~v:v' ~rules:Rule.rules1))
-                    ~cause:[ `Cause (CollisionWithPoint { id; point }) ]
+                    ~cause:[ `Collision (CollisionWithPoint { id; point }) ]
                     ~time:new_time
                     ~points:scene.points
                     ~lines:scene.lines
@@ -1006,7 +1012,7 @@ struct
                          q
                          ~id
                          ~body:(Body.update_v0 body ~v:v' ~rules:Rule.rules1))
-                    ~cause:[ `Cause (CollisionWithLine { id; line }) ]
+                    ~cause:[ `Collision (CollisionWithLine { id; line }) ]
                     ~time:new_time
                     ~points:scene.points
                     ~lines:scene.lines
