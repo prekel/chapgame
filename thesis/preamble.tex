@@ -39,6 +39,11 @@
 % Русский язык
 \usepackage{polyglossia}
 \setdefaultlanguage{russian}
+\makeatletter
+\addto\captionsrussian@modern{
+    \renewcommand{\contentsname}{Содержание}
+}
+\makeatother
 
 % Абзацы и списки
 \usepackage{enumerate}   % Тонкая настройка списков
@@ -63,7 +68,7 @@
     colorlinks, urlcolor={black}, % Все ссылки черного цвета, кликабельные
     linkcolor={black}, citecolor={black}, filecolor={black},
     pdfauthor={Владислав Прекель},
-    pdftitle={Система}
+    pdftitle={Система физического моделирования на основе априорного подхода обнаружения столкновений}
 }
 
 % Оформление библиографии и подрисуночных записей через точку
@@ -104,13 +109,17 @@
 
 % Содержание
 \usepackage{tocloft}
-\renewcommand{\cfttoctitlefont}{\hspace{0.38\textwidth}\bfseries\MakeTextUppercase} % СОДЕРЖАНИЕ
+\renewcommand{\cfttoctitlefont}{\vspace{-2.5cm}\hspace{0.38\textwidth}\bfseries\MakeTextUppercase} % СОДЕРЖАНИЕ
 \renewcommand{\cftsecfont}{\hspace{0pt}}            % Имена секций в содержании не жирным шрифтом
 \renewcommand\cftsecleader{\cftdotfill{\cftdotsep}} % Точки для секций в содержании
-\renewcommand\cftsecpagefont{\mdseries}             % Номера страниц не жирные
+\renewcommand\cftsecpagefont{\mdseries}
+\renewcommand{\cftchapfont}{\hspace{0pt}}            % Имена секций в содержании не жирным шрифтом
+\renewcommand\cftchapleader{\cftdotfill{\cftdotsep}} % Точки для секций в содержании
+\renewcommand\cftchappagefont{\mdseries}
+\setlength{\cftbeforechapskip}{0em}            % Номера страниц не жирные
 \setlength{\cftbeforesecskip}{0em}
 \setlength{\cftbeforesubsecskip}{0em}
-\setlength{\cftbeforesubsubsecskip}{0em}
+% \setlength{\cftbeforesubsubsecskip}{0em}
 \setcounter{tocdepth}{3}                            % Глубина оглавления, до subsubsection
 
 
@@ -179,6 +188,17 @@
 % Оформление заголовков
 \usepackage[compact,explicit]{titlesec}
 
+\titleformat{\chapter}
+{}
+{\bfseries\thechapter~#1}
+{0pt}
+{}
+[]
+\titlespacing*{\chapter}
+{\parindent}
+{-2em}
+{1em}
+
 \titleformat{\section}
 {}
 {\bfseries\thesection~#1}
@@ -216,7 +236,7 @@
 % }
 
 % Секции без номеров (введение, заключение...), вместо section*{}
-\newcommand{\AnonsectionNoToc}[1]{
+\newcommand{\AnonchapterNoToc}[1]{
     \clearpage
     \phantomsection % Корректный переход по ссылкам в содержании
     \begin{center}
@@ -225,9 +245,9 @@
     \par
 }
 % Секции без номеров (введение, заключение...), вместо section*{}
-\newcommand{\Anonsection}[1]{
-    \AnonsectionNoToc{#1}
-    \addcontentsline{toc}{section}{#1}
+\newcommand{\Anonchapter}[1]{
+    \AnonchapterNoToc{#1}
+    \addcontentsline{toc}{chapter}{#1}
 }
 
 % % Секция для аннотации (она не включается в содержание)
@@ -265,6 +285,7 @@
 \newenvironment{Underequation}{
     \noindent
     где
+    \hspace{-5pt}
     \setlength{\parindent}{4.5ex}
 }{
     \setlength{\parindent}{1.25cm}
