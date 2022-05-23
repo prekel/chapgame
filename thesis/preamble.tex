@@ -260,10 +260,11 @@
 % \setcounter{page}{3}  % Начало нумерации страниц
 
 \newenvironment{Underequation}{
-    \hspace{-4mm}
-    \begin{tabular}{rl}
-        где \hspace{-4mm}
-        }{
-    \end{tabular}
-    \vspace{2.5mm}
+
+    \setlength{\parindent}{0cm}
+    где
+    \setlength{\parindent}{1.1cm}
+}{
+    \setlength{\parindent}{1.25cm}
+    \vspace{2mm}
 }
