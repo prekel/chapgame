@@ -1,4 +1,5 @@
 %%% Преамбула %%%
+%%% Много позаимствовано из https://github.com/Amet13/master-thesis/blob/619de30308055fb46d432c4d03a58eeff43e6198/preamble.tex %%%
 
 \usepackage{fontspec} % XeTeX
 \usepackage{xunicode} % Unicode для XeTeX
@@ -177,6 +178,7 @@
 
 % Оформление заголовков
 \usepackage[compact,explicit]{titlesec}
+
 \titleformat{\section}
 {}
 {\bfseries\thesection~#1}
@@ -187,6 +189,7 @@
 {\parindent}
 {1em}
 {1em}
+
 \titleformat{\subsection}
 {}
 {\bfseries\thesubsection~#1}
@@ -260,10 +263,9 @@
 % \setcounter{page}{3}  % Начало нумерации страниц
 
 \newenvironment{Underequation}{
-
-    \setlength{\parindent}{0cm}
+    \noindent
     где
-    \setlength{\parindent}{1.1cm}
+    \setlength{\parindent}{4.5ex}
 }{
     \setlength{\parindent}{1.25cm}
     \vspace{2mm}
