@@ -29,9 +29,11 @@
 % \setlength{\parskip}{0pt}
 
 % Формулы
-\usepackage{mathtools,unicode-math} % Не совместим с amsmath
-% \setmathfont{XITS Math}             % Шрифт для формул: https://github.com/khaledhosny/xits-math
+\usepackage[fleqn]{mathtools}
+\usepackage{unicode-math}% Не совместим с amsmath
+% \setmathfot{XITS Math}             % Шрифт для формул: https://github.com/khaledhosny/xits-math
 \numberwithin{equation}{section}    % Формула вида секция.номер
+\setlength\mathindent{1.25cm}
 
 % Русский язык
 \usepackage{polyglossia}
@@ -176,25 +178,25 @@
 % Оформление заголовков
 \usepackage[compact,explicit]{titlesec}
 \titleformat{\section}
-    {}
-    {\bfseries\thesection~#1}
-    {0pt}
-    {}
-    []
+{}
+{\bfseries\thesection~#1}
+{0pt}
+{}
+[]
 \titlespacing*{\section}
-    {\parindent}
-    {1em}
-    {1em}
+{\parindent}
+{1em}
+{1em}
 \titleformat{\subsection}
-    {}
-    {\bfseries\thesubsection~#1}
-    {0pt}
-    {}
-    []
+{}
+{\bfseries\thesubsection~#1}
+{0pt}
+{}
+[]
 \titlespacing*{\subsection}
-    {\parindent}
-    {1em}
-    {1em}
+{\parindent}
+{1em}
+{1em}
 
 % \titleformat{\subsection}
 % [block]{\vspace{1em}}{}{12.5mm}{
@@ -240,18 +242,18 @@
 % Библиография: отступы и межстрочный интервал
 \makeatletter
 \renewenvironment{thebibliography}[1]
-    {\section*{\refname}
-        \list{\@biblabel{\@arabic\c@enumiv}}
-           {\settowidth\labelwidth{\@biblabel{#1}}
-            \leftmargin\labelsep
-            \itemindent 16.7mm
-            \@openbib@code
-            \usecounter{enumiv}
-            \let\p@enumiv\@empty
-            \renewcommand\theenumiv{\@arabic\c@enumiv}
-        }
-        \setlength{\itemsep}{0pt}
+{\section*{\refname}
+    \list{\@biblabel{\@arabic\c@enumiv}}
+    {\settowidth\labelwidth{\@biblabel{#1}}
+        \leftmargin\labelsep
+        \itemindent 16.7mm
+        \@openbib@code
+        \usecounter{enumiv}
+        \let\p@enumiv\@empty
+        \renewcommand\theenumiv{\@arabic\c@enumiv}
     }
+    \setlength{\itemsep}{0pt}
+}
 \makeatother
 
 \usepackage{lastpage} % Подсчет количества страниц
