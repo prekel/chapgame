@@ -33,8 +33,10 @@
 \usepackage[fleqn]{mathtools}
 \usepackage{unicode-math}% Не совместим с amsmath
 % \setmathfot{XITS Math}             % Шрифт для формул: https://github.com/khaledhosny/xits-math
-\numberwithin{equation}{chapter}    % Формула вида секция.номер
+% \numberwithin{equation}{section}    % Формула вида секция.номер
 \setlength\mathindent{1.25cm}
+\usepackage{chngcntr}
+\counterwithout{equation}{section}
 
 % Русский язык
 \usepackage{polyglossia}
@@ -290,4 +292,10 @@
 }{
     \setlength{\parindent}{1.25cm}
     \vspace{2mm}
+}
+
+\newcommand\TODO{
+    {\color{red}
+            TODO
+        }
 }
