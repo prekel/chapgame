@@ -154,15 +154,15 @@
 достаточно увидеть, что длина вектора \(\vec{v_0}\) должна быть больше длине вектора \(\vec{a}t\)
 и получить неравенство для \(t\) (\ref{constraint_t_1}).
 
-\[
-  \left|\vec{v_0}\right| > \left|\vec{a}t\right|
-\]
-\[
-  \left|\vec{v_0}\right| > \left|\vec{a}\right| t
-\]
-\[
-  \frac{\left|\vec{v_0}\right|}{\left|\vec{a}\right| } > t
-\]
+% \[
+%   \left|\vec{v_0}\right| > \left|\vec{a}t\right|
+% \]
+% \[
+%   \left|\vec{v_0}\right| > \left|\vec{a}\right| t
+% \]
+% \[
+%   \frac{\left|\vec{v_0}\right|}{\left|\vec{a}\right| } > t
+% \]
 
 \newcommand\Constrainttle{
   t < \frac{\left|\vec{v_0}\right|}{\left|\vec{a}\right|}
@@ -191,7 +191,7 @@
 \begin{equation}\label{v_x_1}
   v_x(t) =
   \begin{cases}
-    {v_0}_x - a_x t, & 0 \leqslant \Constrainttle, \\
+    {v_0}_x + a_x t, & 0 \leqslant \Constrainttle, \\
     0,               & \Constrainttge.
   \end{cases}
 \end{equation}
@@ -204,7 +204,7 @@
 \begin{equation}\label{v_y_1}
   v_y(t) =
   \begin{cases}
-    {v_0}_y - a_y t, & 0  \leqslant \Constrainttle, \\
+    {v_0}_y + a_y t, & 0  \leqslant \Constrainttle, \\
     0,               & \Constrainttge.
   \end{cases}
 \end{equation}
@@ -234,6 +234,34 @@
     0,                                             & \Constrainttge .
   \end{cases}
 \end{equation}
+
+Соответствующие проекции на оси абцисс (\ref{r_x_1}) и ординат (\ref{r_y_1}):
+
+\begin{equation}\label{r_x_1}
+  r_x(t) =
+  \begin{cases}
+    {r_0}_x + {v_0}_x t + \frac{a_x t^2}{2}, & 0 \leqslant \Constrainttle, \\
+    {r_0}_x,               & \Constrainttge.
+  \end{cases}
+\end{equation}
+\begin{Underequation}
+  & \(r_x(t)\)~-- проекция радиус-вектора положения тела \(\vec{r}(t)\) в момент времени \(t\) на ось \(X\); \\
+  & \({r_0}_x\)~-- проекция радиус-вектора начального положения тела \(\vec{v_0}\) на ось \(X\). \\
+\end{Underequation}
+
+\begin{equation}\label{r_y_1}
+  r_y(t) =
+  \begin{cases}
+    {r_0}_y + {v_0}_y t + \frac{a_y t^2}{2}, & 0 \leqslant \Constrainttle, \\
+    {r_0}_y,               & \Constrainttge.
+  \end{cases}
+\end{equation}
+\begin{Underequation}
+  & \(r_y(t)\)~-- проекция радиус-вектора положения тела \(\vec{r}(t)\) в момент времени \(t\) на ось \(Y\); \\
+  & \({r_0}_y\)~-- проекция радиус-вектора начального положения тела \(\vec{v_0}\) на ось \(Y\). \\
+\end{Underequation}
+
+Формулы (\ref{r_x_1}) и (\ref{r_y_1}) являются ключевыми во всей работе.
 
 \section{Чтото}
 
