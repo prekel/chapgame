@@ -258,3 +258,12 @@
 
 \usepackage{lastpage} % Подсчет количества страниц
 % \setcounter{page}{3}  % Начало нумерации страниц
+
+\newenvironment{Underequation}{
+    \hspace{-4mm}
+    \begin{tabular}{rl}
+        где \hspace{-4mm}
+        }{
+    \end{tabular}
+    \vspace{2.5mm}
+}

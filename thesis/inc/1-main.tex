@@ -137,44 +137,103 @@
 
 \subsection{Формулы 1}
 
-Скорость при равноускоренном движении
+Скорость при равноускоренном движении (\ref{velocityvec_1}) TODO
 
-\begin{equation}
+\begin{equation}\label{velocityvec_1}
   \vec{v}(t) = \vec{v_0} + \vec{a}t
 \end{equation}
-\hspace{-4mm}
-\begin{tabular}{rl}
-  где \hspace{-4mm} & \(\vec{v}(t)\)~-- вектор скорости тела в момент времени \(t\);  \\
-                    & \(\vec{v_0}\)~-- вектор начальной скорости тела;             \\
-                    & \(\vec{a}\)~-- вектор ускорения тела; \\
-                    & \(t\)~-- момент времени.
-\end{tabular}
+\begin{Underequation}
+  & \(\vec{v}(t)\)~-- вектор скорости тела в момент времени \(t\); \\
+  & \(\vec{v_0}\)~-- вектор начальной скорости тела; \\
+  & \(\vec{a}\)~-- вектор ускорения тела; \\
+  & \(t\)~-- момент времени.
+\end{Underequation}
 
-Причём вектор \(\vec{v}(t)\) сонаправлен вектору \(\vec{v_0}\), а вектор \(\vec{a}\) противонаправлен.
-Для того чтобы обеспечить сонаправленность векторов \(\vec{v}(t)\) и \(\vec{v_0}\), следует ограничить \(t\)
-уравнением \ref{constraint_t_1}.
+Причём вектор \(\vec{v}(t)\) должен быть сонаправлен вектору \(\vec{v_0}\), а вектор \(\vec{a}\) противонаправлен.
+Для того чтобы выяснить, при каких \(t\) сонаправленность векторов \(\vec{v}(t)\) и \(\vec{v_0}\) в уравнении (\ref{velocityvec_1}) соблюдается,
+достаточно увидеть, что длина вектора \(\vec{v_0}\) должна быть больше длине вектора \(\vec{a}t\)
+и получить неравенство для \(t\) (\ref{constraint_t_1}).
+
+\[
+  \left|\vec{v_0}\right| > \left|\vec{a}t\right|
+\]
+\[
+  \left|\vec{v_0}\right| > \left|\vec{a}\right| t
+\]
+\[
+  \frac{\left|\vec{v_0}\right|}{\left|\vec{a}\right| } > t
+\]
+
+\newcommand\Constrainttle{
+  t < \frac{\left|\vec{v_0}\right|}{\left|\vec{a}\right|}
+}
+
+\newcommand\Constrainttge{
+  t \geqslant \frac{\left|\vec{v_0}\right|}{\left|\vec{a}\right|}
+}
 
 \begin{equation}\label{constraint_t_1}
-  t \leqslant \frac{\left|\vec{v_0}\right|}{\left|\vec{a}\right|}
+  \Constrainttle
 \end{equation}
 
-А для остальных \(t\), \(\vec{v}(t)\) следует принять нулю. Тогда получится система \ref{v_system}.
+А для остальных \(t\), \(\vec{v}(t)\) следует принять нулю. Тогда получится система (\ref{v_system}).
 
 \begin{equation}\label{v_system}
-  \vec{v}(t) = \begin{cases}
-    \vec{v_0} + \vec{a}t, & t \leqslant \frac{\left|\vec{v_0}\right|}{\left|\vec{a}\right|}, \\
-    0,                    & t \geqslant \frac{\left|\vec{v_0}\right|}{\left|\vec{a}\right|}
+  \vec{v}(t) =
+  \begin{cases}
+    \vec{v_0} + \vec{a}t, & 0 \leqslant \Constrainttle, \\
+    0,                    & \Constrainttge .
   \end{cases}
 \end{equation}
 
-Проекции на оси:
+Проекции на ось абцисс (\ref{v_x_1}) и ординат (\ref{v_y_1}):
 
-\begin{align*}
-  v_x & = {v_0}_x - a_x t \\
-  v_y & = {v_0}_y - a_y t
-\end{align*}
+\begin{equation}\label{v_x_1}
+  v_x(t) =
+  \begin{cases}
+    {v_0}_x - a_x t, & 0 \leqslant \Constrainttle, \\
+    0,               & \Constrainttge.
+  \end{cases}
+\end{equation}
+\begin{Underequation}
+  & \(v_x(t)\)~-- проекция вектора скорости тела \(\vec{v}(t)\) в момент времени \(t\) на ось \(X\); \\
+  & \({v_0}_x\)~-- проекция вектора начальной скорости тела \(\vec{v_0}\) на ось \(X\); \\
+  & \(a_x\)~-- проекция вектора ускорения тела \(\vec{a}\) на ось \(X\). \\
+\end{Underequation}
 
-Допустим, \({v_0}_x \geqslant 0\)
+\begin{equation}\label{v_y_1}
+  v_y(t) =
+  \begin{cases}
+    {v_0}_y - a_y t, & 0  \leqslant \Constrainttle, \\
+    0,               & \Constrainttge.
+  \end{cases}
+\end{equation}
+\begin{Underequation}
+  & \(v_y(t)\)~-- проекция вектора скорости тела \(\vec{v}(t)\) в момент времени \(t\) на ось \(Y\); \\
+  & \({v_0}_y\)~-- проекция вектора начальной скорости тела \(\vec{v_0}\) на ось \(Y\); \\
+  & \(a_y\)~-- проекция вектора ускорения тела \(\vec{a}\) на ось \(Y\). \\
+\end{Underequation}
+
+Теперь найдём формулу для траектории движения тела. Формуле, соответвующей (\ref{velocityvec_1}),
+только для траектории, соответствует (\ref{traectoryvec_1}):
+
+\begin{equation}\label{traectoryvec_1}
+  \vec{r}(t) = \vec{r_0} + \vec{v_0}t + \frac{\vec{a}t^2}{2}
+\end{equation}
+\begin{Underequation}
+  & \(\vec{r}(t)\)~-- радиус-вектор положения тела в момент времени \(t\); \\
+  & \(\vec{r_0}\)~-- радиус-вектор начального положения тела.
+\end{Underequation}
+
+Исходя из (\ref{v_system}), уравнение для траектории с учётом того, что вектор скорости должен быть
+противонаправлен вектору ускорения, будет (\ref{r_system_1}):
+
+\begin{equation}\label{r_system_1}
+  \vec{r}(t) = \begin{cases}
+    \vec{r_0} + \vec{v_0}t + \frac{\vec{a}t^2}{2}, & 0 \leqslant \Constrainttle, \\
+    0,                                             & \Constrainttge .
+  \end{cases}
+\end{equation}
 
 \section{Чтото}
 
