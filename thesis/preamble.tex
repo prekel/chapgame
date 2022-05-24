@@ -1,4 +1,7 @@
 %%% Преамбула %%%
+%%% Много позаимствовано из https://github.com/Amet13/master-thesis/blob/619de30308055fb46d432c4d03a58eeff43e6198/preamble.tex %%%
+
+\documentclass[xetex,a4paper,14pt]{extreport}
 
 \usepackage{fontspec} % XeTeX
 \usepackage{xunicode} % Unicode для XeTeX
@@ -15,11 +18,11 @@
 %     literate={---}{{-{}-{}-}}3  % Корректно отображать тройной дефис
 % }
 
-% Шрифты, xelatex
+% Шрифты
 \defaultfontfeatures{Ligatures=TeX}
-\setmainfont{Times New Roman} % Нормоконтроллеры хотят именно его
+\setmainfont{Times New Roman}
 \newfontfamily\cyrillicfont{Times New Roman}
-\setmonofont{FreeMono} % Моноширинный шрифт для оформления кода
+%\setmonofont{FreeMono} % Моноширинный шрифт для оформления кода
 
 \usepackage{indentfirst}
 % \usepackage{parskip}
@@ -29,13 +32,22 @@
 % \setlength{\parskip}{0pt}
 
 % Формулы
-\usepackage{mathtools,unicode-math} % Не совместим с amsmath
-% \setmathfont{XITS Math}             % Шрифт для формул: https://github.com/khaledhosny/xits-math
-\numberwithin{equation}{section}    % Формула вида секция.номер
+\usepackage[fleqn]{mathtools}
+\usepackage{unicode-math}% Не совместим с amsmath
+% \setmathfot{XITS Math}             % Шрифт для формул: https://github.com/khaledhosny/xits-math
+% \numberwithin{equation}{section}    % Формула вида секция.номер
+\setlength\mathindent{1.25cm}
+\usepackage{chngcntr}
+\counterwithout{equation}{section}
 
 % Русский язык
 \usepackage{polyglossia}
 \setdefaultlanguage{russian}
+\makeatletter
+\addto\captionsrussian@modern{
+    \renewcommand{\contentsname}{Содержание}
+}
+\makeatother
 
 % Абзацы и списки
 \usepackage{enumerate}   % Тонкая настройка списков
@@ -60,7 +72,7 @@
     colorlinks, urlcolor={black}, % Все ссылки черного цвета, кликабельные
     linkcolor={black}, citecolor={black}, filecolor={black},
     pdfauthor={Владислав Прекель},
-    pdftitle={Система}
+    pdftitle={Система физического моделирования на основе априорного подхода обнаружения столкновений}
 }
 
 % Оформление библиографии и подрисуночных записей через точку
@@ -101,13 +113,17 @@
 
 % Содержание
 \usepackage{tocloft}
-\renewcommand{\cfttoctitlefont}{\hspace{0.38\textwidth}\bfseries\MakeTextUppercase} % СОДЕРЖАНИЕ
+\renewcommand{\cfttoctitlefont}{\vspace{-2.5cm}\hspace{0.38\textwidth}\bfseries\MakeTextUppercase} % СОДЕРЖАНИЕ
 \renewcommand{\cftsecfont}{\hspace{0pt}}            % Имена секций в содержании не жирным шрифтом
 \renewcommand\cftsecleader{\cftdotfill{\cftdotsep}} % Точки для секций в содержании
-\renewcommand\cftsecpagefont{\mdseries}             % Номера страниц не жирные
+\renewcommand\cftsecpagefont{\mdseries}
+\renewcommand{\cftchapfont}{\hspace{0pt}}            % Имена секций в содержании не жирным шрифтом
+\renewcommand\cftchapleader{\cftdotfill{\cftdotsep}} % Точки для секций в содержании
+\renewcommand\cftchappagefont{\mdseries}
+\setlength{\cftbeforechapskip}{0em}            % Номера страниц не жирные
 \setlength{\cftbeforesecskip}{0em}
 \setlength{\cftbeforesubsecskip}{0em}
-\setlength{\cftbeforesubsubsecskip}{0em}
+% \setlength{\cftbeforesubsubsecskip}{0em}
 \setcounter{tocdepth}{3}                            % Глубина оглавления, до subsubsection
 
 
@@ -175,26 +191,39 @@
 
 % Оформление заголовков
 \usepackage[compact,explicit]{titlesec}
+
+\titleformat{\chapter}
+{}
+{\bfseries\thechapter~#1}
+{0pt}
+{}
+[]
+\titlespacing*{\chapter}
+{\parindent}
+{-2em}
+{1em}
+
 \titleformat{\section}
-    {}
-    {\bfseries\thesection~#1}
-    {0pt}
-    {}
-    []
+{}
+{\bfseries\thesection~#1}
+{0pt}
+{}
+[]
 \titlespacing*{\section}
-    {\parindent}
-    {1em}
-    {1em}
+{\parindent}
+{1em}
+{1em}
+
 \titleformat{\subsection}
-    {}
-    {\bfseries\thesubsection~#1}
-    {0pt}
-    {}
-    []
+{}
+{\bfseries\thesubsection~#1}
+{0pt}
+{}
+[]
 \titlespacing*{\subsection}
-    {\parindent}
-    {1em}
-    {1em}
+{\parindent}
+{1em}
+{1em}
 
 % \titleformat{\subsection}
 % [block]{\vspace{1em}}{}{12.5mm}{
@@ -211,7 +240,7 @@
 % }
 
 % Секции без номеров (введение, заключение...), вместо section*{}
-\newcommand{\AnonsectionNoToc}[1]{
+\newcommand{\AnonchapterNoToc}[1]{
     \clearpage
     \phantomsection % Корректный переход по ссылкам в содержании
     \begin{center}
@@ -220,9 +249,9 @@
     \par
 }
 % Секции без номеров (введение, заключение...), вместо section*{}
-\newcommand{\Anonsection}[1]{
-    \AnonsectionNoToc{#1}
-    \addcontentsline{toc}{section}{#1}
+\newcommand{\Anonchapter}[1]{
+    \AnonchapterNoToc{#1}
+    \addcontentsline{toc}{chapter}{#1}
 }
 
 % % Секция для аннотации (она не включается в содержание)
@@ -240,19 +269,39 @@
 % Библиография: отступы и межстрочный интервал
 \makeatletter
 \renewenvironment{thebibliography}[1]
-    {\section*{\refname}
-        \list{\@biblabel{\@arabic\c@enumiv}}
-           {\settowidth\labelwidth{\@biblabel{#1}}
-            \leftmargin\labelsep
-            \itemindent 16.7mm
-            \@openbib@code
-            \usecounter{enumiv}
-            \let\p@enumiv\@empty
-            \renewcommand\theenumiv{\@arabic\c@enumiv}
-        }
-        \setlength{\itemsep}{0pt}
+{\section*{\refname}
+    \list{\@biblabel{\@arabic\c@enumiv}}
+    {\settowidth\labelwidth{\@biblabel{#1}}
+        \leftmargin\labelsep
+        \itemindent 16.7mm
+        \@openbib@code
+        \usecounter{enumiv}
+        \let\p@enumiv\@empty
+        \renewcommand\theenumiv{\@arabic\c@enumiv}
     }
+    \setlength{\itemsep}{0pt}
+}
 \makeatother
 
 \usepackage{lastpage} % Подсчет количества страниц
 % \setcounter{page}{3}  % Начало нумерации страниц
+
+\newenvironment{Underequation}{
+    \noindent
+    где
+    \hspace{-5pt}
+    \setlength{\parindent}{4.5ex}
+}{
+    \setlength{\parindent}{1.25cm}
+    \vspace{2mm}
+}
+
+\newcommand\TODO{
+    {\color{red}
+            TODO
+        }
+}
+
+\begin{document}
+\setlength{\abovedisplayskip}{-2mm}
+\setlength{\belowdisplayskip}{1em}
