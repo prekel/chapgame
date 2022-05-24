@@ -2,5 +2,5 @@ all:
 	xelatex thesis.tex
 	xelatex thesis.tex
 
-xelatex:
+notoc:
 	xelatex thesis.tex
