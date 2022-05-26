@@ -104,15 +104,11 @@
 
 % Списки
 \usepackage{enumitem}
-\setlist[enumerate,itemize]{leftmargin=12.5mm} % Отступы в списках
-
-% \makeatletter
-%     \AddEnumerateCounter{\asbuk}{\@asbuk}{м)}
-% \makeatother
-% \setlist{nolistsep}                           % Нет отступов между пунктами списка
-% \renewcommand{\labelitemi}{--}                % Маркер списка --
-% \renewcommand{\labelenumi}{\asbuk{enumi})}    % Список второго уровня
-% \renewcommand{\labelenumii}{\arabic{enumii})} % Список третьего уровня
+\setlist[enumerate,itemize]{leftmargin=0pt,itemindent=1.65cm,labelsep=1ex,topsep=0em}
+\setlist{nolistsep}                          % Нет отступов между пунктами списка
+\renewcommand{\labelitemi}{-}                % Маркер списка -
+\renewcommand{\labelenumi}{\asbuk{enumi}}    % Список второго уровня
+\renewcommand{\labelenumii}{\arabic{enumii}} % Список третьего уровня
 
 % Содержание
 \usepackage{tocloft}
