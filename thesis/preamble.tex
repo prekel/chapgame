@@ -1,5 +1,5 @@
 %%% Преамбула %%%
-%%% Много позаимствовано из https://github.com/Amet13/master-thesis/blob/619de30308055fb46d432c4d03a58eeff43e6198/preamble.tex %%%
+% Много позаимствовано из https://github.com/Amet13/master-thesis/blob/619de30308055fb46d432c4d03a58eeff43e6198/preamble.tex
 
 \documentclass[xetex,a4paper,14pt]{extreport}
 
@@ -67,7 +67,7 @@
 \counterwithin{table}{section}
 
 \newcommand\Author{Владислав Прекель}
-\newcommand\Theme{Система физического моделирования на основе априорного подхода обнаружения столкновений}
+\newcommand\Topic{Система физического моделирования на основе априорного подхода обнаружения столкновений}
 
 % Гиперссылки
 \usepackage{hyperref}
@@ -75,7 +75,7 @@
     colorlinks, urlcolor={black}, % Все ссылки черного цвета, кликабельные
     linkcolor={black}, citecolor={black}, filecolor={black},
     pdfauthor={\Author},
-    pdftitle={\Theme}
+    pdftitle={\Topic}
 }
 
 % Оформление библиографии и подрисуночных записей через точку
@@ -288,6 +288,11 @@
 
 \usepackage{lastpage} % Подсчет количества страниц
 % \setcounter{page}{3}  % Начало нумерации страниц
+
+\usepackage{totcount}
+\newtotcounter{citenum}
+\def\oldbibitem{} \let\oldbibitem=\bibitem
+\def\bibitem{\stepcounter{citenum}\oldbibitem}
 
 \newenvironment{Underequation}{
     \noindent
