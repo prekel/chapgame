@@ -66,13 +66,16 @@
 \counterwithin{figure}{section}
 \counterwithin{table}{section}
 
+\newcommand\Author{Владислав Прекель}
+\newcommand\Theme{Система физического моделирования на основе априорного подхода обнаружения столкновений}
+
 % Гиперссылки
 \usepackage{hyperref}
 \hypersetup{
     colorlinks, urlcolor={black}, % Все ссылки черного цвета, кликабельные
     linkcolor={black}, citecolor={black}, filecolor={black},
-    pdfauthor={Владислав Прекель},
-    pdftitle={Система физического моделирования на основе априорного подхода обнаружения столкновений}
+    pdfauthor={\Author},
+    pdftitle={\Theme}
 }
 
 % Оформление библиографии и подрисуночных записей через точку
@@ -296,11 +299,7 @@
     \vspace{2mm}
 }
 
-\newcommand\TODO{
-    {\color{red}
-            TODO
-        }
-}
+\newcommand\TODO{{\color{red}TODO}}
 
 \begin{document}
 \setlength{\abovedisplayskip}{-2mm}
