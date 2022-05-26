@@ -4,3 +4,6 @@ all:
 
 notoc:
 	xelatex thesis.tex
+
+docx:
+	pandoc -s thesis.tex -o thesis.docx
