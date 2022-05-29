@@ -7,3 +7,7 @@ notoc:
 
 docx:
 	pandoc -s thesis.tex -o thesis.docx
+
+rep:
+	xelatex report.tex
+	xelatex report.tex
