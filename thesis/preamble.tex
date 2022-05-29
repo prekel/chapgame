@@ -63,8 +63,8 @@
 \usepackage{chngcntr}
 
 % Сбрасываем счетчик таблиц и рисунков в каждой новой главе
-\counterwithin{figure}{section}
-\counterwithin{table}{section}
+% \counterwithin{figure}{section}
+% \counterwithin{table}{section}
 
 \newcommand\Author{Владислав Прекель}
 \newcommand\Topic{Система физического моделирования на основе априорного подхода обнаружения столкновений}
@@ -83,7 +83,7 @@
 \renewcommand*{\@biblabel}[1]{\hfill#1.}
 \renewcommand*\l@section{\@dottedtocline{1}{1em}{1em}}
 \renewcommand{\thefigure}{\thesection.\arabic{figure}} % Формат рисунка секция.номер
-\renewcommand{\thetable}{\thesection.\arabic{table}}   % Формат таблицы секция.номер
+\renewcommand{\thetable}{\arabic{table}}   % Формат таблицы секция.номер
 \def\redeflsection{\def\l@section{\@dottedtocline{1}{0em}{10em}}}
 \makeatother
 
