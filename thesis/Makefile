@@ -12,3 +12,7 @@ rep:
 assign:
 	xelatex assignment.tex
 	xelatex assignment.tex
+
+present:
+	xelatex presentation.tex
+	xelatex presentation.tex
