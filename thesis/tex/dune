@@ -55,3 +55,11 @@
   (progn
    (run %{bin:xelatex} "report.tex")
    (run %{bin:xelatex} "report.tex"))))
+
+(rule
+ (target presentation.pdf)
+ (deps presentation.tex)
+ (action
+  (progn
+   (run %{bin:xelatex} "presentation.tex")
+   (run %{bin:xelatex} "presentation.tex"))))
