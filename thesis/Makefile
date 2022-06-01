@@ -1,18 +1,15 @@
-all:
-	xelatex thesis.tex
-	xelatex thesis.tex
+all: thesis.pdf assignment.pdf
 
-notoc:
-	xelatex thesis.tex
+../_build/default/thesis/tex/thesis.pdf: FORCE
+	dune build ./tex/thesis.pdf
 
-rep:
-	xelatex report.tex
-	xelatex report.tex
+../_build/default/thesis/tex/assignment.pdf: FORCE
+	dune build ./tex/assignment.pdf
 
-assign:
-	xelatex assignment.tex
-	xelatex assignment.tex
+thesis.pdf: ../_build/default/thesis/tex/thesis.pdf
+	cp ../_build/default/thesis/tex/thesis.pdf . -f
 
-present:
-	xelatex presentation.tex
-	xelatex presentation.tex
+assignment.pdf: ../_build/default/thesis/tex/assignment.pdf
+	cp ../_build/default/thesis/tex/assignment.pdf . -f
+
+FORCE:

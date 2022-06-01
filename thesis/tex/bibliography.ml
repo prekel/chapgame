@@ -1,4 +1,6 @@
-\begingroup
+(* open Core *)
+
+let content = {|\begingroup
 \renewcommand{\section}[2]{\Anonchapter{Список использованных источников}\vspace{-1em}}
 \begin{thebibliography}{00}
 
@@ -192,3 +194,11 @@
 \endgroup
 
 % \clearpage
+|}
+
+let () =
+  Stdio.Out_channel.with_file
+    ~fail_if_exists:false
+    "c2-bibliography.tex"
+    ~f:Stdio.Out_channel.(fun c -> output_string c content)
+;;

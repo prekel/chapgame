@@ -1,0 +1,57 @@
+(executable
+ (name bibliography)
+ (libraries core)
+ (preprocess
+  (pps ppx_jane)))
+
+(rule
+ (target c2-bibliography.tex)
+ (deps bibliography.exe)
+ (action
+  (run %{deps})))
+
+(rule
+ (target thesis.pdf)
+ (deps
+  thesis.tex
+  preamble.tex
+  a1-title.tex
+  a2-synopsis.tex
+  a3-toc.tex
+  a4-intro.tex
+  b1-theory.tex
+  b2-design.tex
+  b3-implementation.tex
+  b4-usage.tex
+  c1-outro.tex
+  c2-bibliography.tex)
+ (action
+  (progn
+   (run %{bin:xelatex} "thesis.tex")
+   (run %{bin:xelatex} "thesis.tex"))))
+
+(rule
+ (target assignment.pdf)
+ (deps assignment.tex preamble.tex s1-title.tex s2-assignment.tex)
+ (action
+  (progn
+   (run %{bin:xelatex} "assignment.tex")
+   (run %{bin:xelatex} "assignment.tex"))))
+
+(rule
+ (target report.pdf)
+ (deps
+  report.tex
+  preamble.tex
+  r1-title.tex
+  a3-toc.tex
+  a4-intro.tex
+  r2-assignment.tex
+  r3-plan.tex
+  b1-theory.tex
+  b2-design.tex
+  c2-bibliography.tex)
+ (action
+  (progn
+   (run %{bin:xelatex} "report.tex")
+   (run %{bin:xelatex} "report.tex"))))
