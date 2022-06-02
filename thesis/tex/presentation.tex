@@ -6,11 +6,17 @@
 \usepackage{graphicx}
 \graphicspath{ {../images/} }
 
+\usepackage{listings}
+
 \defaultfontfeatures{Ligatures=TeX}
 \setmainfont{Times New Roman}
-\newfontfamily\cyrillicfontsf{Arial}
-\newfontfamily\cyrillicfont{Arial}
 \setdefaultlanguage{russian}
+\setmonofont{Courier New} 
+
+\newfontfamily{\cyrillicfont}{Times New Roman} 
+\newfontfamily{\cyrillicfontrm}{Times New Roman}
+\newfontfamily{\cyrillicfonttt}{Courier New}
+\newfontfamily{\cyrillicfontsf}{Arial}
 
 % \usetheme{Pittsburgh}
 \usetheme{default}
@@ -38,9 +44,6 @@
 \begin{frame}
     \titlepage
 \end{frame}
-
-\section{Section 1}
-\subsection{sub a}
 
 \begin{frame}
     \frametitle{Модель}
@@ -284,7 +287,7 @@
 
 \begin{frame}
     \frametitle{Использованные технологии}
-    
+
     \begin{itemize}
         \item OCaml~-- язык программирования;
         \item Js\_of\_ocaml~-- компилятор OCaml в JavaScript;
@@ -301,22 +304,51 @@
 
 \end{frame}
 
-\begin{frame}
+\begin{frame}[fragile]
     \frametitle{Реализация движка}
 
+    \footnotesize
+    \begin{lstlisting}[language=ml]
+S.Model.init ~g:1.
+|> S.Engine.recv ~action:{ time = 0.
+        ; action =
+            AddBody { id = Some id1; x0 = 350.; y0 = 200.
+                    ; r = 100.; mu = 1.; m = 10. }
+        ; until = { timespan = Some 0.; quantity = None }}
+|> S.Engine.recv ~action:{ time = 0.
+        ; action =
+            AddBody { id = Some id2; x0 = 700.; y0 = 200.
+                    ; r = 100.; mu = 1.; m = 10. }
+        ; until = { timespan = Some 0.; quantity = None }}
+|> S.Engine.recv ~action:{ time = 0.
+        ; action = GiveVelocity { id = id2; v0 = -100., 0. }
+        ; until = { timespan = None; quantity = None }}
+    \end{lstlisting}
 
 \end{frame}
 
 \begin{frame}
     \frametitle{Интерактивная демострация возможностей движка}
 
+    \includegraphics[height=8cm]{chapgame_1}
+
+\end{frame}
+
+\begin{frame}
+    {\color{blue}\url{https://prekel.github.io/chapgame/}}
+
+    \includegraphics[height=8cm]{chapgame_2}
 
 \end{frame}
 
 \begin{frame}
     \frametitle{Решённые задачи}
 
-
+    \begin{itemize}
+        \item определена модель и математическая база, требующуюся для моделирования;
+              %\item проведён обзор используемых технологий при разработке (второй раздел ВКР);
+        \item программно реализован физический движок и интерактивная демонстрация его работы.
+    \end{itemize}
 \end{frame}
 
 \begin{frame}

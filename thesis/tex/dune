@@ -64,7 +64,9 @@
   ../images/body_second_root.png
   ../images/body_init.png
   ../images/body_collision.png
-  ../images/body_aposteriori.png)
+  ../images/body_aposteriori.png
+  ../images/chapgame_1.png
+  ../images/chapgame_2.png)
  (action
   (progn
    (run %{bin:xelatex} "presentation.tex")

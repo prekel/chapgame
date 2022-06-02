@@ -1,6 +1,6 @@
 (library
  (name chapgame_test)
- (libraries core)
+ (libraries core engine)
  (preprocess
   (pps ppx_jane))
  (inline_tests))

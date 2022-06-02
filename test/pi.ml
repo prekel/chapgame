@@ -1,5 +1,70 @@
-(* open Core
-module S = Chapgame.Scene.Make ((val Chapgame.Utils.make_consts ~eps:1e-6))
+open Core
+module S = Engine.Scene.Make ((val Engine.Utils.make_consts ~eps:1e-6))
+
+let%expect_test "sample" =
+  let id1 = S.Body.Id.next () in
+  let id2 = S.Body.Id.next () in
+  S.Model.init ~g:1.
+  |> S.Engine.recv ~action:{ time = 0.
+         ; action =
+             AddBody { id = Some id1; x0 = 350.; y0 = 200.; r = 100.; mu = 1.; m = 10. }
+         ; until = { timespan = Some 0.; quantity = None }}
+  |> S.Engine.recv ~action:{ time = 0.
+         ; action =
+             AddBody { id = Some id2; x0 = 700.; y0 = 200.; r = 100.; mu = 1.; m = 10. }
+         ; until = { timespan = Some 0.; quantity = None }}
+  |> S.Engine.recv ~action:{ time = 0.
+         ; action = GiveVelocity { id = id2; v0 = -100., 0. }
+         ; until = { timespan = None; quantity = None }}
+  |> [%sexp_of: S.Model.t]
+  |> print_s;
+  [%expect {|
+    ((timeout ())
+     (scenes
+      ((0
+        ((time 0)
+         (bodies
+          ((0
+            ((id 0)
+             (values ((v0_x 0) (v0_y 0) (m 10) (r 100) (mu 1) (x0 350) (y0 200)))
+             (rules (rules0_0))))
+           (1
+            ((id 1)
+             (values
+              ((v0_x -100) (v0_y 0) (m 10) (r 100) (mu 1) (x0 700) (y0 200)))
+             (rules (rules1_0 rules1_1))))))
+         (points ()) (lines ()) (global_values ((g 1)))
+         (cause
+          ((Action
+            ((time 0) (action (GiveVelocity (id 1) (v0 (-100 0))))
+             (until ((timespan ()) (quantity ())))))
+           Init
+           (Action
+            ((time 0)
+             (action (AddBody (id (0)) (x0 350) (y0 200) (r 100) (mu 1) (m 10)))
+             (until ((timespan (0)) (quantity ())))))
+           (Action
+            ((time 0)
+             (action (AddBody (id (1)) (x0 700) (y0 200) (r 100) (mu 1) (m 10)))
+             (until ((timespan (0)) (quantity ())))))))))
+       (1.511421982049427
+        ((time 1.511421982049427)
+         (bodies
+          ((0
+            ((id 0)
+             (values
+              ((v0_x -98.488578017950573) (v0_y 0) (m 10) (r 100) (mu 1)
+               (x0 350) (y0 200)))
+             (rules (rules1_0 rules1_1))))
+           (1
+            ((id 1)
+             (values
+              ((v0_x 0) (v0_y 0) (m 10) (r 100) (mu 1) (x0 549.99999999896841)
+               (y0 200)))
+             (rules (rules1_0 rules1_1))))))
+         (points ()) (lines ()) (global_values ((g 1)))
+         (cause ((Collision (Collision (id1 0) (id2 1)))))))))) |}]
+;;
 
 let model_pi m2 =
   let id1 = S.Body.Id.next () in
@@ -8,30 +73,36 @@ let model_pi m2 =
   |> S.Engine.recv
        ~action:
          { time = 0.
-         ; action = AddBody { id = Some id1; x0 = 350.; y0 = 200.; r = 100.; mu = 0.; m = 1. }
-         ; timeout = Some 0.
+         ; action =
+             AddBody { id = Some id1; x0 = 350.; y0 = 200.; r = 100.; mu = 0.; m = 1. }
+         ; until = { timespan = Some 0.; quantity = None }
          }
   |> S.Engine.recv
        ~action:
          { time = 0.
-         ; action = AddBody { id = Some id2; x0 = 700.; y0 = 200.; r = 100.; mu = 0.; m = m2 }
-         ; timeout = Some 0.
+         ; action =
+             AddBody { id = Some id2; x0 = 700.; y0 = 200.; r = 100.; mu = 0.; m = m2 }
+         ; until = { timespan = Some 0.; quantity = None }
          }
   |> S.Engine.recv
-       ~action:{ time = 0.; action = AddPoint { x = 0.; y = 200. }; timeout = Some 0. }
+       ~action:
+         { time = 0.
+         ; action = AddPoint { x = 0.; y = 200. }
+         ; until = { timespan = Some 0.; quantity = None }
+         }
   |> S.Engine.recv
        ~action:
          { time = 0.
          ; action = GiveVelocity { id = id1; v0 = -100., 0. }
-         ; timeout = Some 0.
+         ; until = { timespan = Some 0.; quantity = None }
          }
   |> S.Engine.recv
        ~action:
          { time = 0.
          ; action = GiveVelocity { id = id2; v0 = -100., 0. }
-         ; timeout = Some 0.
+         ; until = { timespan = Some 0.; quantity = None }
          }
-  |> S.Engine.recv ~action:{ time = 0.; action = Empty; timeout = None }
+  |> S.Engine.prolong ~until:{ timespan = None; quantity = None }
 ;;
 
 let model_to_pi S.Model.{ scenes; _ } =
@@ -41,7 +112,7 @@ let model_to_pi S.Model.{ scenes; _ } =
   |> Sequence.sum
        (module Int)
        ~f:(function
-         | Collision _ | CollisionWithPoint _ -> 1
+         | `Collision _ -> 1
          | _ -> 0)
 ;;
 
@@ -65,4 +136,4 @@ let%expect_test "pi" =
     314
     3141
     31415 |}]
-;; *)
+;;

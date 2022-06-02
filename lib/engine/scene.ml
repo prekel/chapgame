@@ -1147,7 +1147,7 @@ struct
       Model.{ scenes = Scenes.merge_with_list m.scenes f; timeout = new_timeout1 }
     ;;
 
-    let prolong (model : Model.t) (until : Action.until) =
+    let prolong (model : Model.t) ~(until : Action.until) =
       let timeout =
         let%bind.Option new_timespan = until.timespan in
         let%map.Option old_timeout = model.timeout in
@@ -1165,7 +1165,7 @@ struct
       | `Action a -> recv model ~action:a
       | `Replace m -> m
       | `Diff diff -> Model.Diff.apply_diff model ~diff
-      | `Prolong until -> prolong model until
+      | `Prolong until -> prolong model ~until
     ;;
 
     let recv_with_diff model ~action =
