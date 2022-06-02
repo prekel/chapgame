@@ -21,7 +21,6 @@ module type S = sig
     | Mult : 'a t * 'a t -> 'a t
     | Div : 'a t * 'a t -> 'a t
     | Neg : 'a t -> 'a t
-    | Trig : [ `Cos | `Sin ] * scalar t -> scalar t
     | VectorAngle : vector t -> scalar t
     | XOfVector : vector t -> scalar t
     | YOfVector : vector t -> scalar t
@@ -60,8 +59,6 @@ module type S = sig
     val vector_unit : vector t -> vector t
     val vector_of_scalar : scalar t -> scalar t -> vector t
     val scope : scope:scope -> 'a t -> 'a t
-    val cos : scalar t -> scalar t
-    val sin : scalar t -> scalar t
     val vector_angle : vector t -> scalar t
   end
 end
@@ -93,7 +90,6 @@ struct
     | Mult : 'a t * 'a t -> 'a t
     | Div : 'a t * 'a t -> 'a t
     | Neg : 'a t -> 'a t
-    | Trig : [ `Cos | `Sin ] * scalar t -> scalar t
     | VectorAngle : vector t -> scalar t
     | XOfVector : vector t -> scalar t
     | YOfVector : vector t -> scalar t
@@ -151,7 +147,6 @@ struct
     | Sexp.List [ Atom "Mult"; a; b ] -> Mult (t_scalar_of_sexp a, t_scalar_of_sexp b)
     | Sexp.List [ Atom "Div"; a; b ] -> Div (t_scalar_of_sexp a, t_scalar_of_sexp b)
     | Sexp.List [ Atom "Neg"; a ] -> Neg (t_scalar_of_sexp a)
-    | Sexp.List [ Atom "Trig"; op; a ] -> Trig (trig_op_of_sexp op, t_scalar_of_sexp a)
     | Sexp.List [ Atom "VectorAngle"; a ] -> VectorAngle (t_vector_of_sexp a)
     | Sexp.List [ Atom "XOfVector"; v ] -> XOfVector (t_vector_of_sexp v)
     | Sexp.List [ Atom "YOfVector"; v ] -> YOfVector (t_vector_of_sexp v)
@@ -191,7 +186,6 @@ struct
     | Mult (a, b) -> List [ Atom "Mult"; sexp_of_t a; sexp_of_t b ]
     | Div (a, b) -> List [ Atom "Div"; sexp_of_t a; sexp_of_t b ]
     | Neg a -> List [ Atom "Neg"; sexp_of_t a ]
-    | Trig (op, a) -> List [ Atom "Trig"; sexp_of_trig_op op; sexp_of_t a ]
     | VectorAngle v -> List [ Atom "VectorAngle"; sexp_of_t v ]
     | XOfVector v -> List [ Atom "XOfVector"; sexp_of_t v ]
     | YOfVector v -> List [ Atom "YOfVector"; sexp_of_t v ]
@@ -250,13 +244,6 @@ struct
     | Neg a ->
       let ca = calc ~values ~scoped_values (module Ops) a in
       Ops.(-ca)
-    | Trig (op, a) ->
-      let x = calc ~values ~scoped_values (module N) a in
-      begin
-        match op with
-        | `Cos -> N.cos x
-        | `Sin -> N.sin x
-      end
     | VectorAngle v ->
       let x, y = calc ~values ~scoped_values (module VectorOps) v in
       N.(atan2 y x)
@@ -298,8 +285,6 @@ struct
     let vector_unit v = UnitVector v
     let vector_of_scalar a b = VectorOfXY (a, b)
     let scope ~scope a = Scope (scope, a)
-    let cos a = Trig (`Cos, a)
-    let sin a = Trig (`Sin, a)
     let vector_angle v = VectorAngle v
   end
 end

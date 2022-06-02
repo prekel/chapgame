@@ -85,7 +85,7 @@ struct
           ; v_x = Formula.of_alist_exn Exprs.[ 0, v0_x; 1, a_x ]
           ; v_y = Formula.of_alist_exn Exprs.[ 0, v0_y; 1, a_y ]
           ; after = rules1
-          ; name = "rules1 - 0"
+          ; name = "rules1_0"
           }
         ; { interval = `PosInfinity Exprs.(vector_length v0_vec / vector_length a_vec)
           ; x =
@@ -111,7 +111,7 @@ struct
           ; v_x = Formula.of_alist_exn Exprs.[ 0, zero ]
           ; v_y = Formula.of_alist_exn Exprs.[ 0, zero ]
           ; after = rules0
-          ; name = "rules1 - 1"
+          ; name = "rules1_1"
           }
         ]
 
@@ -122,7 +122,7 @@ struct
         ; v_x = Formula.of_alist_exn Exprs.[ 0, zero ]
         ; v_y = Formula.of_alist_exn Exprs.[ 0, zero ]
         ; after = rules0
-        ; name = "rules0 - 0"
+        ; name = "rules0_0"
         }
       ]
     ;;
@@ -136,9 +136,9 @@ struct
     let sexp_of_t { name; _ } = Sexp.Atom name
 
     let t_of_sexp = function
-      | Sexp.Atom "rules1 - 0" -> rules1_0
-      | Sexp.Atom "rules1 - 1" -> rules1_1
-      | Sexp.Atom "rules0 - 0" -> rules0_0
+      | Sexp.Atom "rules1_0" -> rules1_0
+      | Sexp.Atom "rules1_1" -> rules1_1
+      | Sexp.Atom "rules0_0" -> rules0_0
       | _ -> assert false
     ;;
 
@@ -245,17 +245,15 @@ struct
 
       let collision_extra ~id1 ~id2 ~rules1 ~rules2 ~r ~ac ~values1 ~values2 ~global ~eps =
         Sequence.cartesian_product (Sequence.of_list rules1) (Sequence.of_list rules2)
-        |> Sequence.map ~f:(fun (a, b) ->
+        |> Sequence.map ~f:(fun ((a : Rule.t), (b : Rule.t)) ->
                let open Formula.Syntax in
-               let x_1 = scope a.Rule.x ~scope:`_1 in
-               let x_2 = scope b.Rule.x ~scope:`_2 in
+               let x_1 = scope a.x ~scope:`_1 in
+               let x_2 = scope b.x ~scope:`_2 in
                let y_1 = scope a.y ~scope:`_1 in
                let y_2 = scope b.y ~scope:`_2 in
                let r_1 = scope r ~scope:`_1 in
                let r_2 = scope r ~scope:`_2 in
                let f = sqr (x_2 - x_1) + sqr (y_2 - y_1) - sqr (r_1 + r_2) in
-               let ai = inter values1 a.interval ~global in
-               let bi = inter values2 b.interval ~global in
                let p =
                  Formula.to_polynomial
                    f
@@ -267,6 +265,8 @@ struct
                      | `_2 -> Values.to_function values2)
                in
                let roots = Solver.PE.roots p ~eps in
+               let ai = inter values1 a.interval ~global in
+               let bi = inter values2 b.interval ~global in
                let roots_filtered =
                  roots
                  |> List.filter ~f:(fun root ->

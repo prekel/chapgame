@@ -19,7 +19,6 @@ module type S = sig
     | Mult : 'a t * 'a t -> 'a t
     | Div : 'a t * 'a t -> 'a t
     | Neg : 'a t -> 'a t
-    | Trig : [ `Cos | `Sin ] * scalar t -> scalar t
     | VectorAngle : vector t -> scalar t
     | XOfVector : vector t -> scalar t
     | YOfVector : vector t -> scalar t
@@ -58,8 +57,6 @@ module type S = sig
     val vector_unit : vector t -> vector t
     val vector_of_scalar : scalar t -> scalar t -> vector t
     val scope : scope:scope -> 'a t -> 'a t
-    val cos : scalar t -> scalar t
-    val sin : scalar t -> scalar t
     val vector_angle : vector t -> scalar t
   end
 end

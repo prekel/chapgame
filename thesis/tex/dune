@@ -58,7 +58,13 @@
 
 (rule
  (target presentation.pdf)
- (deps presentation.tex)
+ (deps
+  presentation.tex
+  ../images/equation_deg3_plot.png
+  ../images/body_second_root.png
+  ../images/body_init.png
+  ../images/body_collision.png
+  ../images/body_aposteriori.png)
  (action
   (progn
    (run %{bin:xelatex} "presentation.tex")

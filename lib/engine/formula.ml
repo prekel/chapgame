@@ -29,7 +29,7 @@ module Make
       |> Map.of_sequence_multi (module Int)
       |> Map.map ~f:(fun a -> Expr.SumList a)
     ;;
-
+    
     let sqr a = a * a
     let scope m ~scope = Map.map m ~f:(fun v -> Expr.Scope (scope, v))
   end
