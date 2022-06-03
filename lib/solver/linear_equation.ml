@@ -1,11 +1,11 @@
 open Core
-
 include Linear_equation_intf
 
-module Make
-    (N : Module_types.NUMBER)
-    (Polynomial : module type of Polynomial.Make (N)) =
-    struct
+module Make (N : Module_types.NUMBER) (Polynomial : Polynomial.S with module N = N) =
+struct
+  module N = N
+  module Polynomial = Polynomial
+
   let root ~a ~b = N.(-b / a)
   let root_opt ~a ~b = if N.(a = zero) then None else Some N.(-b / a)
 

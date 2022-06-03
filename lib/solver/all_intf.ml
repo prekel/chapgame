@@ -8,7 +8,7 @@ module type S = sig
   module PE : Polynomial_equation.S with module N = N and module P = P
 end
 
-module type Ints = sig
+module type Intf = sig
   module type S = S
 
   module Make (N : Module_types.NUMBER) : S with module N = N

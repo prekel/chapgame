@@ -5,10 +5,13 @@ module Make
     (N : Module_types.NUMBER)
     (I : Interval.S with module N = N)
     (P : Polynomial.S with module N = N)
-    (LE : Linear_equation.S with module N = N and module Polynomial = Polynomial)
+    (LE : Linear_equation.S with module N = N and module Polynomial = P)
     (QE : Quadratic_equation.S with module N = N and module Polynomial = P)
     (BS : Bisection.S with module N = N and module Interval = I) =
 struct
+  module N = N
+  module P = P
+
   let rec roots ~eps poly =
     match P.degree poly with
     | non_nat when non_nat <= 0 -> []

@@ -1,6 +1,7 @@
 include All_intf
 
 module Make (N : Module_types.NUMBER) = struct
+  module N = N
   module I = Interval.Make (N)
   module P = Polynomial.Make (N)
   module LE = Linear_equation.Make (N) (P)

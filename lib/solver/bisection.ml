@@ -2,6 +2,9 @@ open Core
 include Bisection_intf
 
 module Make (N : Module_types.NUMBER) (Interval : Interval.S with module N = N) = struct
+  module N = N
+  module Interval = Interval
+
   let two = N.(one + one)
 
   let search ~f ~eps =
