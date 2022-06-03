@@ -6,13 +6,13 @@ module Make
     (Scope : Module_types.SCOPE)
     (N : Solver.Module_types.NUMBER)
     (Expr : Expr.S with module Var = Var and module Scope = Scope and module N = N)
-    (Solver : Solver.All.S with module N = N)
+    (Polynomial : Solver.Polynomial.S with module N = N)
     (Expr_polynomial : Expr_polynomial.S
                          with module Var = Var
                           and module Scope = Scope
                           and module N = N
                           and module Expr = Expr
-                          and module Solver = Solver)
+                          and module Polynomial = Polynomial)
     (Values : Values.S with module Var = Var and module Scope = Scope and module N = N)
     (Rule : sig
       include
@@ -21,7 +21,6 @@ module Make
            and module Scope = Scope
            and module N = N
            and module Expr = Expr
-           and module Solver = Solver
            and module Expr_polynomial = Expr_polynomial
 
       include Sexpable.S with type t := t
@@ -54,7 +53,7 @@ struct
     let c = Expr.calc ~values ~scoped_values (module N) in
     let calc_xy f =
       Expr_polynomial.to_polynomial f ~values ~scoped_values ~eps:C.eps
-      |> Solver.P.calc ~x:t
+      |> Polynomial.calc ~x:t
     in
     List.find_map rules ~f:(fun Rule.{ interval; x; y; v_x; v_y; after; _ } ->
         match interval with

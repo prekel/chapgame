@@ -43,7 +43,7 @@ struct
 
   module Solver = Solver.All.Make (N)
   module Expr = Expr.Make (Vars) (Scope) (N)
-  module Formula = Expr_polynomial.Make (Vars) (Scope) (N) (Expr) (Solver)
+  module Formula = Expr_polynomial.Make (Vars) (Scope) (N) (Expr) (Solver.P)
   module Vector = Vector.Make (N)
   module Values = Values.Make (Vars) (Scope) (N)
   module Point = Point.Make (N)
@@ -52,7 +52,7 @@ struct
   module Lines = Common.Utils.MakeAdvancedSet (Line)
 
   module Rule = struct
-    include Rule.Make (Vars) (Scope) (N) (Expr) (Solver) (Formula)
+    include Rule.Make (Vars) (Scope) (N) (Expr) (Solver.P) (Formula)
 
     module Exprs = struct
       open Expr.Syntax
@@ -155,7 +155,7 @@ struct
   end
 
   module Body = struct
-    include Body.Make (Vars) (Scope) (N) (Expr) (Solver) (Formula) (Values) (Rule) (C)
+    include Body.Make (Vars) (Scope) (N) (Expr) (Solver.P) (Formula) (Values) (Rule) (C)
 
     let update_x0y0 ~body (x, y, v_x, v_y) ~rules =
       { body with

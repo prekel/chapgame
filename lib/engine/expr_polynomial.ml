@@ -6,13 +6,13 @@ module Make
     (Scope : Module_types.SCOPE)
     (N : Solver.Module_types.NUMBER)
     (Expr : Expr.S with module Var = Var and module Scope = Scope and module N = N)
-    (Solver : Solver.All.S with module N = N) =
+    (Polynomial : Solver.Polynomial.S with module N = N) =
 struct
   module Var = Var
   module Scope = Scope
   module N = N
   module Expr = Expr
-  module Solver = Solver
+  module Polynomial = Polynomial
 
   include
     Common.Utils.MakeAdvancedMap
@@ -48,6 +48,6 @@ struct
         match Expr.calc ~values ~scoped_values (module N) a with
         | c when N.is_finite c -> Some c
         | _ -> None)
-    |> Solver.P.of_map ~eps
+    |> Polynomial.of_map ~eps
   ;;
 end

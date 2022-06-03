@@ -1,6 +1,11 @@
 module type S = sig
-  module N : Module_types.NUMBER
-  module P : Polynomial.S with module N = N
+  module N : sig
+    type t
+  end
+
+  module P : sig
+    type t
+  end
 
   (** [roots ~eps poly] is roots of equation [poly] = 0 when [abs (calc poly ~x) < eps]*)
   val roots : eps:N.t -> P.t -> N.t list

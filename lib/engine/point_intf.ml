@@ -1,7 +1,9 @@
 open Core
 
 module type S = sig
-  module N : Solver.Module_types.NUMBER
+  module N : sig
+    type t
+  end
 
   type t =
     { x : N.t

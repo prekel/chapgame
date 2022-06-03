@@ -1,6 +1,11 @@
 module type S = sig
-  module N : Module_types.NUMBER
-  module Polynomial : Polynomial.S with module N = N
+  module N : sig
+    type t
+  end
+
+  module Polynomial : sig
+    type t
+  end
 
   val root : a:N.t -> b:N.t -> N.t
   val root_opt : a:N.t -> b:N.t -> N.t option

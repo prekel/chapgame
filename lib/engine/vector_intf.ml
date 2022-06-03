@@ -1,5 +1,8 @@
 module type S = sig
-  module N : Solver.Module_types.NUMBER
+  module N : sig
+    type t
+  end
+
   include Common.Module_types.BASIC_OPS with type t = N.t * N.t
 
   (** [dot v1 v2] is dot-product (scalar product) of vector [v1] and [v2] *)
@@ -24,5 +27,5 @@ end
 module type Intf = sig
   module type S = S
 
-  module Make (N : Solver.Module_types.NUMBER) : S with module N = N 
+  module Make (N : Solver.Module_types.NUMBER) : S with module N = N
 end

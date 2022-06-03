@@ -1,6 +1,11 @@
 module type S = sig
-  module N : Module_types.NUMBER
-  module Interval : Interval.S with module N = N
+  module N : sig
+    type t
+  end
+
+  module Interval : sig
+    type t
+  end
 
   (** [search ~f ~eps interval] is [x] where [abs (f x) < eps]. Requires that [f] is
       continuous and non-decreasing (or non-increasing) on [interval]. *)

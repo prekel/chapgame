@@ -6,19 +6,18 @@ module Make
     (Scope : Module_types.SCOPE)
     (N : Solver.Module_types.NUMBER)
     (Expr : Expr.S with module Var = Var and module Scope = Scope and module N = N)
-    (Solver : Solver.All.S with module N = N)
+    (Polynomial : Solver.Polynomial.S with module N = N)
     (Expr_polynomial : Expr_polynomial.S
                          with module Var = Var
                           and module Scope = Scope
                           and module N = N
                           and module Expr = Expr
-                          and module Solver = Solver) =
+                          and module Polynomial = Polynomial) =
 struct
   module Var = Var
   module Scope = Scope
   module N = N
   module Expr = Expr
-  module Solver = Solver
   module Expr_polynomial = Expr_polynomial
 
   type t =

@@ -1,8 +1,13 @@
 open Core
 
 module type S = sig
-  module N : Solver.Module_types.NUMBER
-  module Point : Point.S with module N = N
+  module N : sig
+    type t
+  end
+
+  module Point : sig
+    type t
+  end
 
   type kind =
     [ `Line

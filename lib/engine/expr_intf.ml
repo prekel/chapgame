@@ -1,7 +1,15 @@
 module type S = sig
-  module Var : Module_types.VAR
-  module Scope : Module_types.SCOPE
-  module N : Solver.Module_types.NUMBER
+  module Var : sig
+    type t
+  end
+
+  module Scope : sig
+    type t
+  end
+
+  module N : sig
+    type t
+  end
 
   type key = Var.t [@@deriving sexp, equal]
   type scalar = N.t [@@deriving sexp, equal]
