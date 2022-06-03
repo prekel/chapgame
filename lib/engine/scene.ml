@@ -41,7 +41,13 @@ struct
     let is_global = equal `Global
   end
 
-  module Solver = Solver.All.Make (N)
+  module Solver = struct
+    module I = Solver.Interval.Make (N)
+    module P = Solver.Polynomial.Make (N)
+    module BS = Solver.Bisection.Make (N) (I)
+    module PE = Solver.Polynomial_equation.Make (N) (I) (P) (BS)
+  end
+ 
   module Expr = Expr.Make (Vars) (Scope) (N)
   module Formula = Expr_polynomial.Make (Vars) (Scope) (N) (Expr) (Solver.P)
   module Vector = Vector.Make (N)
