@@ -1,9 +1,10 @@
 open Core
+include Line_intf
 
-module Make
-    (N : Solver.Module_types.NUMBER)
-    (Point : module type of Point.Make (N)) =
-    struct
+module Make (N : Solver.Module_types.NUMBER) (Point : Point.S with module N = N) = struct
+  module N = N
+  module Point = Point
+
   module T = struct
     type kind =
       [ `Line

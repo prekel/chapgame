@@ -1,6 +1,9 @@
 open Core
+include Interval_intf
 
 module Make (N : Module_types.NUMBER) = struct
+  module N = N
+
   type t =
     | Interval of
         { left : N.t

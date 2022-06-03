@@ -1,9 +1,6 @@
 open Core
 
-module Make
-    (N : Module_types.NUMBER)
-    (Interval : module type of Interval.Make (N)) =
-    struct
+module Make (N : Module_types.NUMBER) (Interval : Interval.S with module N := N) = struct
   let two = N.(one + one)
 
   let search ~f ~eps =

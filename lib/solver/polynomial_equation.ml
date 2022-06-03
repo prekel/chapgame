@@ -2,7 +2,7 @@ open Core
 
 module Make
     (N : Module_types.NUMBER)
-    (I : module type of Interval.Make (N))
+    (I : Interval.S with module N := N)
     (P : module type of Polynomial.Make (N))
     (LE : module type of Linear_equation.Make (N) (P))
     (QE : module type of Quadratic_equation.Make (N) (P))
