@@ -1,6 +1,9 @@
 open Core
+include Point_intf
 
 module Make (N : Solver.Module_types.NUMBER) = struct
+  module N = N
+
   module T = struct
     type t =
       { x : N.t
