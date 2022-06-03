@@ -1,12 +1,10 @@
 open Core
 
+
+
 module MakeIntId (Name : sig
   val module_name : string
-end) : sig
-  include Identifiable.S
-
-  val next : unit -> t
-end = struct
+end) : Module_types.IDENTIFIABLE = struct
   module T = struct
     type t = int [@@deriving bin_io, hash, compare, sexp]
 

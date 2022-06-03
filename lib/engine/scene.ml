@@ -1070,7 +1070,8 @@ struct
           List.fold updated ~init:body.values ~f:(fun acc (var, value) ->
               Values.update_scalar acc ~var ~value)
         in
-        let body = Body.{ body with values; rules = Rule.of_values values } in
+        let rules = Rule.of_values values in
+        let body = Body.{ body with values; rules } in
         Scene.update s ~bodies:(Bodies.update_by_id s.bodies ~id:body.id ~body) ~time
       | UpdateLine (old, new_) ->
         let lines = s.lines |> Lines.remove ~el:old |> Lines.add ~el:new_ in

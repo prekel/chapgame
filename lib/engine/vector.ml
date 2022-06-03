@@ -1,4 +1,7 @@
+include Vector_intf
 module Make (N : Solver.Module_types.NUMBER) = struct
+  module N = N
+
   type t = N.t * N.t [@@deriving equal]
 
   let zero = N.zero, N.zero

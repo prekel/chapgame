@@ -1,12 +1,19 @@
 open Core
+include Expr_polynomial_intf
 
 module Make
-    (Key : Module_types.VAR)
+    (Var : Module_types.VAR)
     (Scope : Module_types.SCOPE)
     (N : Solver.Module_types.NUMBER)
-    (Expr : Expr.S with type key = Key.t and type scope = Scope.t and type scalar = N.t)
-    (Solver : module type of Solver.All.Make (N)) =
-    struct
+    (Expr : Expr.S with module Var = Var and module Scope = Scope and module N = N)
+    (Solver : Solver.All.S with module N = N) =
+struct
+  module Var = Var
+  module Scope = Scope
+  module N = N
+  module Expr = Expr
+  module Solver = Solver
+
   include
     Common.Utils.MakeAdvancedMap
       (Int)
@@ -29,7 +36,7 @@ module Make
       |> Map.of_sequence_multi (module Int)
       |> Map.map ~f:(fun a -> Expr.SumList a)
     ;;
-    
+
     let sqr a = a * a
     let scope m ~scope = Map.map m ~f:(fun v -> Expr.Scope (scope, v))
   end
