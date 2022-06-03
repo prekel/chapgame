@@ -1,6 +1,8 @@
 open Core
+include Polynomial_intf
 
 module Make (N : Module_types.NUMBER) = struct
+  module N = N
   include Common.Utils.MakeAdvancedMap (Int) (N)
 
   let equal = Map.equal N.equal

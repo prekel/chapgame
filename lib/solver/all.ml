@@ -1,3 +1,5 @@
+include All_intf
+
 module Make (N : Module_types.NUMBER) = struct
   module I = Interval.Make (N)
   module P = Polynomial.Make (N)

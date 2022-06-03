@@ -1,9 +1,11 @@
 open Core
+include Quadratic_equation_intf
 
-module Make
-    (N : Module_types.NUMBER)
-    (Polynomial : module type of Polynomial.Make (N)) =
-    struct
+module Make (N : Module_types.NUMBER) (Polynomial : Polynomial.S with module N = N) =
+struct
+  module N = N
+  module Polynomial = Polynomial
+
   let two = N.(one + one)
   let four = N.(two + two)
 

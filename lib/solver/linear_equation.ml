@@ -1,5 +1,7 @@
 open Core
 
+include Linear_equation_intf
+
 module Make
     (N : Module_types.NUMBER)
     (Polynomial : module type of Polynomial.Make (N)) =
