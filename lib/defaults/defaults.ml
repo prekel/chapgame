@@ -51,32 +51,32 @@ module Replays = struct
     ; S.Action.AddPoint { x = 600.; y = 400. }
     ; S.Action.AddPoint { x = 700.; y = 450. }
     ; S.Action.AddLine
-        (S.LineSegmentRay.of_points
+        (S.Line.of_points
            ~p1:{ x = 650.; y = 325. }
            ~p2:{ x = 600.; y = 400. }
            ~kind:`Segment)
     ; S.Action.AddLine
-        (S.LineSegmentRay.of_points
+        (S.Line.of_points
            ~p1:{ x = 600.; y = 400. }
            ~p2:{ x = 700.; y = 450. }
            ~kind:`Segment)
     ; S.Action.AddLine
-        (S.LineSegmentRay.of_points
+        (S.Line.of_points
            ~p1:{ x = 400.; y = 200. }
            ~p2:{ x = 1100.; y = 100. }
            ~kind:`Segment)
     ; S.Action.AddLine
-        (S.LineSegmentRay.of_points
+        (S.Line.of_points
            ~p1:{ x = 1100.; y = 100. }
            ~p2:{ x = 700.; y = 700. }
            ~kind:`Line)
     ; S.Action.AddLine
-        (S.LineSegmentRay.of_points
+        (S.Line.of_points
            ~p1:{ x = 700.; y = 700. }
            ~p2:{ x = 100.; y = 700. }
            ~kind:`Ray)
     ; S.Action.AddLine
-        (S.LineSegmentRay.of_points
+        (S.Line.of_points
            ~p1:{ x = 100.; y = 700. }
            ~p2:{ x = 400.; y = 200. }
            ~kind:`Segment)

@@ -3,7 +3,8 @@ module Make
     (Scope : Module_types.SCOPE)
     (N : Solver.Module_types.NUMBER)
     (Expr : Expr.S with type key = Key.t and type scope = Scope.t and type scalar = N.t)
-    (Solver : module type of Solver.All.Make (N)) : sig
+    (Solver : module type of Solver.All.Make (N)) : 
+sig
   type t [@@deriving sexp, equal]
 
   module Syntax : sig

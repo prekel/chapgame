@@ -6,9 +6,9 @@ module Make
     (N : Solver.Module_types.NUMBER)
     (Expr : module type of Expr.Make (Var) (Scope) (N))
     (Solver : module type of Solver.All.Make (N))
-    (Formula : module type of Formula.Make (Var) (Scope) (N) (Expr) (Solver))
+    (Expr_polynomial : module type of Expr_polynomial.Make (Var) (Scope) (N) (Expr) (Solver))
     (Values : module type of Values.Make (Var) (Scope) (N)) (Rule : sig
-      include module type of Rule.Make (Var) (Scope) (N) (Expr) (Solver) (Formula)
+      include module type of Rule.Make (Var) (Scope) (N) (Expr) (Solver) (Expr_polynomial)
       include Sexpable.S with type t := t
     end) (C : sig
       val eps : N.t
@@ -28,7 +28,7 @@ module Make
       let calc ~values ~rules ~scoped_values ~t =
         let c = Expr.calc ~values ~scoped_values (module N) in
         let calc_xy f =
-          Formula.to_polynomial f ~values ~scoped_values ~eps:C.eps |> Solver.P.calc ~x:t
+          Expr_polynomial.to_polynomial f ~values ~scoped_values ~eps:C.eps |> Solver.P.calc ~x:t
         in
         List.find_map rules ~f:(fun Rule.{ interval; x; y; v_x; v_y; after; _ } ->
             match interval with

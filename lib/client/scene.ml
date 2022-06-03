@@ -5,38 +5,39 @@ open Js_of_ocaml
 module Svg = Virtual_dom_svg
 
 let format_float = sprintf "%.2f"
-let svg_ref = ref None
-let pt_ref = ref None
 
-let svg_click_coords (evt : Dom_html.mouseEvent Js.t) =
-  match
-    evt##.target
-    |> Js.Opt.to_option
-    |> Option.map ~f:Dom_svg.CoerceTo.element
-    |> Option.bind ~f:Js.Opt.to_option
-  with
-  | Some e ->
-    let svg =
-      match e##.ownerSVGElement |> Js.some |> Js.Opt.to_option with
-      | Some e -> e
-      | None -> Dom_svg.CoerceTo.svg e |> Js.Opt.to_option |> Option.value_exn
-    in
-    let pt =
-      match !svg_ref, !pt_ref with
-      | Some svg, Some pt when phys_equal svg e##.ownerSVGElement -> pt
-      | _ ->
-        let pt = svg##createSVGPoint in
-        svg_ref := Some e##.ownerSVGElement;
-        pt_ref := Some pt;
-        pt
-    in
-    (Js.Unsafe.coerce pt)##.x := evt##.clientX;
-    (Js.Unsafe.coerce pt)##.y := evt##.clientY;
-    let cursorpt = pt##matrixTransform svg##getScreenCTM##inverse in
-    let x = cursorpt##.x in
-    let y = cursorpt##.y in
-    x, y
-  | None -> assert false
+let svg_click_coords =
+  let svg_ref = ref None in
+  let pt_ref = ref None in
+  fun (evt : Dom_html.mouseEvent Js.t) ->
+    match
+      evt##.target
+      |> Js.Opt.to_option
+      |> Option.map ~f:Dom_svg.CoerceTo.element
+      |> Option.bind ~f:Js.Opt.to_option
+    with
+    | Some e ->
+      let svg =
+        match e##.ownerSVGElement |> Js.some |> Js.Opt.to_option with
+        | Some e -> e
+        | None -> Dom_svg.CoerceTo.svg e |> Js.Opt.to_option |> Option.value_exn
+      in
+      let pt =
+        match !svg_ref, !pt_ref with
+        | Some svg, Some pt when phys_equal svg e##.ownerSVGElement -> pt
+        | _ ->
+          let pt = svg##createSVGPoint in
+          svg_ref := Some e##.ownerSVGElement;
+          pt_ref := Some pt;
+          pt
+      in
+      (Js.Unsafe.coerce pt)##.x := evt##.clientX;
+      (Js.Unsafe.coerce pt)##.y := evt##.clientY;
+      let cursorpt = pt##matrixTransform svg##getScreenCTM##inverse in
+      let x = cursorpt##.x in
+      let y = cursorpt##.y in
+      x, y
+    | None -> assert false
 ;;
 
 let actual_wh_var = Bonsai.Var.create None
@@ -401,7 +402,7 @@ module Make
       []
   ;;
 
-  let line (S.LineSegmentRay.{ p1; p2; kind } as line) =
+  let line (S.Line.{ p1; p2; kind } as line) =
     let open Float in
     let x1, y1, x2, y2 = p1.x, p1.y, p2.x, p2.y in
     let dx, dy = x2 - x1, y2 - y1 in
@@ -414,7 +415,7 @@ module Make
     in
     let open Vdom in
     Svg.Node.line
-      ~key:(Sexp.to_string [%sexp (line : S.LineSegmentRay.t)])
+      ~key:(Sexp.to_string [%sexp (line : S.Line.t)])
       ~attr:
         (Attr.many
            [ Svg.Attr.x1 x1
@@ -474,8 +475,8 @@ module Make
     let t = time -. scene.time in
     let circles =
       scene.bodies
-      |> S.Scene.Figures.calc ~t ~global_values:scene.global_values
-      |> S.Scene.Figures.to_sequence
+      |> S.Bodies.calc ~t ~global_values:scene.global_values
+      |> S.Bodies.to_sequence
       |> Sequence.map ~f:(circle ~body_click)
     in
     let lines = scene.lines |> S.Lines.to_sequence |> Sequence.map ~f:line in
@@ -1055,7 +1056,7 @@ module Make
     and edit_body_modal = edit_body_modal in
     let bodies =
       scene.S.Scene.bodies
-      |> S.Scene.Figures.calc ~t:(time -. scene.time) ~global_values:scene.global_values
+      |> S.Bodies.calc ~t:(time -. scene.time) ~global_values:scene.global_values
     in
     let open Vdom in
     let open Node in
@@ -1149,7 +1150,7 @@ module Make
                      ]
                  ; tbody
                      (bodies
-                     |> S.Scene.Figures.to_sequence
+                     |> S.Bodies.to_sequence
                      |> Sequence.map ~f:snd
                      |> Sequence.map ~f:body_tr
                      |> Sequence.to_list)
@@ -1229,7 +1230,7 @@ module Make
       Bonsai.state_opt
         [%here]
         (module struct
-          type t = S.LineSegmentRay.kind [@@deriving sexp, equal]
+          type t = S.Line.kind [@@deriving sexp, equal]
         end)
         ~default_model:`Segment
     in
@@ -1279,7 +1280,7 @@ module Make
           | Some p1x, Some p1y, Some p2x, Some p2y, Some kind ->
             let%bind.Effect () =
               add_line
-                S.LineSegmentRay.
+                S.Line.
                   { p1 = { x = p1x; y = p1y }; p2 = { x = p2x; y = p2y }; kind }
             in
             Effect.return true
@@ -1333,25 +1334,25 @@ module Make
                                  (many
                                     [ on_change (fun _ s ->
                                           Sexp.of_string s
-                                          |> [%of_sexp: S.LineSegmentRay.kind]
+                                          |> [%of_sexp: S.Line.kind]
                                           |> Option.some
                                           |> set_kind)
                                     ])
                                [ option
                                    [ text
                                        (Sexp.to_string
-                                          [%sexp (`Line : S.LineSegmentRay.kind)])
+                                          [%sexp (`Line : S.Line.kind)])
                                    ]
                                ; option
                                    ~attr:selected
                                    [ text
                                        (Sexp.to_string
-                                          [%sexp (`Segment : S.LineSegmentRay.kind)])
+                                          [%sexp (`Segment : S.Line.kind)])
                                    ]
                                ; option
                                    [ text
                                        (Sexp.to_string
-                                          [%sexp (`Ray : S.LineSegmentRay.kind)])
+                                          [%sexp (`Ray : S.Line.kind)])
                                    ]
                                ]
                            ]
@@ -1372,7 +1373,7 @@ module Make
     let open Attr in
     let line_tr line =
       tr
-        [ td [ text (format_float line.S.LineSegmentRay.p1.x) ]
+        [ td [ text (format_float line.S.Line.p1.x) ]
         ; td [ text (format_float line.p1.y) ]
         ; td [ text (format_float line.p2.x) ]
         ; td [ text (format_float line.p2.y) ]
