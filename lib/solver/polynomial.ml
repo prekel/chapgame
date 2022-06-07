@@ -1,7 +1,7 @@
 open Core
 include Polynomial_intf
 
-module Make (N : Module_types.NUMBER) = struct
+module Make (N : Common.Module_types.NUMBER) = struct
   module N = N
   include Common.Utils.MakeAdvancedMap (Int) (N)
 

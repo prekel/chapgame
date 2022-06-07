@@ -15,7 +15,7 @@ module type Intf = sig
   module type S = S
 
   module Make
-      (N : Module_types.NUMBER)
+      (N : Common.Module_types.NUMBER)
       (I : Interval.S with module N = N)
       (Polynomial : Polynomial.S with module N = N)
       (BS : Bisection.S with module N = N and module Interval = I) :

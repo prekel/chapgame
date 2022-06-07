@@ -11,9 +11,3 @@ module type SCOPE = sig
 
   val is_global : t -> bool
 end
-
-module type CONSTS = sig
-  module N : Solver.Module_types.NUMBER
-
-  val eps : N.t
-end

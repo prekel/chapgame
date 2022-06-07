@@ -1,14 +1,6 @@
 open Core
-module C = (val Engine.Utils.make_consts ~eps:1e-6)
-module MakeDeps = Engine.Deps.Make (C.N)
-module S = Engine.Scene.Make (C.N) (C) (MakeDeps)
-module Request = Protocol.Request.Make (C) (S)
-
-module Response =
-  Protocol.Response.Make (C) (S)
-    (struct
-      include Unit
-    end)
+module Response = Protocol.Response.Make (Unit)
+module S = Engine
 
 module Replays = struct
   let actions =
@@ -88,7 +80,7 @@ module Replays = struct
     lazy
       (actions
       |> List.fold ~init:(S.Model.init ~g:1.) ~f:(fun acc action ->
-             S.Engine.recv
+             S.recv
                ~action:{ time = 0.; action; until = { timespan = None; quantity = None } }
                acc))
   ;;

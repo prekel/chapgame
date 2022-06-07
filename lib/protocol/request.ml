@@ -1,11 +1,8 @@
-module Make (C : Engine.Module_types.CONSTS) (S : Engine.Scene.S with module N = C.N) =
-struct
-  module N = C.N
+open Core
 
-  type t =
-    { time : N.t
-    ; speed : N.t
-    ; action : [ `Action of S.Action.t | `Replace of S.Model.t ]
-    }
-  [@@deriving sexp, equal]
-end
+type t =
+  { time : float
+  ; speed : float
+  ; action : [ `Action of Engine.Action.t | `Replace of Engine.Model.t ]
+  }
+[@@deriving sexp, equal]

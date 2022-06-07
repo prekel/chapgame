@@ -1,6 +1,6 @@
 include Vector_intf
 
-module Make (N : Solver.Module_types.NUMBER) = struct
+module Make (N : Module_types.NUMBER) = struct
   module N = N
 
   type t = N.t * N.t [@@deriving equal]

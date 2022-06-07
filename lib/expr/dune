@@ -1,6 +1,6 @@
 (library
- (name engine)
- (libraries core common solver expr)
+ (name expr)
+ (libraries core common solver)
  (preprocess
   (pps ppx_jane))
  (flags

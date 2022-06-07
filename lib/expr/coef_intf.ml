@@ -75,7 +75,7 @@ module type Intf = sig
   module type S = S
 
   module Make
-      (N : Solver.Module_types.NUMBER)
+      (N : Common.Module_types.NUMBER)
       (Var : Module_types.VAR)
       (Scope : Module_types.SCOPE) :
     S with module Var = Var and module Scope = Scope and module N = N

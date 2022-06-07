@@ -15,6 +15,6 @@ end
 module type Intf = sig
   module type S = S
 
-  module Make (N : Module_types.NUMBER) (Interval : Interval.S with module N = N) :
+  module Make (N : Common.Module_types.NUMBER) (Interval : Interval.S with module N = N) :
     S with module N = N and module Interval = Interval
 end

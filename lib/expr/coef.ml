@@ -1,8 +1,8 @@
 open Core
-include Expr_intf
+include Coef_intf
 
 module Make
-    (N : Solver.Module_types.NUMBER)
+    (N : Common.Module_types.NUMBER)
     (Var : Module_types.VAR)
     (Scope : Module_types.SCOPE) =
 struct
@@ -15,7 +15,7 @@ struct
   type vector = N.t * N.t [@@deriving sexp, equal]
   type scope = Scope.t [@@deriving sexp, equal]
 
-  module VectorOps = Vector.Make (N)
+  module VectorOps = Common.Vector.Make (N)
 
   type 'result t =
     | ScalarConst : scalar -> scalar t

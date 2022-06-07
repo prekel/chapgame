@@ -2,9 +2,9 @@ open Core
 open Bonsai_web
 open Bonsai.Let_syntax
 open Js_of_ocaml
-module SC = Scene.Make (Defaults.C) (Defaults.S)
-module Offline = Offline.Make (Defaults.C) (Defaults.S) (SC) (Defaults.Replays)
-module Online = Online.Make (Defaults.C) (Defaults.S)
+module SC = Scene
+module Offline = Offline.Make (Defaults.Replays)
+module Online = Online
 
 let fake_router =
   let%sub tab, set_tab =

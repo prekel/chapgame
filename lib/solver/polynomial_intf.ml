@@ -19,5 +19,5 @@ end
 module type Intf = sig
   module type S = S
 
-  module Make (N : Module_types.NUMBER) : S with module N = N
+  module Make (N : Common.Module_types.NUMBER) : S with module N = N
 end
