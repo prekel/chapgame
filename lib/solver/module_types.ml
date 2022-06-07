@@ -18,9 +18,6 @@ module type NUMBER = sig
   val pi : t
   val is_finite : t -> bool
   val square : t -> t
-  val sin : t -> t
-  val cos : t -> t
-  val atan2 : t -> t -> t
 
   val to_string_hum
     :  ?delimiter:char

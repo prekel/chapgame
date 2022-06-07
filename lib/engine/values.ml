@@ -1,13 +1,14 @@
 open Core
 include Values_intf
+
 module Make
+    (N : Solver.Module_types.NUMBER)
     (Var : Module_types.VAR)
-    (Scope : Module_types.SCOPE)
-    (N : Solver.Module_types.NUMBER) =
+    (Scope : Module_types.SCOPE) =
 struct
+  module N = N
   module Var = Var
   module Scope = Scope
-  module N = N
   include Common.Utils.MakeAdvancedMap (Var) (N)
 
   let get_scalar_exn values ~var = Map.find_exn values var

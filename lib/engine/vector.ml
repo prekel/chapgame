@@ -1,4 +1,5 @@
 include Vector_intf
+
 module Make (N : Solver.Module_types.NUMBER) = struct
   module N = N
 

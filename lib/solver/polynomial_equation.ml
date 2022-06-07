@@ -50,7 +50,7 @@ struct
     | _ ->
       poly
       |> Polynomial.derivative
-      |> roots ~eps:N.(eps / (one + one + one + one))
+      |> roots ~eps
       |> I.intervals_of_list
       |> List.filter_map ~f:(BS.search ~f:(fun x -> Polynomial.calc poly ~x) ~eps)
       |> List.sort ~compare:N.ascending

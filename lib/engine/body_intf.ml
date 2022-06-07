@@ -42,11 +42,11 @@ module type Intf = sig
   module type S = S
 
   module Make
+      (N : Solver.Module_types.NUMBER)
+      (Polynomial : Solver.Polynomial.S with module N = N)
       (Var : Module_types.VAR)
       (Scope : Module_types.SCOPE)
-      (N : Solver.Module_types.NUMBER)
       (Expr : Expr.S with module Var = Var and module Scope = Scope and module N = N)
-      (Polynomial : Solver.Polynomial.S with module N = N)
       (Expr_polynomial : Expr_polynomial.S
                            with module Var = Var
                             and module Scope = Scope

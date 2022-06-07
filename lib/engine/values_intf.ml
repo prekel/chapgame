@@ -1,13 +1,13 @@
 module type S = sig
+  module N : sig
+    type t
+  end
+
   module Var : sig
     type t
   end
 
   module Scope : sig
-    type t
-  end
-
-  module N : sig
     type t
   end
 
@@ -32,8 +32,8 @@ module type Intf = sig
   module type S = S
 
   module Make
+      (N : Solver.Module_types.NUMBER)
       (Var : Module_types.VAR)
-      (Scope : Module_types.SCOPE)
-      (N : Solver.Module_types.NUMBER) :
+      (Scope : Module_types.SCOPE) :
     S with module Var = Var and module Scope = Scope and module N = N
 end

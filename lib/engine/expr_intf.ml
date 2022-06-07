@@ -1,13 +1,13 @@
 module type S = sig
+  module N : sig
+    type t
+  end
+
   module Var : sig
     type t
   end
 
   module Scope : sig
-    type t
-  end
-
-  module N : sig
     type t
   end
 
@@ -31,7 +31,6 @@ module type S = sig
     | Mult : 'a t * 'a t -> 'a t
     | Div : 'a t * 'a t -> 'a t
     | Neg : 'a t -> 'a t
-    | VectorAngle : vector t -> scalar t
     | XOfVector : vector t -> scalar t
     | YOfVector : vector t -> scalar t
     | LengthOfVector : vector t -> scalar t
@@ -69,7 +68,6 @@ module type S = sig
     val vector_unit : vector t -> vector t
     val vector_of_scalar : scalar t -> scalar t -> vector t
     val scope : scope:scope -> 'a t -> 'a t
-    val vector_angle : vector t -> scalar t
   end
 end
 
@@ -77,8 +75,8 @@ module type Intf = sig
   module type S = S
 
   module Make
+      (N : Solver.Module_types.NUMBER)
       (Var : Module_types.VAR)
-      (Scope : Module_types.SCOPE)
-      (N : Solver.Module_types.NUMBER) :
+      (Scope : Module_types.SCOPE) :
     S with module Var = Var and module Scope = Scope and module N = N
 end

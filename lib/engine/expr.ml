@@ -2,13 +2,13 @@ open Core
 include Expr_intf
 
 module Make
+    (N : Solver.Module_types.NUMBER)
     (Var : Module_types.VAR)
-    (Scope : Module_types.SCOPE)
-    (N : Solver.Module_types.NUMBER) =
+    (Scope : Module_types.SCOPE) =
 struct
+  module N = N
   module Var = Var
   module Scope = Scope
-  module N = N
 
   type key = Var.t [@@deriving sexp, equal]
   type scalar = N.t [@@deriving sexp, equal]
@@ -32,7 +32,6 @@ struct
     | Mult : 'a t * 'a t -> 'a t
     | Div : 'a t * 'a t -> 'a t
     | Neg : 'a t -> 'a t
-    | VectorAngle : vector t -> scalar t
     | XOfVector : vector t -> scalar t
     | YOfVector : vector t -> scalar t
     | LengthOfVector : vector t -> scalar t
@@ -89,7 +88,6 @@ struct
     | Sexp.List [ Atom "Mult"; a; b ] -> Mult (t_scalar_of_sexp a, t_scalar_of_sexp b)
     | Sexp.List [ Atom "Div"; a; b ] -> Div (t_scalar_of_sexp a, t_scalar_of_sexp b)
     | Sexp.List [ Atom "Neg"; a ] -> Neg (t_scalar_of_sexp a)
-    | Sexp.List [ Atom "VectorAngle"; a ] -> VectorAngle (t_vector_of_sexp a)
     | Sexp.List [ Atom "XOfVector"; v ] -> XOfVector (t_vector_of_sexp v)
     | Sexp.List [ Atom "YOfVector"; v ] -> YOfVector (t_vector_of_sexp v)
     | Sexp.List [ Atom "LengthOfVector"; v ] -> LengthOfVector (t_vector_of_sexp v)
@@ -128,7 +126,6 @@ struct
     | Mult (a, b) -> List [ Atom "Mult"; sexp_of_t a; sexp_of_t b ]
     | Div (a, b) -> List [ Atom "Div"; sexp_of_t a; sexp_of_t b ]
     | Neg a -> List [ Atom "Neg"; sexp_of_t a ]
-    | VectorAngle v -> List [ Atom "VectorAngle"; sexp_of_t v ]
     | XOfVector v -> List [ Atom "XOfVector"; sexp_of_t v ]
     | YOfVector v -> List [ Atom "YOfVector"; sexp_of_t v ]
     | LengthOfVector v -> List [ Atom "LengthOfVector"; sexp_of_t v ]
@@ -186,9 +183,6 @@ struct
     | Neg a ->
       let ca = calc ~values ~scoped_values (module Ops) a in
       Ops.(-ca)
-    | VectorAngle v ->
-      let x, y = calc ~values ~scoped_values (module VectorOps) v in
-      N.(atan2 y x)
     | XOfVector v ->
       let x, _y = calc ~values ~scoped_values (module VectorOps) v in
       x
@@ -227,6 +221,5 @@ struct
     let vector_unit v = UnitVector v
     let vector_of_scalar a b = VectorOfXY (a, b)
     let scope ~scope a = Scope (scope, a)
-    let vector_angle v = VectorAngle v
   end
 end
