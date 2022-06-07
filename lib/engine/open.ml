@@ -1,7 +1,6 @@
 open Core
-module N = Float
 
-let eps = 1e-6
+let eps = 1e-7
 
 module Var = struct
   type t =
@@ -32,8 +31,6 @@ module Var = struct
   let m = `m
 end
 
-module Vars = Var
-
 module Scope = struct
   type t =
     [ `Global
@@ -48,13 +45,12 @@ end
 module Solver = struct
   module P = Solver.Polynomial.Make (Float)
   module I = Solver.Interval.Make (Float)
-
-  module PE =
-    Solver.Polynomial_equation.Make (Float) (I) (P) (Solver.Bisection.Make (Float) (I))
+  module BS = Solver.Bisection.Make (Float) (I)
+  module PE = Solver.Polynomial_equation.Make (Float) (I) (P) (BS)
 end
 
-module ExprCoef = Expr.Coef.Make (N) (Var) (Scope)
-module Formula = Expr.Polynomial.Make (N) (Solver.P) (Var) (Scope) (ExprCoef)
+module ExprCoef = Expr.Coef.Make (Float) (Var) (Scope)
+module Formula = Expr.Polynomial.Make (Float) (Solver.P) (Var) (Scope) (ExprCoef)
 module Points = Common.Utils.MakeAdvancedSet (Point)
 module Lines = Common.Utils.MakeAdvancedSet (Line)
-module Vector = Common.Vector.Make (N)
+module Vector = Common.Vector.Make (Float)

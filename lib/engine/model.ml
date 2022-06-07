@@ -1,14 +1,14 @@
 open Core
-open Open
 
 type t =
-  { timeout : N.t option
+  { timeout : float option
   ; scenes : Scenes.t
   }
 [@@deriving sexp, equal]
 
 let init ~g =
-  { scenes = Map.of_alist_exn (module N) [ N.zero, Scene.init ~g ] |> Scenes.of_map
+  { scenes =
+      Map.of_alist_exn (module Float) [ Float.zero, Scene.init ~g ] |> Scenes.of_map
   ; timeout = None
   }
 ;;
@@ -35,9 +35,9 @@ module Diff = struct
   type tt = t
 
   type t =
-    { init : [ `Init of Scene.t | `Since of N.t ]
+    { init : [ `Init of Scene.t | `Since of float ]
     ; scene_diffs : Scene.Diff.t list
-    ; new_timeout : N.t option
+    ; new_timeout : float option
     }
   [@@deriving sexp, equal]
 
@@ -51,7 +51,7 @@ module Diff = struct
         ~init:None
         ~f:
           (fun acc -> function
-            | `Both (a, b) when N.(a = b) ->
+            | `Both (a, b) when Float.(a = b) ->
               let av = Scenes.get_by_id ~id:a old.scenes in
               let bv = Scenes.get_by_id ~id:b curr.scenes in
               if Scene.equal av bv then Continue (Some a) else Stop acc
@@ -68,7 +68,7 @@ module Diff = struct
     in
     let scene_diffs =
       Scenes.to_map curr.scenes
-      |> Map.filter_keys ~f:N.(fun k -> k > init_time)
+      |> Map.filter_keys ~f:Float.(fun k -> k > init_time)
       |> Map.to_sequence
       |> Sequence.folding_map ~init:init_scene ~f:(fun prev (_, curr) ->
              curr, Scene.Diff.diff ~old:prev curr)
@@ -80,7 +80,7 @@ module Diff = struct
   let apply_diff ~diff old =
     let common_scenes, init_scene =
       match diff.init with
-      | `Init init -> Map.singleton (module N) init.time init, init
+      | `Init init -> Map.singleton (module Float) init.time init, init
       | `Since since ->
         let l, r = Scenes.before old.scenes ~time:since in
         Scenes.to_map l, r
@@ -91,7 +91,7 @@ module Diff = struct
       |> Sequence.folding_map ~init:init_scene ~f:(fun prev diff ->
              let ret = Scene.Diff.apply_diff ~diff prev in
              ret, (ret.time, ret))
-      |> Map.of_sequence_exn (module N)
+      |> Map.of_sequence_exn (module Float)
       |> Map.merge_skewed common_scenes ~combine:(fun ~key:_ l _ -> l)
       |> Scenes.of_map
     in

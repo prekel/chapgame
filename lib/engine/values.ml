@@ -1,6 +1,6 @@
 open Core
 open Open
-include Common.Utils.MakeAdvancedMap (Var) (N)
+include Common.Utils.MakeAdvancedMap (Var) (Float)
 
 let get_scalar_exn values ~var = Map.find_exn values var
 

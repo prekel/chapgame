@@ -13,15 +13,15 @@ type t =
 [@@deriving sexp, equal]
 
 let calc ~values ~rules ~scoped_values ~t =
-  let c = ExprCoef.calc ~values ~scoped_values (module N) in
+  let c = ExprCoef.calc ~values ~scoped_values (module Float) in
   let calc_xy f =
     Formula.to_polynomial f ~values ~scoped_values ~eps |> Solver.P.calc ~x:t
   in
   List.find_map rules ~f:(fun Rule.{ interval; x; y; v_x; v_y; after; _ } ->
       match interval with
-      | `Interval (l, r) when N.(c l <= t && t < c r) ->
+      | `Interval (l, r) when Float.(c l <= t && t < c r) ->
         Some ((calc_xy x, calc_xy y, calc_xy v_x, calc_xy v_y), after)
-      | `PosInfinity l when N.(c l <= t) ->
+      | `PosInfinity l when Float.(c l <= t) ->
         Some ((calc_xy x, calc_xy y, calc_xy v_x, calc_xy v_y), after)
       | _ -> None)
 ;;

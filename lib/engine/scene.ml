@@ -28,7 +28,7 @@ module Cause = struct
 end
 
 type t =
-  { time : N.t
+  { time : float
   ; bodies : Bodies.t
   ; points : Points.t
   ; lines : Lines.t
@@ -57,12 +57,12 @@ let add_body bodies ~id ~x0 ~y0 ~r ~mu ~m =
     ~id
     ~values:
       (Values.of_alist
-         [ `x0, x0; `y0, y0; `v0_x, N.zero; `v0_y, N.zero; `r, r; `mu, mu; `m, m ])
+         [ `x0, x0; `y0, y0; `v0_x, Float.zero; `v0_y, Float.zero; `r, r; `mu, mu; `m, m ])
     ~rules:Rule.rules0
 ;;
 
 let init ~g =
-  { time = N.zero
+  { time = Float.zero
   ; bodies = Bodies.empty
   ; points = Points.empty
   ; lines = Lines.empty
@@ -73,7 +73,7 @@ let init ~g =
 
 module Diff = struct
   type t =
-    { new_time : N.t
+    { new_time : float
     ; bodies_diff : Bodies.Diff.t
     ; points_diff : Points.Diff.t
     ; lines_diff : Lines.Diff.t

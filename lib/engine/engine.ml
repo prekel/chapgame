@@ -1,6 +1,6 @@
 open Core
 open Open
-module Vars = Vars
+module Var = Var
 module Values = Values
 module Line = Line
 module Point = Point
@@ -37,7 +37,7 @@ let forward_seq ?time (scene : Scene.t) =
             |> Option.map ~f:(fun ((t, _, _) as a) -> t, `WithLine a)
           ]
           |> List.filter_opt
-          |> List.min_elt ~compare:(fun (t1, _) (t2, _) -> N.compare t1 t2)
+          |> List.min_elt ~compare:(fun (t1, _) (t2, _) -> Float.compare t1 t2)
           |> Option.map ~f:snd
         in
         let time_lt_scene_time =
@@ -60,14 +60,14 @@ let forward_seq ?time (scene : Scene.t) =
                        ~id:id2
                        ~body:(Body.update_v0 body2 ~v:v2n ~rules:Rule.rules1))
                 ~cause:[ `Collision (Collision { id1; id2 }) ]
-                ~time:N.(scene.time + t)
+                ~time:Float.(scene.time + t)
                 ~points:scene.points
                 ~lines:scene.lines
             | `WithPoint (t, id, point) ->
               let q = Bodies.calc scene.bodies ~t ~global_values:scene.global_values in
               let body = Bodies.get_by_id q ~id in
               let v' = Collision_handle.calculate_new_v_with_point ~body ~point in
-              let new_time = N.(scene.time + t) in
+              let new_time = Float.(scene.time + t) in
               Scene.update
                 scene
                 ~bodies:
@@ -83,7 +83,7 @@ let forward_seq ?time (scene : Scene.t) =
               let q = Bodies.calc scene.bodies ~t ~global_values:scene.global_values in
               let body = Bodies.get_by_id q ~id in
               let v' = Collision_handle.calculate_new_v_with_line ~body ~line in
-              let new_time = N.(scene.time + t) in
+              let new_time = Float.(scene.time + t) in
               Scene.update
                 scene
                 ~bodies:
@@ -97,7 +97,7 @@ let forward_seq ?time (scene : Scene.t) =
                 ~lines:scene.lines
           in
           match time with
-          | Some time when N.(s.Scene.time > time) -> Some (s, Some time)
+          | Some time when Float.(s.Scene.time > time) -> Some (s, Some time)
           | Some _ | None -> Some (s, None)
         in
         (match time_lt_scene_time, time with
@@ -109,7 +109,7 @@ let forward_seq ?time (scene : Scene.t) =
                 ~bodies:
                   (Bodies.calc
                      scene.bodies
-                     ~t:N.(time - scene.time)
+                     ~t:Float.(time - scene.time)
                      ~global_values:scene.global_values)
                 ~cause:[]
                 ~time
@@ -122,7 +122,7 @@ let forward_seq ?time (scene : Scene.t) =
 let forward ?time (scene : Scene.t) ~timeout ~quantity =
   let filter_timeout =
     match timeout with
-    | Some timeout -> Sequence.take_while ~f:N.(fun s -> s.Scene.time <= timeout)
+    | Some timeout -> Sequence.take_while ~f:Float.(fun s -> s.Scene.time <= timeout)
     | None -> Fn.id
   in
   let filter_quantity =
@@ -202,7 +202,7 @@ let apply_action s ~time = function
 ;;
 
 let recv Model.{ scenes; _ } ~action:Action.({ time; action; until } as ac) =
-  let timeout = Option.map until.timespan ~f:(fun t -> N.(time + t)) in
+  let timeout = Option.map until.timespan ~f:(fun t -> Float.(time + t)) in
   let quantity = until.quantity in
   let before, s = Scenes.before scenes ~time in
   let _new_timeout, scenes = forward s ~time ~timeout:(Some time) ~quantity:None in
@@ -218,7 +218,7 @@ let prolong (model : Model.t) ~(until : Action.until) =
   let timeout =
     let%bind.Option new_timespan = until.timespan in
     let%map.Option old_timeout = model.timeout in
-    N.(old_timeout + new_timespan)
+    Float.(old_timeout + new_timespan)
   in
   let quantity = until.quantity in
   let new_timeout, after = forward (Scenes.last_exn model.scenes) ~timeout ~quantity in

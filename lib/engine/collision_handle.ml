@@ -3,7 +3,7 @@ open Open
 
 let collision ~v1 ~v2 ~x1 ~x2 ~m1 ~m2 =
   let module V = Vector in
-  let open N in
+  let open Float in
   let two = one + one in
   let q1 = v1 in
   let q2 =
@@ -35,8 +35,8 @@ let calculate_new_v values1 values2 =
   let y2 = Values.get_scalar_exn values2 ~var:`y0 in
   let v1', v2' = collision_body ~v1 ~v2 ~m1 ~m2 ~x1 ~y1 ~x2 ~y2 in
   (* TODO: inf m *)
-  let v1' = if N.(m1 = infinity) then v1 else v1' in
-  let v2' = if N.(m2 = infinity) then v2 else v2' in
+  let v1' = if Float.(m1 = infinity) then v1 else v1' in
+  let v2' = if Float.(m2 = infinity) then v2 else v2' in
   v1', v2'
 ;;
 
@@ -45,7 +45,7 @@ let calculate_new_v_with_point ~body ~point:Point.{ x = x2; y = y2 } =
   let m1 = Values.get_scalar_exn body.values ~var:`m in
   let x1 = Values.get_scalar_exn body.values ~var:`x0 in
   let y1 = Values.get_scalar_exn body.values ~var:`y0 in
-  fst @@ collision_body ~v1 ~v2:N.(zero, zero) ~m1 ~m2:N.infinity ~x1 ~y1 ~x2 ~y2
+  fst @@ collision_body ~v1 ~v2:Float.(zero, zero) ~m1 ~m2:Float.infinity ~x1 ~y1 ~x2 ~y2
 ;;
 
 let calculate_new_v_with_line ~body ~line =
@@ -55,8 +55,8 @@ let calculate_new_v_with_line ~body ~line =
   let x1 = Values.get_scalar_exn body.values ~var:`x0 in
   let y1 = Values.get_scalar_exn body.values ~var:`y0 in
   let r = Values.get_scalar_exn body.values ~var:`r in
-  let v2 = N.(zero, zero) in
-  let m2 = N.infinity in
+  let v2 = Float.(zero, zero) in
+  let m2 = Float.infinity in
   let module V = Vector in
   let x2, y2 = V.((x1, y1) + (unit (a, b) *^ r)) in
   fst @@ collision_body ~v1 ~v2 ~m1 ~m2 ~x1 ~y1 ~x2 ~y2

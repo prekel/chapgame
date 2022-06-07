@@ -1,9 +1,8 @@
 open Core
-open Open
 
 type t [@@deriving sexp, equal]
 
-val calc : t -> t:N.t -> global_values:Values.t -> t
+val calc : t -> t:float -> global_values:Values.t -> t
 val add : t -> id:Body.Id.t -> body:Body.t -> t
 val empty : t
 val to_sequence : t -> (Body.Id.t * Body.t) Sequence.t

@@ -382,9 +382,9 @@ let calc_new_time_every ~timeout ~time ~set_time ~speed ~prolong =
 ;;
 
 let circle (id, figure) ~body_click =
-  let x = S.Values.get_scalar_exn (S.Body.get_values figure) ~var:S.Vars.x0 in
-  let y = S.Values.get_scalar_exn (S.Body.get_values figure) ~var:S.Vars.y0 in
-  let r = S.Values.get_scalar_exn (S.Body.get_values figure) ~var:S.Vars.r in
+  let x = S.Values.get_scalar_exn (S.Body.get_values figure) ~var:S.Var.x0 in
+  let y = S.Values.get_scalar_exn (S.Body.get_values figure) ~var:S.Var.y0 in
+  let r = S.Values.get_scalar_exn (S.Body.get_values figure) ~var:S.Var.r in
   let on_click id (evt : Dom_html.mouseEvent Js.t) =
     let sx, sy = svg_click_coords evt in
     let nx = sx -. x in
@@ -870,13 +870,13 @@ let edit_body_modal body ~close ~set_values =
     let%arr body = body in
     match body with
     | Some body ->
-      let x = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Vars.x0 in
-      let y = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Vars.y0 in
-      let vx = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Vars.v0_x in
-      let vy = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Vars.v0_y in
-      let mu = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Vars.mu in
-      let m = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Vars.m in
-      let r = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Vars.r in
+      let x = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Var.x0 in
+      let y = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Var.y0 in
+      let vx = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Var.v0_x in
+      let vy = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Var.v0_y in
+      let mu = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Var.mu in
+      let m = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Var.m in
+      let r = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Var.r in
       Some (S.Body.get_id body), Some x, Some y, Some vx, Some vy, Some mu, Some m, Some r
     | None -> None, None, None, None, None, None, None, None
   in
@@ -1057,13 +1057,13 @@ let bodies_table ~scene ~time ~remove_body ~set_values ~set_pause =
   let open Attr in
   let body_tr body =
     let id = S.Body.get_id body |> S.Body.Id.to_string in
-    let x = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Vars.x0 in
-    let y = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Vars.y0 in
-    let mu = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Vars.mu in
-    let m = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Vars.m in
-    let r = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Vars.r in
-    let v_x = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Vars.v0_x in
-    let v_y = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Vars.v0_y in
+    let x = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Var.x0 in
+    let y = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Var.y0 in
+    let mu = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Var.mu in
+    let m = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Var.m in
+    let r = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Var.r in
+    let v_x = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Var.v0_x in
+    let v_y = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Var.v0_y in
     let ((a_x, a_y) as a_vec) = S.Body.calc_a ~global_values:scene.global_values body in
     let v_len = V.len (v_x, v_y) in
     let a_len = V.len a_vec in

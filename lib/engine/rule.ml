@@ -34,8 +34,8 @@ module Exprs = struct
   let x0 = scalar_var `x0
   let y0 = scalar_var `y0
   let r = scalar_var `r
-  let zero = scalar_const N.zero
-  let two = scalar_const N.(one + one)
+  let zero = scalar_const Float.zero
+  let two = scalar_const Float.(one + one)
 end
 
 let rec rules1 =
@@ -102,7 +102,7 @@ let t_of_sexp = function
 ;;
 
 let of_values values =
-  let open N in
+  let open Float in
   if Values.get_scalar_exn values ~var:`v0_x = zero
      && Values.get_scalar_exn values ~var:`v0_y = zero
   then rules0

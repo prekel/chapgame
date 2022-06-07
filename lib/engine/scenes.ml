@@ -1,6 +1,5 @@
 open Core
-open Open
-include Common.Utils.MakeAdvancedMap (N) (Scene)
+include Common.Utils.MakeAdvancedMap (Float) (Scene)
 
 let before scenes ~time =
   match Map.split scenes time with
@@ -12,7 +11,7 @@ let merge_with_list scenes l =
   (* TODO *)
   let l =
     Map.of_alist_reduce
-      (module N)
+      (module Float)
       (List.map l ~f:(fun scene -> scene.Scene.time, scene))
       ~f:(fun _a b -> b)
   in
