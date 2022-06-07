@@ -1,11 +1,11 @@
 open Core
 open Lwt.Let_syntax
 
-module Room =
+(* module Room =
   Room.Make (Defaults.C) (Defaults.S)
     (struct
       let replay _ = assert false
-    end)
+    end) *)
 
 let loader path ~content_type =
   match Assets.read path with

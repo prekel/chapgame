@@ -1,4 +1,4 @@
-open Core
+(* open Core
 open Lwt.Let_syntax
 
 let random = Stdlib.Random.State.make_self_init ()
@@ -155,4 +155,4 @@ module Make
               loop ()))
     ]
   ;;
-end
+end *)

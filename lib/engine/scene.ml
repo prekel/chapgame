@@ -1,17 +1,10 @@
 open Core
 
-module Make1
+module Make
     (N : Solver.Module_types.NUMBER) (C : sig
       val eps : N.t
-    end) (MakeValues : functor (Var : Module_types.VAR) (Scope : Module_types.SCOPE) ->
-      Values.S with module Var = Var and module Scope = Scope and module N = N)
-                                                                              (MakeExpr : functor
-                                                                                (Var : Module_types
-                                                                                       .VAR)
-                                                                                (Scope : Module_types
-                                                                                         .SCOPE)
-                                                                                ->
-      Expr.S with module Var = Var and module Scope = Scope and module N = N) =
+    end) (MakeDeps : functor (Var : Module_types.VAR) (Scope : Module_types.SCOPE) ->
+      module type of Deps.Make (N) (Var) (Scope)) =
 struct
   let eps = C.eps
 
@@ -46,24 +39,24 @@ struct
     let is_global = equal `Global
   end
 
+  module Deps = MakeDeps (Vars) (Scope)
+
   module Solver = struct
-    module I = Solver.Interval.Make (N)
-    module P = Solver.Polynomial.Make (N)
-    module BS = Solver.Bisection.Make (N) (I)
-    module PE = Solver.Polynomial_equation.Make (N) (I) (P) (BS)
+    module P = Deps.P
+    module PE = Deps.PE
   end
 
-  module Expr = MakeExpr (Vars) (Scope)
-  module Formula = Expr_polynomial.Make (N) (Solver.P) (Vars) (Scope) (Expr)
-  module Vector = Vector.Make (N)
-  module Values = MakeValues (Vars) (Scope)
-  module Point = Point.Make (N)
-  module Line = Line.Make (N) (Point)
+  module Expr = Deps.E
+  module Formula = Deps.EP
+  module Values = Deps.V
+  module Point = Deps.Pt
+  module Line = Deps.Ln
   module Points = Common.Utils.MakeAdvancedSet (Point)
   module Lines = Common.Utils.MakeAdvancedSet (Line)
+  module Vector = Vector.Make (N)
 
   module Rule = struct
-    include Rule.Make (N) (Solver.P) (Vars) (Scope) (Expr) (Formula)
+    include Deps.R
 
     module Exprs = struct
       open Expr.Syntax
@@ -166,7 +159,7 @@ struct
   end
 
   module Body = struct
-    include Body.Make (N) (Solver.P) (Vars) (Scope)  (Expr)  (Formula) (Values) (Rule) (C)
+    include Deps.B (Rule) (C)
 
     let update_x0y0 ~body (x, y, v_x, v_y) ~rules =
       { body with
@@ -1137,9 +1130,7 @@ struct
   end
 end
 
-module Make (C : sig
-  module N : Solver.Module_types.NUMBER
-
-  val eps : N.t
-end) =
-  Make1 (C.N) (C) (Values.Make (C.N)) (Expr.Make (C.N))
+module type S = sig 
+  module N : sig type n end
+  include module type of Make (N) (struct let eps = Obj.magic None end) (Deps.Make (N))
+end

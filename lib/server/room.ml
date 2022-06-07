@@ -1,4 +1,4 @@
-open Core
+(* open Core
 open Lwt.Let_syntax
 
 module Make
@@ -54,4 +54,4 @@ module Make
   ;;
 
   let route = Dream.scope "/room" [ inject_rooms ] (action_route :: generic_routes)
-end
+end *)
