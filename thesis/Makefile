@@ -3,9 +3,6 @@ all: thesis.pdf assignment.pdf presentation.pdf
 ../_build/default/thesis/tex/thesis.pdf: FORCE
 	dune build ./tex/thesis.pdf
 
-../_build/default/thesis/tex/report.pdf: FORCE
-	dune build ./tex/report.pdf
-
 ../_build/default/thesis/tex/assignment.pdf: FORCE
 	dune build ./tex/assignment.pdf
 
@@ -17,9 +14,6 @@ thesis.pdf: ../_build/default/thesis/tex/thesis.pdf
 
 assignment.pdf: ../_build/default/thesis/tex/assignment.pdf
 	cp ../_build/default/thesis/tex/assignment.pdf . -f
-
-report.pdf: ../_build/default/thesis/tex/report.pdf
-	cp ../_build/default/thesis/tex/report.pdf . -f
 
 presentation.pdf: ../_build/default/thesis/tex/presentation.pdf
 	cp ../_build/default/thesis/tex/presentation.pdf . -f

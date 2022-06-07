@@ -39,24 +39,6 @@
    (run %{bin:xelatex} "assignment.tex"))))
 
 (rule
- (target report.pdf)
- (deps
-  report.tex
-  preamble.tex
-  r1-title.tex
-  a3-toc.tex
-  a4-intro.tex
-  r2-assignment.tex
-  r3-plan.tex
-  b1-theory.tex
-  b2-design.tex
-  c2-bibliography.tex)
- (action
-  (progn
-   (run %{bin:xelatex} "report.tex")
-   (run %{bin:xelatex} "report.tex"))))
-
-(rule
  (target presentation.pdf)
  (deps
   presentation.tex

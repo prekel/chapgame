@@ -5,7 +5,6 @@ let collision ~v1 ~v2 ~x1 ~x2 ~m1 ~m2 =
   let module V = Vector in
   let open Float in
   let two = one + one in
-  let q1 = v1 in
   let q2 =
     match m1 = infinity, m2 = infinity with
     | true, true -> one
@@ -14,8 +13,7 @@ let collision ~v1 ~v2 ~x1 ~x2 ~m1 ~m2 =
     | false, false -> two * m2 / (m1 + m2)
   in
   let q3 = V.(dot (v1 - v2) (x1 - x2)) / square V.(len (x2 - x1)) in
-  let q4 = V.(x1 - x2) in
-  V.(q1 - (N.(q2 * q3) ^* q4))
+  V.(v1 - (N.(q2 * q3) ^* (x1 - x2)))
 ;;
 
 let collision_body ~v1 ~v2 ~m1 ~m2 ~x1 ~y1 ~x2 ~y2 =
