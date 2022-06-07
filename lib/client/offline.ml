@@ -4,7 +4,7 @@ open Bonsai.Let_syntax
 
 module Make
     (C : Engine.Module_types.CONSTS with module N = Float)
-    (S : module type of Engine.Scene.Make (C))
+    (S : Engine.Scene.S with module N = Float)
     (SC : module type of Scene.Make (C) (S)) (R : sig
       val replay : string -> S.Model.t
     end) =

@@ -381,12 +381,12 @@ let calc_new_time_every ~timeout ~time ~set_time ~speed ~prolong =
 
 module Make
     (C : Engine.Module_types.CONSTS with module N = Float)
-    (S : module type of Engine.Scene.Make (C)) =
-    struct
+    (S : Engine.Scene.S with module N = Float) =
+struct
   let circle (id, figure) ~body_click =
-    let x = S.Values.get_scalar_exn figure.S.Body.values ~var:`x0 in
-    let y = S.Values.get_scalar_exn figure.values ~var:`y0 in
-    let r = S.Values.get_scalar_exn figure.values ~var:`r in
+    let x = S.Values.get_scalar_exn (S.Body.get_values figure) ~var:S.Vars.x0 in
+    let y = S.Values.get_scalar_exn (S.Body.get_values figure) ~var:S.Vars.y0 in
+    let r = S.Values.get_scalar_exn (S.Body.get_values figure) ~var:S.Vars.r in
     let on_click id (evt : Dom_html.mouseEvent Js.t) =
       let sx, sy = svg_click_coords evt in
       let nx = sx -. x in
@@ -876,14 +876,14 @@ module Make
       let%arr body = body in
       match body with
       | Some body ->
-        let x = S.Values.get_scalar_exn body.values ~var:`x0 in
-        let y = S.Values.get_scalar_exn body.values ~var:`y0 in
-        let vx = S.Values.get_scalar_exn body.values ~var:`v0_x in
-        let vy = S.Values.get_scalar_exn body.values ~var:`v0_y in
-        let mu = S.Values.get_scalar_exn body.values ~var:`mu in
-        let m = S.Values.get_scalar_exn body.values ~var:`m in
-        let r = S.Values.get_scalar_exn body.values ~var:`r in
-        Some body.id, Some x, Some y, Some vx, Some vy, Some mu, Some m, Some r
+        let x = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Vars.x0 in
+        let y = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Vars.y0 in
+        let vx = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Vars.v0_x in
+        let vy = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Vars.v0_y in
+        let mu = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Vars.mu in
+        let m = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Vars.m in
+        let r = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Vars.r in
+        Some (S.Body.get_id body), Some x, Some y, Some vx, Some vy, Some mu, Some m, Some r
       | None -> None, None, None, None, None, None, None, None
     in
     let%sub is_acceptable =
@@ -1062,18 +1062,18 @@ module Make
     let open Node in
     let open Attr in
     let body_tr body =
-      let id = body.S.Body.id |> S.Body.Id.to_string in
-      let x = S.Values.get_scalar_exn body.values ~var:`x0 in
-      let y = S.Values.get_scalar_exn body.values ~var:`y0 in
-      let mu = S.Values.get_scalar_exn body.values ~var:`mu in
-      let m = S.Values.get_scalar_exn body.values ~var:`m in
-      let r = S.Values.get_scalar_exn body.values ~var:`r in
-      let v_x = S.Values.get_scalar_exn body.values ~var:`v0_x in
-      let v_y = S.Values.get_scalar_exn body.values ~var:`v0_y in
+      let id = (S.Body.get_id body) |> S.Body.Id.to_string in
+      let x = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Vars.x0 in
+      let y = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Vars.y0 in
+      let mu = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Vars.mu in
+      let m = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Vars.m in
+      let r = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Vars.r in
+      let v_x = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Vars.v0_x in
+      let v_y = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Vars.v0_y in
       let module V = Engine.Vector.Make (Float) in
       let calc =
         S.Expr.calc
-          ~values:(S.Values.to_function body.values)
+          ~values:(S.Values.to_function (S.Body.get_values body))
           ~scoped_values:(S.Values.global_to_scoped scene.global_values)
           (module V)
       in
@@ -1280,8 +1280,7 @@ module Make
           | Some p1x, Some p1y, Some p2x, Some p2y, Some kind ->
             let%bind.Effect () =
               add_line
-                S.Line.
-                  { p1 = { x = p1x; y = p1y }; p2 = { x = p2x; y = p2y }; kind }
+                S.Line.{ p1 = { x = p1x; y = p1y }; p2 = { x = p2x; y = p2y }; kind }
             in
             Effect.return true
           | _ -> Effect.return false)
@@ -1339,21 +1338,14 @@ module Make
                                           |> set_kind)
                                     ])
                                [ option
-                                   [ text
-                                       (Sexp.to_string
-                                          [%sexp (`Line : S.Line.kind)])
-                                   ]
+                                   [ text (Sexp.to_string [%sexp (`Line : S.Line.kind)]) ]
                                ; option
                                    ~attr:selected
                                    [ text
-                                       (Sexp.to_string
-                                          [%sexp (`Segment : S.Line.kind)])
+                                       (Sexp.to_string [%sexp (`Segment : S.Line.kind)])
                                    ]
                                ; option
-                                   [ text
-                                       (Sexp.to_string
-                                          [%sexp (`Ray : S.Line.kind)])
-                                   ]
+                                   [ text (Sexp.to_string [%sexp (`Ray : S.Line.kind)]) ]
                                ]
                            ]
                        ]

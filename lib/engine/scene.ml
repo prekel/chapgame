@@ -1,11 +1,14 @@
 open Core
+include Scene_intf
 
 module Make
     (N : Solver.Module_types.NUMBER) (C : sig
       val eps : N.t
     end) (MakeDeps : functor (Var : Module_types.VAR) (Scope : Module_types.SCOPE) ->
-      module type of Deps.Make (N) (Var) (Scope)) =
+        module type of Deps.Make (N) (Var) (Scope)) =
 struct
+  module N = N
+
   let eps = C.eps
 
   module Vars = struct
@@ -26,6 +29,15 @@ struct
     include Comparable.Make (struct
       type nonrec t = t [@@deriving sexp, equal, compare]
     end)
+
+    let x0 = `x0
+    let y0 = `y0
+    let v0_x = `v0_x
+    let v0_y = `v0_y
+    let r = `r
+    let g = `g
+    let mu = `mu
+    let m = `m
   end
 
   module Scope = struct
@@ -77,11 +89,8 @@ struct
       let x0 = scalar_var `x0
       let y0 = scalar_var `y0
       let r = scalar_var `r
-      let half = scalar_const N.(one / (one + one))
       let zero = scalar_const N.zero
-      let three = scalar_const N.(one + one + one)
       let two = scalar_const N.(one + one)
-      let pi = scalar_const N.pi
     end
 
     let rec rules1 =
@@ -177,6 +186,19 @@ struct
         values = body.values |> Values.update_vector ~var_x:`v0_x ~var_y:`v0_y ~value:v
       ; rules
       }
+    ;;
+
+    let get_id { id; _ } = id
+    let get_values { values; _ } = values
+
+    let calc_a ~global_values { values; _ } =
+      let calc =
+        Expr.calc
+          ~values:(Values.to_function values)
+          ~scoped_values:(Values.global_to_scoped global_values)
+          (module Vector)
+      in
+      calc Rule.Exprs.a_vec
     ;;
   end
 
@@ -1113,24 +1135,11 @@ struct
       Model.{ scenes = Scenes.merge_with_list model.scenes after; timeout = new_timeout }
     ;;
 
-    let update model ~action =
-      match action with
-      | `Action a -> recv model ~action:a
-      | `Replace m -> m
-      | `Diff diff -> Model.Diff.apply_diff model ~diff
-      | `Prolong until -> prolong model ~until
-    ;;
+    (* let update model ~action = match action with | `Action a -> recv model ~action:a |
+       `Replace m -> m | `Diff diff -> Model.Diff.apply_diff model ~diff | `Prolong until
+       -> prolong model ~until ;; *)
 
-    let recv_with_diff model ~action =
-      match action with
-      | `Action a ->
-        let updated = recv model ~action:a in
-        updated, Model.Diff.diff ~old:model updated
-    ;;
+    (* let recv_with_diff model ~action = match action with | `Action a -> let updated =
+       recv model ~action:a in updated, Model.Diff.diff ~old:model updated ;; *)
   end
-end
-
-module type S = sig 
-  module N : sig type n end
-  include module type of Make (N) (struct let eps = Obj.magic None end) (Deps.Make (N))
 end
