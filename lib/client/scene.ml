@@ -985,13 +985,13 @@ let edit_body_modal body ~close ~set_values =
                      ; (if is_acceptable then empty else disabled)
                      ; on_click (fun _ ->
                            let values =
-                             [ `x0, x
-                             ; `y0, y
-                             ; `v0_x, vx
-                             ; `v0_y, vy
-                             ; `mu, mu
-                             ; `r, r
-                             ; `m, m
+                             [ S.Var.x0, x
+                             ; S.Var.y0, y
+                             ; S.Var.v0_x, vx
+                             ; S.Var.v0_y, vy
+                             ; S.Var.mu, mu
+                             ; S.Var.r, r
+                             ; S.Var.m, m
                              ]
                              |> List.filter_map ~f:(fun (k, v) ->
                                     Option.map v ~f:(fun v -> k, v))
@@ -1095,7 +1095,11 @@ let bodies_table ~scene ~time ~remove_body ~set_values ~set_pause =
       ; td [ text (format_float a_len) ]
       ; td
           [ button
-              ~attr:(many [ class_ "delete"; on_click (fun _ -> remove_body body.id) ])
+              ~attr:
+                (many
+                   [ class_ "delete"
+                   ; on_click (fun _ -> remove_body (S.Body.get_id body))
+                   ])
               []
           ]
       ]
@@ -1762,13 +1766,13 @@ let scene
   in
   let%sub g_changed_manually =
     let%arr dispatch = dispatch in
-    fun g -> dispatch (S.Action.UpdateGlobal (`g, g))
+    fun g -> dispatch (S.Action.UpdateGlobal (S.Var.g, g))
   in
   let%sub g_panel =
     g_panel
       ~g:
         (Bonsai.Value.map scene ~f:(fun scene ->
-             S.Values.get_scalar_exn scene.global_values ~var:`g))
+             S.Values.get_scalar_exn scene.global_values ~var:S.Var.g))
       ~g_changed_manually
   in
   let%arr frame = frame

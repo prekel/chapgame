@@ -1,7 +1,6 @@
 open Core
-module N = Float
 
-module Vars : sig
+module Var : sig
   type t
 
   val x0 : t
@@ -18,24 +17,53 @@ module Scope : sig
   type t
 end
 
-module Expr : sig
+(* module Expr : sig
   type _ t
 
   val calc
-    :  values:(Vars.t -> N.t)
-    -> scoped_values:(Scope.t -> Vars.t -> N.t)
+    :  values:(Var.t -> float)
+    -> scoped_values:(Scope.t -> Var.t -> float)
     -> (module Common.Module_types.BASIC_OPS with type t = 'result)
     -> 'result t
     -> 'result
+end *)
+
+module Point : sig
+  type t =
+    { x : float
+    ; y : float
+    }
+
+  include Sexpable.S with type t := t
+  include Comparable.S with type t := t
 end
 
-module Point : Point.S with module N = N
-module Line : Line.S with module N = N and module Point = Point
+module Line : sig
+  type kind =
+    [ `Line
+    | `Segment
+    | `Ray
+    ]
+  [@@deriving sexp, equal, compare]
+
+  type t =
+    { p1 : Point.t
+    ; p2 : Point.t
+    ; kind : kind
+    }
+  [@@deriving sexp]
+
+  include Comparable.S with type t := t
+
+  val of_points : p1:Point.t -> p2:Point.t -> kind:[ `Line | `Ray | `Segment ] -> t
+  val to_abc : t -> Float.t * Float.t * Float.t
+end
 
 module Points : sig
   type t
 
   val to_sequence : t -> Point.t Sequence.t
+  val to_list : t -> Point.t list
 
   module Diff : Common.Utils.AdvancedSetDiff with type tt = t and type value = Point.t
 end
@@ -44,6 +72,7 @@ module Lines : sig
   type t
 
   val to_sequence : t -> Line.t Sequence.t
+  val to_list : t -> Line.t list
 
   module Diff : Common.Utils.AdvancedSetDiff with type tt = t and type value = Line.t
 end
@@ -51,15 +80,15 @@ end
 module Values : sig
   type t
 
-  val get_scalar_exn : t -> var:Vars.t -> N.t
-  val to_function : t -> Vars.t -> N.t
-  val global_to_scoped : t -> Scope.t -> Vars.t -> N.t
+  val get_scalar_exn : t -> var:Var.t -> float
+  val to_function : t -> Var.t -> float
+  val global_to_scoped : t -> Scope.t -> Var.t -> float
 
   module Diff :
     Common.Utils.AdvancedMapDiff
       with type tt = t
-       and type key = Vars.t
-       and type value = N.t
+       and type key = Var.t
+       and type value = float
 end
 
 module Body : sig
@@ -69,12 +98,13 @@ module Body : sig
 
   val get_id : t -> Id.t
   val get_values : t -> Values.t
+  val calc_a : global_values:Values.t -> t -> float * float
 end
 
 module Bodies : sig
   type t
 
-  val calc : t -> t:N.t -> global_values:Values.t -> t
+  val calc : t -> t:float -> global_values:Values.t -> t
   val to_sequence : t -> (Body.Id.t * Body.t) Sequence.t
 
   module Diff :
@@ -88,37 +118,37 @@ module Action : sig
   type a =
     | AddBody of
         { id : Body.Id.t option
-        ; x0 : N.t
-        ; y0 : N.t
-        ; r : N.t
-        ; mu : N.t
-        ; m : N.t
+        ; x0 : float
+        ; y0 : float
+        ; r : float
+        ; mu : float
+        ; m : float
         }
-    | AddBodyOfValues of (Body.Id.t option * (Vars.t * N.t) list)
+    | AddBodyOfValues of (Body.Id.t option * (Var.t * float) list)
     | AddPoint of Point.t
     | AddLine of Line.t
     | AddLineWithPoints of Line.t
     | GiveVelocity of
         { id : Body.Id.t
-        ; v0 : N.t * N.t
+        ; v0 : float * float
         }
     | RemoveBody of Body.Id.t
     | RemoveLine of Line.t
     | RemovePoint of Point.t
-    | UpdateBody of (Body.Id.t * (Vars.t * N.t) list)
+    | UpdateBody of (Body.Id.t * (Var.t * float) list)
     | UpdateLine of Line.t * Line.t
     | UpdatePoint of Point.t * Point.t
-    | UpdateGlobal of (Vars.t * N.t)
+    | UpdateGlobal of (Var.t * float)
   [@@deriving sexp, equal, compare]
 
   type until =
-    { timespan : N.t option
+    { timespan : float option
     ; quantity : int option
     }
   [@@deriving sexp, equal, compare]
 
   type t =
-    { time : N.t
+    { time : float
     ; action : a
     ; until : until
     }
@@ -153,7 +183,7 @@ module Scene : sig
   end
 
   type t =
-    { time : N.t
+    { time : float
     ; bodies : Bodies.t
     ; points : Points.t
     ; lines : Lines.t
@@ -164,7 +194,7 @@ module Scene : sig
 
   module Diff : sig
     type t =
-      { new_time : N.t
+      { new_time : float
       ; bodies_diff : Bodies.Diff.t
       ; points_diff : Points.Diff.t
       ; lines_diff : Lines.Diff.t
@@ -178,34 +208,43 @@ end
 module Scenes : sig
   type t
 
+  val before : t -> time:float -> t * Scene.t
   val last_exn : t -> Scene.t
-  val to_map : t -> (N.t, Scene.t, N.comparator_witness) Map.t
-  val to_sequence : t -> (N.t * Scene.t) Sequence.t
+  val to_map : t -> (float, Scene.t, Float.comparator_witness) Map.t
+  val to_sequence : t -> (float * Scene.t) Sequence.t
 end
 
 module Model : sig
   type t =
-    { timeout : N.t option
+    { timeout : float option
     ; scenes : Scenes.t
     }
   [@@deriving sexp, equal]
 
-  val init : g:N.t -> t
+  val init : g:float -> t
 
   module Diff : sig
     type tt = t
 
     type t =
-      { init : [ `Init of Scene.t | `Since of N.t ]
+      { init : [ `Init of Scene.t | `Since of float ]
       ; scene_diffs : Scene.Diff.t list
-      ; new_timeout : N.t option
+      ; new_timeout : float option
       }
 
     include Common.Utils.Diff with type tt := tt and type t := t
   end
 end
 
-module Engine : sig
-  val recv : Model.t -> action:Action.t -> Model.t
-  val prolong : Model.t -> until:Action.until -> Model.t
-end
+val recv : Model.t -> action:Action.t -> Model.t
+val prolong : Model.t -> until:Action.until -> Model.t
+
+val update
+  :  Model.t
+  -> action:
+       [< `Action of Action.t
+       | `Diff of Model.Diff.t
+       | `Prolong of Action.until
+       | `Replace of Model.t
+       ]
+  -> Model.t

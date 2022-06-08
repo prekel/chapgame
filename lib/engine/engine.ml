@@ -1,6 +1,7 @@
 open Core
 open Open
 module Var = Var
+module Scope = Scope
 module Values = Values
 module Line = Line
 module Point = Point
@@ -12,6 +13,8 @@ module Bodies = Bodies
 module Lines = Lines
 module Points = Points
 module Scenes = Scenes
+
+(* module Expr = ExprCoef *)
 
 let forward_seq ?time (scene : Scene.t) =
   Sequence.unfold ~init:(Some scene) ~f:(function
@@ -233,9 +236,9 @@ let update model ~action =
   | `Prolong until -> prolong model ~until
 ;;
 
-let recv_with_diff model ~action =
+(* let recv_with_diff model ~action =
   match action with
   | `Action a ->
     let updated = recv model ~action:a in
     updated, Model.Diff.diff ~old:model updated
-;;
+;; *)
