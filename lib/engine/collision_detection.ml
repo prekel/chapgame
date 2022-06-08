@@ -41,14 +41,11 @@ module WithBody = struct
            let r_2 = scope r ~scope:`_2 in
            let f = sqr (x_2 - x_1) + sqr (y_2 - y_1) - sqr (r_1 + r_2) in
            let p =
-             Formula.to_polynomial
-               f
-               ~eps
-               ~values:(Values.to_function global)
-               ~scoped_values:(function
+             Formula.to_map f ~values:(Values.to_function global) ~scoped_values:(function
                  | `Global -> Values.to_function global
                  | `_1 -> Values.to_function values1
                  | `_2 -> Values.to_function values2)
+             |> Solver.P.of_map ~eps
            in
            let roots = Solver.PE.roots p ~eps in
            let ai = inter values1 a.interval ~global in
@@ -130,10 +127,7 @@ module WithPoint = struct
       let r_1 = scope r ~scope:`_1 in
       let i = inter values rule.interval ~global in
       sqr (x_2 - x_1) + sqr (y_2 - y_1) - sqr r_1
-      |> Formula.to_polynomial
-           ~eps
-           ~values:(Values.to_function global)
-           ~scoped_values:(function
+      |> Formula.to_map ~values:(Values.to_function global) ~scoped_values:(function
              | `Global -> Values.to_function global
              | `_1 -> Values.to_function values
              | `_2 ->
@@ -141,6 +135,7 @@ module WithPoint = struct
                | `with_point `x -> x
                | `with_point `y -> y
                | _ -> assert false))
+      |> Solver.P.of_map ~eps
       |> Solver.PE.roots ~eps
       |> List.filter ~f:(fun root -> is_in_interval root i)
       |> List.min_elt ~compare:Float.compare
@@ -206,10 +201,7 @@ module WithLine = struct
       let a', b', c' = Line.to_abc line in
       let a2b2' = Float.(sqrt (square a' + square b')) in
       let to_polynomial =
-        Formula.to_polynomial
-          ~eps
-          ~values:(Values.to_function global)
-          ~scoped_values:(function
+        Formula.to_map ~values:(Values.to_function global) ~scoped_values:(function
             | `Global -> Values.to_function global
             | `_1 -> Values.to_function values
             | `_2 ->
@@ -219,6 +211,7 @@ module WithLine = struct
               | `with_line `c -> c'
               | `with_line `a2b2 -> a2b2'
               | _ -> assert false))
+        >> Solver.P.of_map ~eps
       in
       let abc = (a * x) + (b * y) + c |> to_polynomial in
       let is_qwf ~p1 ~p2 ~root =

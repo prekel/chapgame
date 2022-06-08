@@ -3,7 +3,7 @@ open Bonsai_web
 open Bonsai.Let_syntax
 open Js_of_ocaml
 module SC = Scene
-module Offline = Offline.Make (Defaults.Replays)
+module Offline = Offline.Make (Protocol.Defaults.Replays)
 module Online = Online
 
 let fake_router =

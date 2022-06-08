@@ -1,6 +1,6 @@
 (library
  (name server_lib)
- (libraries defaults dream core dream-encoding uuidm)
+ (libraries protocol dream core dream-encoding uuidm)
  (preprocess
   (pps ppx_jane)))
 

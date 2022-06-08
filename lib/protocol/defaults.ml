@@ -1,5 +1,5 @@
 open Core
-module Response = Protocol.Response.Make (Unit)
+module Response = Response.Make (Unit)
 module S = Engine
 
 module Replays = struct

@@ -15,7 +15,7 @@ type t =
 let calc ~values ~rules ~scoped_values ~t =
   let c = ExprCoef.calc ~values ~scoped_values (module Float) in
   let calc_xy f =
-    Formula.to_polynomial f ~values ~scoped_values ~eps |> Solver.P.calc ~x:t
+    Formula.to_map f ~values ~scoped_values |> Solver.P.of_map ~eps |> Solver.P.calc ~x:t
   in
   List.find_map rules ~f:(fun Rule.{ interval; x; y; v_x; v_y; after; _ } ->
       match interval with

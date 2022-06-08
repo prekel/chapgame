@@ -15,10 +15,6 @@ module type S = sig
     type 'a t
   end
 
-  module Polynomial : sig
-    type t
-  end
-
   type t [@@deriving sexp, equal]
 
   module Syntax : sig
@@ -41,16 +37,6 @@ module type S = sig
     -> values:(Var.t -> N.t)
     -> scoped_values:(Scope.t -> Var.t -> N.t)
     -> (int, N.t, Int.comparator_witness) Map.t
-
-  (** [to_polynomial t ~values ~scoped_values ~eps] is the polynomial corresponding to the
-      expression [t], with the given values for variables [values] [scoped_values], and
-      precision [eps]. *)
-  val to_polynomial
-    :  t
-    -> values:(Var.t -> N.t)
-    -> scoped_values:(Scope.t -> Var.t -> N.t)
-    -> eps:N.t
-    -> Polynomial.t
 end
 
 module type Intf = sig
@@ -58,7 +44,6 @@ module type Intf = sig
 
   module Make
       (N : Common.Module_types.NUMBER)
-      (Polynomial : Solver.Polynomial.S with module N = N)
       (Var : Module_types.VAR)
       (Scope : Module_types.SCOPE)
       (Coef : Coef.S with module Var = Var and module Scope = Scope and module N = N) :
@@ -67,5 +52,4 @@ module type Intf = sig
        and module Scope = Scope
        and module N = N
        and module Coef = Coef
-       and module Polynomial = Polynomial
 end

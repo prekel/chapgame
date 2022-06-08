@@ -50,7 +50,7 @@ module Solver = struct
 end
 
 module ExprCoef = Expr.Coef.Make (Float) (Var) (Scope)
-module Formula = Expr.Polynomial.Make (Float) (Solver.P) (Var) (Scope) (ExprCoef)
+module Formula = Expr.Polynomial.Make (Float) (Var) (Scope) (ExprCoef)
 module Points = Common.Utils.MakeAdvancedSet (Point)
 module Lines = Common.Utils.MakeAdvancedSet (Line)
 module Vector = Common.Vector.Make (Float)

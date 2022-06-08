@@ -1,7 +1,7 @@
 (library
  (name client_lib)
  (libraries
-  defaults
+  protocol
   core
   bonsai.web
   virtual_dom.svg

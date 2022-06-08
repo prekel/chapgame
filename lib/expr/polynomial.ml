@@ -3,7 +3,6 @@ include Polynomial_intf
 
 module Make
     (N : Common.Module_types.NUMBER)
-    (Polynomial : Solver.Polynomial.S with module N = N)
     (Var : Module_types.VAR)
     (Scope : Module_types.SCOPE)
     (Coef : Coef.S with module Var = Var and module Scope = Scope and module N = N) =
@@ -12,7 +11,6 @@ struct
   module Scope = Scope
   module N = N
   module Coef = Coef
-  module Polynomial = Polynomial
 
   include
     Common.Utils.MakeAdvancedMap
@@ -48,9 +46,5 @@ struct
         match Coef.calc ~values ~scoped_values (module N) a with
         | c when N.is_finite c -> Some c
         | _ -> None)
-  ;;
-
-  let to_polynomial p ~values ~scoped_values ~eps =
-    to_map p ~values ~scoped_values |> Polynomial.of_map ~eps
   ;;
 end
