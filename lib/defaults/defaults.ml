@@ -85,8 +85,63 @@ module Replays = struct
                acc))
   ;;
 
+  let square S.Point.{ x = x1; y = y1 } S.Point.{ x = x2; y = y2 } =
+    [ S.Action.AddLine
+        (S.Line.of_points ~p1:{ x = x1; y = y1 } ~p2:{ x = x1; y = y2 } ~kind:`Segment)
+    ; S.Action.AddLine
+        (S.Line.of_points ~p1:{ x = x1; y = y1 } ~p2:{ x = x2; y = y1 } ~kind:`Segment)
+    ; S.Action.AddLine
+        (S.Line.of_points ~p1:{ x = x2; y = y2 } ~p2:{ x = x1; y = y2 } ~kind:`Segment)
+    ; S.Action.AddLine
+        (S.Line.of_points ~p1:{ x = x2; y = y2 } ~p2:{ x = x2; y = y1 } ~kind:`Segment)
+    ]
+  ;;
+
+  let unfold actions =
+    lazy
+      (actions
+      |> List.fold ~init:(S.Model.init ~g:1.) ~f:(fun acc action ->
+             S.recv
+               ~action:
+                 { time = 0.; action; until = { timespan = None; quantity = Some 1 } }
+               acc))
+  ;;
+
+  let brownian_1 =
+    let left, right, top, bottom = 200., 600., 200., 600. in
+    let square = square S.Point.{ x = left; y = top } S.Point.{ x = right; y = bottom } in
+    let actions =
+      Sequence.range 0 30
+      |> Sequence.map ~f:(fun _ ->
+             let open Float in
+             let r = 12. in
+             let id = S.Body.Id.next () in
+             let add =
+               S.Action.AddBody
+                 { id = Some id
+                 ; x0 = Random.float_range (left + r) (right - r)
+                 ; y0 = Random.float_range (top + r) (bottom - r)
+                 ; r = r
+                 ; mu = 0.
+                 ; m = 1.
+                 }
+             in
+             let give_v =
+               S.Action.GiveVelocity
+                 { id
+                 ; v0 = Random.float_range (-100.) 100., Random.float_range (-100.) 100.
+                 }
+             in
+             [ add; give_v ])
+      |> Sequence.bind ~f:Sequence.of_list
+      |> Sequence.to_list
+    in
+    square @ actions |> unfold
+  ;;
+
   let replay = function
     | "start" -> Lazy.force start
+    | "brownian_1" -> Lazy.force brownian_1
     | _ -> assert false
   ;;
 end
