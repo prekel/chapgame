@@ -400,7 +400,9 @@ let circle (id, figure) ~body_click =
     []
 ;;
 
-let line (S.Line.{ p1; p2; kind } as line) =
+let line line =
+  let p1, p2 = S.Line.to_points line in
+  let kind = S.Line.kind line in
   let open Float in
   let x1, y1, x2, y2 = p1.x, p1.y, p2.x, p2.y in
   let dx, dy = x2 - x1, y2 - y1 in
@@ -1125,17 +1127,63 @@ let bodies_table ~scene ~time ~remove_body ~set_values ~set_pause =
                    [ tr
                        [ th [ p [ text "id" ] ]
                        ; th ~attr:(class_ "deletetd") []
-                       ; th [ p [ text "x" ] ]
-                       ; th [ p [ text "y" ] ]
-                       ; th [ p [ text "μ" ] ]
-                       ; th [ p [ text "m" ] ]
-                       ; th [ p [ text "r" ] ]
-                       ; th [ p [ text "v"; Node.create "sub" [ text "x" ] ] ]
-                       ; th [ p [ text "v"; Node.create "sub" [ text "y" ] ] ]
-                       ; th [ p [ text "|v|" ] ]
-                       ; th [ p [ text "a"; Node.create "sub" [ text "x" ] ] ]
-                       ; th [ p [ text "a"; Node.create "sub" [ text "y" ] ] ]
-                       ; th [ p [ text "|a|" ] ]
+                       ; th
+                           [ Node.create
+                               "abbr"
+                               ~attr:(Attr.title "X-coordinate")
+                               [ text "x" ]
+                           ]
+                       ; th
+                           [ Node.create
+                               "abbr"
+                               ~attr:(Attr.title "Y-coordinate")
+                               [ text "y" ]
+                           ]
+                       ; th
+                           [ Node.create
+                               "abbr"
+                               ~attr:(Attr.title "Coefficient of friction")
+                               [ text "μ" ]
+                           ]
+                       ; th [ Node.create "abbr" ~attr:(Attr.title "Mass") [ text "m" ] ]
+                       ; th
+                           [ Node.create "abbr" ~attr:(Attr.title "Radius") [ text "r" ] ]
+                       ; th
+                           [ Node.create
+                               "abbr"
+                               ~attr:(Attr.title "Velocity X-component")
+                               [ text "v"; Node.create "sub" [ text "x" ] ]
+                           ]
+                       ; th
+                           [ Node.create
+                               "abbr"
+                               ~attr:(Attr.title "Velocity Y-component")
+                               [ text "v"; Node.create "sub" [ text "y" ] ]
+                           ]
+                       ; th
+                           [ Node.create
+                               "abbr"
+                               ~attr:(Attr.title "Velocity magnitude")
+                               [ text "|v|" ]
+                           ]
+                       ; th
+                           [ Node.create
+                               "abbr"
+                               ~attr:(Attr.title "Acceleration X-component")
+                               [ text "a"; Node.create "sub" [ text "x" ] ]
+                           ]
+                       ; th
+                           [ Node.create
+                               "abbr"
+                               ~attr:(Attr.title "Acceleration Y-component")
+                               [ text "a"; Node.create "sub" [ text "y" ] ]
+                           ]
+                       ; th
+                           [ Node.create
+                               "abbr"
+                               ~attr:(Attr.title "Acceleration magnitude")
+                               [ text "|a|" ]
+                           ]
                        ; th ~attr:(class_ "deletetd") []
                        ]
                    ]
@@ -1268,7 +1316,11 @@ let line_add_modal ~add_line ~set_pause =
         match p1x, p1y, p2x, p2y, kind with
         | Some p1x, Some p1y, Some p2x, Some p2y, Some kind ->
           let%bind.Effect () =
-            add_line S.Line.{ p1 = { x = p1x; y = p1y }; p2 = { x = p2x; y = p2y }; kind }
+            add_line
+              (S.Line.of_points
+                 ~p1:S.Point.{ x = p1x; y = p1y }
+                 ~p2:S.Point.{ x = p2x; y = p2y }
+                 ~kind)
           in
           Effect.return true
         | _ -> Effect.return false)
@@ -1351,16 +1403,17 @@ let lines_table ~lines ~remove_line ~add_line ~set_pause =
   let open Node in
   let open Attr in
   let line_tr line =
+    let p1, p2 = S.Line.to_points line in
     tr
-      [ td [ text (format_float line.S.Line.p1.x) ]
-      ; td [ text (format_float line.p1.y) ]
-      ; td [ text (format_float line.p2.x) ]
-      ; td [ text (format_float line.p2.y) ]
+      [ td [ text (format_float p1.x) ]
+      ; td [ text (format_float p1.y) ]
+      ; td [ text (format_float p2.x) ]
+      ; td [ text (format_float p2.y) ]
       ; td
           [ p
               ~attr:(many [ style (Css_gen.font_size (`Em_float 0.85)) ])
               [ text
-                  (match line.kind with
+                  (match S.Line.kind line with
                   | `Segment -> "Segment"
                   | `Line -> "Line"
                   | `Ray -> "Ray")
@@ -1390,10 +1443,30 @@ let lines_table ~lines ~remove_line ~add_line ~set_pause =
                ~attr:(many [ classes [ "table"; "is-narrow"; "is-fullwidth" ] ])
                [ thead
                    [ tr
-                       [ th [ p [ text "P1"; Node.create "sub" [ text "x" ] ] ]
-                       ; th [ p [ text "P1"; Node.create "sub" [ text "y" ] ] ]
-                       ; th [ p [ text "P2"; Node.create "sub" [ text "x" ] ] ]
-                       ; th [ p [ text "P2"; Node.create "sub" [ text "y" ] ] ]
+                       [ th
+                           [ Node.create
+                               "abbr"
+                               ~attr:(Attr.title "First point X-coordinate")
+                               [ text "P1"; Node.create "sub" [ text "x" ] ]
+                           ]
+                       ; th
+                           [ Node.create
+                               "abbr"
+                               ~attr:(Attr.title "First point Y-coordinate")
+                               [ text "P1"; Node.create "sub" [ text "y" ] ]
+                           ]
+                       ; th
+                           [ Node.create
+                               "abbr"
+                               ~attr:(Attr.title "Second point X-coordinate")
+                               [ text "P2"; Node.create "sub" [ text "x" ] ]
+                           ]
+                       ; th
+                           [ Node.create
+                               "abbr"
+                               ~attr:(Attr.title "Second point Y-coordinate")
+                               [ text "P2"; Node.create "sub" [ text "y" ] ]
+                           ]
                        ; th [ p [ text "kind" ] ]
                        ; th ~attr:(class_ "deletetd") []
                        ]
@@ -1614,7 +1687,10 @@ let until_panel ~(until : S.Action.until Value.t) ~set_until ~current =
                             |> set_until)
                       ])
                  []
-             ; text " Time"
+             ; Node.create
+                 "abbr"
+                 ~attr:(Attr.title "Calculate next N seconds")
+                 [ text " Time" ]
              ])
         ~right:
           (match until.timespan with
@@ -1646,7 +1722,10 @@ let until_panel ~(until : S.Action.until Value.t) ~set_until ~current =
                             |> set_until)
                       ])
                  []
-             ; text " Quantity"
+             ; Node.create
+                 "abbr"
+                 ~attr:(Attr.title "Calculate next N collisions")
+                 [ text " Quantity" ]
              ])
         ~right:
           (match until.quantity with

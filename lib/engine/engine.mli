@@ -17,17 +17,6 @@ module Scope : sig
   type t
 end
 
-(* module Expr : sig
-  type _ t
-
-  val calc
-    :  values:(Var.t -> float)
-    -> scoped_values:(Scope.t -> Var.t -> float)
-    -> (module Common.Module_types.BASIC_OPS with type t = 'result)
-    -> 'result t
-    -> 'result
-end *)
-
 module Point : sig
   type t =
     { x : float
@@ -46,17 +35,13 @@ module Line : sig
     ]
   [@@deriving sexp, equal, compare]
 
-  type t =
-    { p1 : Point.t
-    ; p2 : Point.t
-    ; kind : kind
-    }
-  [@@deriving sexp]
+  type t [@@deriving sexp]
 
   include Comparable.S with type t := t
 
   val of_points : p1:Point.t -> p2:Point.t -> kind:[ `Line | `Ray | `Segment ] -> t
-  val to_abc : t -> Float.t * Float.t * Float.t
+  val to_points : t -> Point.t * Point.t
+  val kind : t -> kind
 end
 
 module Points : sig
