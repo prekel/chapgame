@@ -49,7 +49,7 @@ module Solver = struct
   module PE = Solver.Polynomial_equation.Make (Float) (I) (P) (BS)
 end
 
-module ExprCoef = Expr.Coef.Make (Float) (Var) (Scope)
+module ExprCoef = Expr.Coeff.Make (Float) (Var) (Scope)
 module Formula = Expr.Polynomial.Make (Float) (Var) (Scope) (ExprCoef)
 module Points = Common.Utils.MakeAdvancedSet (Point)
 module Lines = Common.Utils.MakeAdvancedSet (Line)

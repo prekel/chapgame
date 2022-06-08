@@ -190,6 +190,11 @@ let content = {|\begingroup
     \bibitem{bulma-vs-bootstrap}
     https://bulma.io/alternative-to-bootstrap/ \TODO
 
+    \bibitem{fprog-adt}
+    https://www.fprog.ru/2009/issue2/practice-fp-2-compact.pdf 
+    Алгебраические типы данных и их использование в программировании с. 49
+    Роман Душкин \TODO
+
 \end{thebibliography}
 \endgroup
 

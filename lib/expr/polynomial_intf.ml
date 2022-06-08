@@ -11,7 +11,7 @@ module type S = sig
 
   module N : Common.Module_types.NUMBER
 
-  module Coef : sig
+  module Coeff : sig
     type 'a t
   end
 
@@ -27,10 +27,10 @@ module type S = sig
   end
 
   (** [of_alist_exn alist] is formula made of associative list [alist] *)
-  val of_alist_exn : (int * N.t Coef.t) list -> t
+  val of_alist_exn : (int * N.t Coeff.t) list -> t
 
   (** [singleton_zero s] if formula with single zero-degree element [s] *)
-  val singleton_zero : N.t Coef.t -> t
+  val singleton_zero : N.t Coeff.t -> t
 
   val to_map
     :  t
@@ -46,10 +46,10 @@ module type Intf = sig
       (N : Common.Module_types.NUMBER)
       (Var : Module_types.VAR)
       (Scope : Module_types.SCOPE)
-      (Coef : Coef.S with module Var = Var and module Scope = Scope and module N = N) :
+      (Coeff : Coeff.S with module Var = Var and module Scope = Scope and module N = N) :
     S
       with module Var = Var
        and module Scope = Scope
        and module N = N
-       and module Coef = Coef
+       and module Coeff = Coeff
 end

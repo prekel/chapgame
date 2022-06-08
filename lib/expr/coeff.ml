@@ -1,5 +1,5 @@
 open Core
-include Coef_intf
+include Coeff_intf
 
 module Make
     (N : Common.Module_types.NUMBER)
