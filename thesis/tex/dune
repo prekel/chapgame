@@ -38,6 +38,8 @@
  (deps assignment.tex preamble.tex s1-title.tex s2-assignment.tex)
  (action
   (progn
+   (run %{bin:xelatex} "assignment.tex")
+   (run %{bin:xelatex} "assignment.tex")
    (run %{bin:xelatex} "assignment.tex"))))
 
 (rule
