@@ -1,6 +1,6 @@
 open Core
 
-let eps = 1e-7
+let eps = 1e-6
 
 module Var = struct
   type t =

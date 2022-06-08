@@ -198,7 +198,7 @@ let content = {|\begingroup
 \end{thebibliography}
 \endgroup
 
-% \clearpage
+\clearpage
 |}
 
 let () =

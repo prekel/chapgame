@@ -14,8 +14,6 @@ module Lines = Lines
 module Points = Points
 module Scenes = Scenes
 
-(* module Expr = ExprCoef *)
-
 let forward_seq ?time (scene : Scene.t) =
   Sequence.unfold ~init:(Some scene) ~f:(function
       | None -> None
