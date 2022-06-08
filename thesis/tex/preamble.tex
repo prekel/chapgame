@@ -79,6 +79,19 @@
     pdftitle={\Topic}
 }
 
+\usepackage{lastpage} % Подсчет количества страниц
+% \setcounter{page}{1}  % Начало нумерации страниц
+
+\usepackage{totcount}
+\newtotcounter{citenum}
+\def\oldbibitem{} \let\oldbibitem=\bibitem
+\def\bibitem{\stepcounter{citenum}\oldbibitem}
+
+\usepackage[figure,table,equation]{totalcount}
+
+\usepackage{setspace}
+\usepackage[normalem]{ulem}
+
 % Оформление библиографии и подрисуночных записей через точку
 \makeatletter
 \renewcommand*{\@biblabel}[1]{\hfill#1.}
@@ -242,7 +255,6 @@
 % Секции без номеров (введение, заключение...), вместо section*{}
 \newcommand{\AnonchapterNoToc}[1]{
     \clearpage
-    \phantomsection % Корректный переход по ссылкам в содержании
     \begin{center}
         \bfseries\MakeTextUppercase{#1}
     \end{center}
@@ -250,8 +262,13 @@
 }
 % Секции без номеров (введение, заключение...), вместо section*{}
 \newcommand{\Anonchapter}[1]{
-    \AnonchapterNoToc{#1}
+    \clearpage        
+    \phantomsection % Корректный переход по ссылкам в содержании
+    \begin{center}
+        \bfseries\MakeTextUppercase{#1}
+    \end{center}
     \addcontentsline{toc}{chapter}{#1}
+    \par
 }
 
 % % Секция для аннотации (она не включается в содержание)
@@ -282,19 +299,6 @@
     \setlength{\itemsep}{0pt}
 }
 \makeatother
-
-\usepackage{lastpage} % Подсчет количества страниц
-%\setcounter{page}{1}  % Начало нумерации страниц
-
-\usepackage{totcount}
-\newtotcounter{citenum}
-\def\oldbibitem{} \let\oldbibitem=\bibitem
-\def\bibitem{\stepcounter{citenum}\oldbibitem}
-
-\usepackage[figure,table,equation]{totalcount}
-
-\usepackage{setspace}
-\usepackage[normalem]{ulem} 
 
 \newenvironment{Underequation}{
     \noindent

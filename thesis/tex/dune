@@ -16,6 +16,8 @@
   thesis.tex
   preamble.tex
   a1-title.tex
+  s1-title.tex
+  s2-assignment.tex
   a2-synopsis.tex
   a3-toc.tex
   a4-intro.tex
@@ -28,6 +30,7 @@
  (action
   (progn
    (run %{bin:xelatex} "thesis.tex")
+   (run %{bin:xelatex} "thesis.tex")
    (run %{bin:xelatex} "thesis.tex"))))
 
 (rule
@@ -35,7 +38,6 @@
  (deps assignment.tex preamble.tex s1-title.tex s2-assignment.tex)
  (action
   (progn
-   (run %{bin:xelatex} "assignment.tex")
    (run %{bin:xelatex} "assignment.tex"))))
 
 (rule
@@ -51,5 +53,6 @@
   ../images/chapgame_2.png)
  (action
   (progn
+   (run %{bin:xelatex} "presentation.tex")
    (run %{bin:xelatex} "presentation.tex")
    (run %{bin:xelatex} "presentation.tex"))))
