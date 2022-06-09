@@ -19,9 +19,6 @@ module type S = sig
   type 'result t =
     | ScalarConst : scalar -> scalar t
     | VectorConst : vector -> vector t
-    | ScalarNegInf : scalar t
-    | ScalarPosInf : scalar t
-    | ScalarZero : scalar t
     | ScalarVar : key -> scalar t
     | VectorVar : key * key -> vector t
     | Sum : 'a t * 'a t -> 'a t

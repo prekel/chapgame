@@ -9,20 +9,16 @@ struct
   module N = N
   module Var = Var
   module Scope = Scope
+  module Vector = Common.Vector.Make (N)
 
   type key = Var.t [@@deriving sexp, equal]
   type scalar = N.t [@@deriving sexp, equal]
   type vector = N.t * N.t [@@deriving sexp, equal]
   type scope = Scope.t [@@deriving sexp, equal]
 
-  module VectorOps = Common.Vector.Make (N)
-
   type 'result t =
     | ScalarConst : scalar -> scalar t
     | VectorConst : vector -> vector t
-    | ScalarNegInf : scalar t
-    | ScalarPosInf : scalar t
-    | ScalarZero : scalar t
     | ScalarVar : key -> scalar t
     | VectorVar : key * key -> vector t
     | Sum : 'a t * 'a t -> 'a t
@@ -44,8 +40,6 @@ struct
     match a, b with
     | ScalarConst a, ScalarConst b -> N.(a = b)
     | VectorConst (ax, ay), VectorConst (bx, by) -> N.(ax = bx) && N.(ay = by)
-    | ScalarNegInf, ScalarNegInf | ScalarPosInf, ScalarPosInf | ScalarZero, ScalarZero ->
-      true
     | ScalarVar a, ScalarVar b -> Var.(equal a b)
     | VectorVar (a_x, a_y), VectorVar (b_x, b_y) -> Var.(equal a_x b_x && equal a_y b_y)
     | Sum (al, ar), Sum (bl, br)
@@ -69,17 +63,8 @@ struct
   let equal_t_scalar = equal
   let equal_t_vector = equal
 
-  type trig_op =
-    [ `Cos
-    | `Sin
-    ]
-  [@@deriving sexp, equal]
-
   let rec t_scalar_of_sexp = function
     | Sexp.List [ Atom "ScalarConst"; s ] -> ScalarConst (scalar_of_sexp s)
-    | Sexp.List [ Atom "ScalarNegInf" ] -> ScalarNegInf
-    | Sexp.List [ Atom "ScalarPosInf" ] -> ScalarPosInf
-    | Sexp.List [ Atom "ScalarZero" ] -> ScalarZero
     | Sexp.List [ Atom "ScalarVar"; key ] -> ScalarVar (key_of_sexp key)
     | Sexp.List [ Atom "Sum"; a; b ] -> Sum (t_scalar_of_sexp a, t_scalar_of_sexp b)
     | Sexp.List [ Atom "SumList"; l ] -> SumList (List.t_of_sexp t_scalar_of_sexp l)
@@ -114,9 +99,6 @@ struct
   let rec sexp_of_t : type result. result t -> Sexp.t = function
     | ScalarConst s -> List [ Atom "ScalarConst"; [%sexp (s : scalar)] ]
     | VectorConst v -> List [ Atom "VectorConst"; [%sexp (v : vector)] ]
-    | ScalarNegInf -> List [ Atom "ScalarNegInf" ]
-    | ScalarPosInf -> List [ Atom "ScalarPosInf" ]
-    | ScalarZero -> List [ Atom "ScalarZero" ]
     | ScalarVar s -> List [ Atom "ScalarVar"; [%sexp (s : key)] ]
     | VectorVar (x, y) -> List [ Atom "VectorVar"; [%sexp (x : key)]; [%sexp (y : key)] ]
     | Sum (a, b) -> List [ Atom "Sum"; sexp_of_t a; sexp_of_t b ]
@@ -148,9 +130,6 @@ struct
    fun ~values ~scoped_values (module Ops) -> function
     | ScalarConst x -> x
     | VectorConst x -> x
-    | ScalarNegInf -> N.neg_infinity
-    | ScalarPosInf -> N.infinity
-    | ScalarZero -> N.zero
     | ScalarVar name -> values name
     | VectorVar (name_x, name_y) -> values name_x, values name_y
     | Sum (a, b) ->
@@ -160,21 +139,16 @@ struct
       Ops.(ca + cb)
     | SumList l ->
       let calc = calc ~values ~scoped_values (module Ops) in
-      let c = List.sum (module Ops) l ~f:calc in
-      c
+      List.sum (module Ops) l ~f:calc
     | Sub (a, b) ->
       let calc = calc ~values ~scoped_values (module Ops) in
-      let ca = calc a in
-      let cb = calc b in
-      Ops.(ca - cb)
+      Ops.(calc a - calc b)
     | Sqr a ->
       let ca = calc ~values ~scoped_values (module Ops) a in
       Ops.(ca * ca)
     | Mult (a, b) ->
       let calc = calc ~values ~scoped_values (module Ops) in
-      let ca = calc a in
-      let cb = calc b in
-      Ops.(ca * cb)
+      Ops.(calc a * calc b)
     | Div (a, b) ->
       let calc = calc ~values ~scoped_values (module Ops) in
       let ca = calc a in
@@ -184,16 +158,16 @@ struct
       let ca = calc ~values ~scoped_values (module Ops) a in
       Ops.(-ca)
     | XOfVector v ->
-      let x, _y = calc ~values ~scoped_values (module VectorOps) v in
+      let x, _y = calc ~values ~scoped_values (module Vector) v in
       x
     | YOfVector v ->
-      let _x, y = calc ~values ~scoped_values (module VectorOps) v in
+      let _x, y = calc ~values ~scoped_values (module Vector) v in
       y
     | LengthOfVector v ->
-      let x, y = calc ~values ~scoped_values (module VectorOps) v in
+      let x, y = calc ~values ~scoped_values (module Vector) v in
       N.(sqrt ((x * x) + (y * y)))
     | UnitVector v ->
-      let x, y = calc ~values ~scoped_values (module VectorOps) v in
+      let x, y = calc ~values ~scoped_values (module Vector) v in
       let length = N.(sqrt ((x * x) + (y * y))) in
       N.(if equal length zero then zero, zero else x / length, y / length)
     | VectorOfXY (a, b) ->

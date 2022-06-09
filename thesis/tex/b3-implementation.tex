@@ -141,6 +141,37 @@
 
 Таким образом, реализован метод численного решения алгебраических уравнений, описанный в пункте~\ref{solvefourthdegree}.
 
+\section{Символьные вычисления}\label{expr}
+
+Это часть проекта призвана обобщить вычисление коэффициентов одночленов, когда требуется перемножать или складывать многочлены.
+Для этого выражание представлено \TODO
+Диаграмма модулей приведена на рисунке \ref{exprdiagramfig}. В таблице \ref{exprtable} показано их место в реализации и расшифровка.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=8cm,trim={1cm 9cm 6cm 1cm},clip]{exprdiagram}
+    \caption{Диаграмма модулей библиотеки символьных вычислений\label{exprdiagramfig}}
+\end{figure}
+
+\begin{centering}
+    \begin{longtable}{|l|l|l|}
+        \caption{Модули библиотеки символьных вычислений} \label{exprtable}                                                                                                                                                  \\
+
+        \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                              & \multicolumn{1}{c|}{\textbf{Расшифровка}} \\ \hline
+        \endfirsthead
+
+        \multicolumn{3}{c}%
+        {\hspace{-12.5cm}{Окончание таблицы \thetable} \vspace{1ex}}                                                                                                                                                         \\
+        \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                              & \multicolumn{1}{c|}{\textbf{Расшифровка}} \\ \hline
+        \endhead
+
+        \multirow{2}{*}{Coeff}                                & \href{https://github.com/prekel/chapgame/blob/master/lib/expr/coeff.ml}{lib/expr/coeff.ml}                       & \multirow{2}{*}{Коэффициент}              \\*
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/expr/coeff\_intf.ml}{lib/expr/coeff\_intf.ml}           &                                           \\ \hline
+        \multirow{2}{*}{Polynomial}                           & \href{https://github.com/prekel/chapgame/blob/master/lib/expr/polynomial.ml}{lib/expr/polynomial.ml}             & \multirow{2}{*}{Многочлен}                \\*
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/expr/polynomial\_intf.ml}{lib/expr/polynomial\_intf.ml} &                                           \\ \hline
+    \end{longtable}
+\end{centering}
+
 \section{Движок}\label{engine}
 
 Архитектура движка имеет более плоскую и последовательную структуру, поэтому нет смысла приводить диаграмму.
@@ -191,16 +222,6 @@
 \end{centering}
 
 \TODO
-
-\subsection{Символьные вычисления}\label{expr}
-
-\TODO
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=8cm,trim={1cm 9cm 6cm 1cm},clip]{exprdiagram}
-    \caption{Диаграмма модулей библиотеки символьных вычислений\label{exprdiagramfig}}
-\end{figure}
 
 \TODO
 
