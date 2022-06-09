@@ -1,22 +1,21 @@
-(* open Core
+open Core
 open Lwt.Let_syntax
+module S = Engine
 
-module Make
-    (C : Engine.Module_types.CONSTS)
-    (S : module type of Engine.Scene.Make (C)) (R : sig
-      val replay : string -> S.Model.t
-    end) =
-    struct
+module Make (R : sig
+  val replay : string -> S.Model.t
+end) =
+struct
   include
-    Generic_room.Make (C) (S) (R)
+    Generic_room.Make
+      (R)
       (struct
-        type t = unit [@@deriving sexp, equal]
+        include Unit
 
         let empty = ()
       end)
 
-  module N = C.N
-  module Request = Protocol.Request.Make (C) (S)
+  module Request = Protocol.Request
 
   let update_room (room : Room.t) Request.{ time; speed; action } =
     Lwt_mutex.with_lock room.lock (fun () ->
@@ -25,7 +24,7 @@ module Make
           | `Action _ as a ->
             let%map model, diff =
               Lwt_preemptive.detach
-                (fun (model, action) -> S.Engine.recv_with_diff model ~action)
+                (fun (model, action) -> S.recv_with_diff model ~action)
                 (room.model, a)
             in
             model, Some diff
@@ -54,4 +53,4 @@ module Make
   ;;
 
   let route = Dream.scope "/room" [ inject_rooms ] (action_route :: generic_routes)
-end *)
+end

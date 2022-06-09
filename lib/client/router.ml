@@ -37,7 +37,7 @@ let fake_router =
       | `Online -> Effect.Ignore
     in
     Bar.component
-      ~inner:(Bonsai.Value.return Error_pages.tbd)
+      ~inner:(Bonsai.Value.return Error_pages.online_dummy)
       ~outer:(Bonsai.Value.return Vdom.Node.none)
       ~opened_tab:`Online
       ~tab_click
@@ -55,7 +55,7 @@ let router =
       ~tab_click:
         (Bonsai.Value.return (function
             | `Offline -> Effect.Ignore
-            | `Online -> Location.push (Online.route 1 None)))
+            | `Online -> Location.push Online_chooser.route))
   | [ "online"; room_id ], token ->
     let%sub inner, outer =
       Online.component
@@ -72,6 +72,16 @@ let router =
         (Bonsai.Value.return (function
             | `Offline -> Location.push Offline.route
             | `Online -> Effect.Ignore))
+  | [ "online" ], _ ->
+    let%sub inner = Online_chooser.component in
+    Bar.component
+      ~inner
+      ~outer:(Bonsai.Value.return Vdom.Node.none)
+      ~opened_tab:`Online
+      ~tab_click:
+        (Bonsai.Value.return (function
+            | `Offline -> Location.push Offline.route
+            | `Online -> Effect.Ignore))
   | _ ->
     Bar.component
       ~inner:(Bonsai.Value.return Error_pages.not_found)
@@ -80,7 +90,7 @@ let router =
       ~tab_click:
         (Bonsai.Value.return (function
             | `Offline -> Location.push Offline.route
-            | `Online -> Location.push (Online.route 1 None)))
+            | `Online -> Location.push Online_chooser.route))
 ;;
 
 let component =

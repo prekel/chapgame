@@ -1,20 +1,18 @@
-(* open Core
+open Core
 open Lwt.Let_syntax
+module S = Engine
 
 let random = Stdlib.Random.State.make_self_init ()
 
-module Make
-    (C : Engine.Module_types.CONSTS)
-    (S : module type of Engine.Scene.Make (C)) (R : sig
-      val replay : string -> S.Model.t
-    end) (Payload : sig
-      type t [@@deriving sexp, equal]
+module Make (R : sig
+  val replay : string -> S.Model.t
+end) (Payload : sig
+  type t [@@deriving sexp, equal]
 
-      val empty : t
-    end) =
-    struct
-  module N = C.N
-  module Response = Protocol.Response.Make (C) (S) (Payload)
+  val empty : t
+end) =
+struct
+  module Response = Protocol.Response.Make (Payload)
 
   module Client = struct
     module Id = Common.Utils.MakeIntId (struct
@@ -39,8 +37,8 @@ module Make
       { model : S.Model.t
       ; clients : (Clients.t[@sexp.opaque])
       ; lock : (Lwt_mutex.t[@sexp.opaque])
-      ; time : N.t
-      ; speed : N.t
+      ; time : float
+      ; speed : float
       ; payload : Payload.t
       ; token : (string[@sexp.opaque])
       }
@@ -63,8 +61,8 @@ module Make
       { model
       ; clients = Clients.create ()
       ; lock = Lwt_mutex.create ()
-      ; time = N.zero
-      ; speed = N.one
+      ; time = Float.zero
+      ; speed = Float.one
       ; payload
       ; token =
           (match token with
@@ -155,4 +153,4 @@ module Make
               loop ()))
     ]
   ;;
-end *)
+end

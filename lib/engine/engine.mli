@@ -233,3 +233,5 @@ val update
        | `Replace of Model.t
        ]
   -> Model.t
+
+val recv_with_diff : Model.t -> action:[< `Action of Action.t ] -> Model.t * Model.Diff.t

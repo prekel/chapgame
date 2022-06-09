@@ -1,8 +1,6 @@
 open Core
 open Lwt.Let_syntax
-
-(* module Room = Room.Make (Defaults.C) (Defaults.S) (struct let replay _ = assert false
-   end) *)
+module Room = Room.Make (Protocol.Defaults.Replays)
 
 let loader path ~content_type =
   match Assets.read path with
@@ -22,8 +20,8 @@ let main () =
   Dream.run ~interface:"0.0.0.0"
   @@ Dream.logger
   @@ Dream.router
-       [ (* Dream.scope "/api" [] [ Room.route ]; *)
-         Dream.scope
+       [ Dream.scope "/api" [] [ Room.route ]
+       ; Dream.scope
            "/"
            [ Dream_encoding.compress ]
            [ Dream.get "/client_bin.bc.js" (fun _ -> Dream.empty `No_Content)
