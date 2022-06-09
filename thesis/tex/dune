@@ -27,12 +27,12 @@
   b4-usage.tex
   c1-outro.tex
   c2-bibliography.tex
-  ../images/solver.svg)
+  ../images/solver.pdf)
  (action
   (progn
-   (run %{bin:xelatex} "--shell-escape" "thesis.tex")
-   (run %{bin:xelatex} "--shell-escape" "thesis.tex")
-   (run %{bin:xelatex} "--shell-escape" "thesis.tex"))))
+   (run %{bin:xelatex} "thesis.tex")
+   (run %{bin:xelatex} "thesis.tex")
+   (run %{bin:xelatex} "thesis.tex"))))
 
 (rule
  (target assignment.pdf)

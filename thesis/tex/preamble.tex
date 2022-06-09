@@ -57,11 +57,7 @@
 \usepackage{longtable}
 
 % Пути к каталогам с изображениями
-\usepackage{graphicx,xcolor} % Вставка картинок и дополнений
-\usepackage{svg}
-\usepackage[off]{svg-extract}
-\svgsetup{clean=true}
-\usepackage{relsize}
+\usepackage{graphicx} % Вставка картинок и дополнений
 \graphicspath{ {../images/} }
 
 % Формат подрисуночных записей
@@ -103,7 +99,7 @@
 \makeatletter
 \renewcommand*{\@biblabel}[1]{\hfill#1.}
 \renewcommand*\l@section{\@dottedtocline{1}{1em}{1em}}
-\renewcommand{\thefigure}{\thesection.\arabic{figure}} % Формат рисунка секция.номер
+\renewcommand{\thefigure}{\arabic{figure}} % Формат рисунка секция.номер
 \renewcommand{\thetable}{\arabic{table}}   % Формат таблицы секция.номер
 \def\redeflsection{\def\l@section{\@dottedtocline{1}{0em}{10em}}}
 \makeatother
@@ -168,6 +164,7 @@
 \captionsetup[figure]{justification=centering, labelsep=defffis, format=plain} % Подпись рисунка по центру
 \captionsetup[table]{justification=raggedright, labelsep=defffis, format=plain, singlelinecheck=false} % Подпись таблицы слева
 \addto\captionsrussian{\renewcommand{\figurename}{Рисунок}} % Имя фигуры
+\setlength\intextsep{0pt}
 
 % Пользовательские функции
 % \newcommand{\addimg}[4]{ % Добавление одного рисунка

@@ -45,10 +45,16 @@
 
 \section{Реализация метода решения алгебраических уравнений}
 
-\begin{figure}
-    \includesvg[width=\linewidth]{solver}
-    \caption{An example figure with \LaTeX~support\label{fig:example}}
+Trtortnro. TRStrtrs. \TODO. Trtortnro. TRStrtrs. \TODO. Trtortnro. TRStrtrs. \TODO. Trtortnro. TRStrtrs. \TODO.  Trtortnro. TRStrtrs. \TODO.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=10cm,trim={1cm 3cm 1cm 2cm},clip]{solver}
+    \caption{Диаграмма модулей решателя алгебраических уравнений\label{fig:example}}
 \end{figure}
+
+
+Trtortnro. TRStrtrs. \TODO.  Trtortnro. TRStrtrs. \TODO.  Trtortnro. TRStrtrs. \TODO.  Trtortnro. TRStrtrs. \TODO.  Trtortnro. TRStrtrs. \TODO.  Trtortnro. TRStrtrs. \TODO.
 
 \begin{centering}
     \begin{longtable}{|l|l|l|}
@@ -62,13 +68,13 @@
         \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                                                      & \multicolumn{1}{c|}{\textbf{Расшифровка}}     \\ \hline
         \endhead
 
-        \multirow{2}{*}{Interval}                             & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/interval.ml}{lib/solver/interval.ml}                                     & \multirow{2}{*}{Промежуток}                   \\\nopagebreak \cline{2-2}
+        \multirow{2}{*}{Interval}                             & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/interval.ml}{lib/solver/interval.ml}                                     & \multirow{2}{*}{Промежуток}                   \\*
                                                               & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/interval\_intf.ml}{lib/solver/interval\_intf.ml}                         &                                               \\ \hline
-        \multirow{2}{*}{Polynomial}                           & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/polynomial.ml}{lib/solver/polynomial.ml}                                 & \multirow{2}{*}{Многочлен}                    \\\nopagebreak \cline{2-2}
+        \multirow{2}{*}{Polynomial}                           & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/polynomial.ml}{lib/solver/polynomial.ml}                                 & \multirow{2}{*}{Многочлен}                    \\*
                                                               & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/polynomial\_intf.ml}{lib/solver/polynomial\_intf.ml}                     &                                               \\ \hline
-        \multirow{2}{*}{Bisection}                            & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/bisection.ml}{lib/solver/bisection.ml}                                   & \multirow{2}{*}{Бисекция}                     \\\nopagebreak \cline{2-2}
+        \multirow{2}{*}{Bisection}                            & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/bisection.ml}{lib/solver/bisection.ml}                                   & \multirow{2}{*}{Бисекция}                     \\*
                                                               & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/bisection\_intf.ml}{lib/solver/bisection\_intf.ml}                       &                                               \\ \hline
-        \multirow{2}{*}{Polynomial\_equation}                 & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/polynomial\_equation.ml}{lib/solver/polynomial\_equation.ml}             & \multirow{2}{3.4cm}{Алгебраическое уравнение} \\\nopagebreak \cline{2-2}
+        \multirow{2}{*}{Polynomial\_equation}                 & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/polynomial\_equation.ml}{lib/solver/polynomial\_equation.ml}             & \multirow{2}{3.4cm}{Алгебраическое уравнение} \\*
                                                               & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/polynomial\_equation\_intf.ml}{lib/solver/polynomial\_equation\_intf.ml} &                                               \\ \hline
     \end{longtable}
 \end{centering}
@@ -139,31 +145,34 @@
         \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                                            & \multicolumn{1}{c|}{\textbf{Расшифровка}}   \\ \hline
         \endhead
 
-        \multirow{2}{*}{Body}                                 & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/body.ml}{lib/engine/body.ml}                                   & \multirow{2}{*}{Тело}                       \\\nopagebreak \cline{2-2}
+        \hline
+        \endfoot
+
+        \multirow{2}{*}{Body}                                 & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/body.ml}{lib/engine/body.ml}                                   & \multirow{2}{*}{Тело}                       \\*
                                                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/body.mli}{lib/engine/body.mli}                                 &                                             \\ \hline
-        \multirow{2}{*}{Bodies}                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/bodies.ml}{lib/engine/bodies.ml}                               & \multirow{2}{*}{Тела}                       \\\nopagebreak \cline{2-2}
+        \multirow{2}{*}{Bodies}                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/bodies.ml}{lib/engine/bodies.ml}                               & \multirow{2}{*}{Тела}                       \\*
                                                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/bodies.mli}{lib/engine/bodies.mli}                             &                                             \\ \hline
-        \multirow{2}{*}{Collision\_detection}                 & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/collision\_detection.ml}{lib/engine/collision\_detection.ml}   & \multirow{2}{2cm}{Обнаружение столкновений} \\\nopagebreak \cline{2-2}
+        \multirow{2}{*}{Collision\_detection}                 & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/collision\_detection.ml}{lib/engine/collision\_detection.ml}   & \multirow{2}{2cm}{Обнаружение столкновений} \\*
                                                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/collision\_detection.mli}{lib/engine/collision\_detection.mli} &                                             \\ \hline
-        \multirow{2}{*}{Collision\_handle}                    & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/collision\_handle.ml}{lib/engine/collision\_handle.ml}         & \multirow{2}{*}{Обработка ударов}           \\\nopagebreak \cline{2-2}
+        \multirow{2}{*}{Collision\_handle}                    & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/collision\_handle.ml}{lib/engine/collision\_handle.ml}         & \multirow{2}{*}{Обработка ударов}           \\*
                                                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/collision\_handle.mli}{lib/engine/collision\_handle.mli}       &                                             \\ \hline
-        \multirow{2}{*}{Action}                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/action.ml}{lib/engine/action.ml}                               & \multirow{2}{*}{Действие}                   \\\nopagebreak \cline{2-2}
+        \multirow{2}{*}{Action}                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/action.ml}{lib/engine/action.ml}                               & \multirow{2}{*}{Действие}                   \\*
                                                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/action.mli}{lib/engine/action.mli}                             &                                             \\ \hline
-        \multirow{2}{*}{Line}                                 & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/line.ml}{lib/engine/line.ml}                                   & \multirow{2}{*}{Линия}                      \\\nopagebreak \cline{2-2}
+        \multirow{2}{*}{Line}                                 & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/line.ml}{lib/engine/line.ml}                                   & \multirow{2}{*}{Линия}                      \\*
                                                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/line.mli}{lib/engine/line.mli}                                 &                                             \\ \hline
-        \multirow{2}{*}{Model}                                & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/model.ml}{lib/engine/model.ml}                                 & \multirow{2}{*}{Модель}                     \\\nopagebreak \cline{2-2}
+        \multirow{2}{*}{Model}                                & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/model.ml}{lib/engine/model.ml}                                 & \multirow{2}{*}{Модель}                     \\*
                                                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/model.mli}{lib/engine/model.mli}                               &                                             \\ \hline
-        \multirow{2}{*}{Point}                                & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/point.ml}{lib/engine/point.ml}                                 & \multirow{2}{*}{Точка}                      \\\nopagebreak \cline{2-2}
+        \multirow{2}{*}{Point}                                & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/point.ml}{lib/engine/point.ml}                                 & \multirow{2}{*}{Точка}                      \\*
                                                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/point.mli}{lib/engine/point.mli}                               &                                             \\ \hline
-        \multirow{2}{*}{Rule}                                 & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/rule.ml}{lib/engine/rule.ml}                                   & \multirow{2}{*}{Правило}                    \\\nopagebreak \cline{2-2}
+        \multirow{2}{*}{Rule}                                 & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/rule.ml}{lib/engine/rule.ml}                                   & \multirow{2}{*}{Правило}                    \\*
                                                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/rule.mli}{lib/engine/rule.mli}\TODO                            &                                             \\ \hline
-        \multirow{2}{*}{Scene}                                & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/scene.ml}{lib/engine/scene.ml}                                 & \multirow{2}{*}{Сцена}                      \\\nopagebreak \cline{2-2}
+        \multirow{2}{*}{Scene}                                & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/scene.ml}{lib/engine/scene.ml}                                 & \multirow{2}{*}{Сцена}                      \\*
                                                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/scene.mli}{lib/engine/scene.mli}\TODO                          &                                             \\ \hline
-        \multirow{2}{*}{Scenes}                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/scenes.ml}{lib/engine/scenes.ml}                               & \multirow{2}{*}{Сцены}                      \\\nopagebreak \cline{2-2}
+        \multirow{2}{*}{Scenes}                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/scenes.ml}{lib/engine/scenes.ml}                               & \multirow{2}{*}{Сцены}                      \\*
                                                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/scenes.mli}{lib/engine/scenes.mli}                             &                                             \\ \hline
-        \multirow{2}{*}{Values}                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/values.ml}{lib/engine/values.ml}                               & \multirow{2}{*}{Значения}                   \\\nopagebreak \cline{2-2}
+        \multirow{2}{*}{Values}                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/values.ml}{lib/engine/values.ml}                               & \multirow{2}{*}{Значения}                   \\*
                                                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/values.mli}{lib/engine/values.mli}                             &                                             \\ \hline
-        \multirow{2}{*}{Engine}                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/engine.ml}{lib/engine/engine.ml}                               & \multirow{2}{*}{Движок}                     \\\nopagebreak \cline{2-2}
+        \multirow{2}{*}{Engine}                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/engine.ml}{lib/engine/engine.ml}                               & \multirow{2}{*}{Движок}                     \\*
                                                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/engine.mli}{lib/engine/engine.mli}                             &                                             \\ \hline
     \end{longtable}
 \end{centering}
