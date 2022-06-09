@@ -47,7 +47,32 @@
 
 \TODO Рисунок
 
-\TODO Таблица
+\begin{centering}
+    \begin{longtable}{|l|l|l|}
+        \caption{Модули решателя алгебраических уравнений} \label{solvermodules}                                                                                                                                                                         \\
+
+        \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                                                      & \multicolumn{1}{c|}{\textbf{Расшифровка}}     \\ \hline
+        \endfirsthead
+
+        \multicolumn{3}{c}%
+        {\hspace{-12.5cm}{Окончание таблицы \thetable} \vspace{1ex}}                                                                                                                                                                                     \\
+        \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                                                      & \multicolumn{1}{c|}{\textbf{Расшифровка}}     \\ \hline
+        \endhead
+
+        \multirow{3}{*}{Interval}                             & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/interval.ml}{lib/solver/interval.ml}                                     & \multirow{3}{*}{Промежуток}                   \\\nopagebreak \cline{2-2}
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/interval\_intf.ml}{lib/solver/interval\_intf.ml}                         &                                               \\\nopagebreak \cline{2-2}
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/interval.mli}{lib/solver/interval.mli}                                   &                                               \\ \hline
+        \multirow{3}{*}{Polynomial}                           & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/polynomial.ml}{lib/solver/polynomial.ml}                                 & \multirow{3}{*}{Многочлен}                    \\\nopagebreak \cline{2-2}
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/polynomial\_intf.ml}{lib/solver/polynomial\_intf.ml}                     &                                               \\\nopagebreak \cline{2-2}
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/polynomial.mli}{lib/solver/polynomial.mli}                               &                                               \\ \hline
+        \multirow{3}{*}{Bisection}                            & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/bisection.ml}{lib/solver/bisection.ml}                                   & \multirow{3}{*}{Бисекция}                     \\\nopagebreak \cline{2-2}
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/bisection\_intf.ml}{lib/solver/bisection\_intf.ml}                       &                                               \\\nopagebreak \cline{2-2}
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/bisection.mli}{lib/solver/bisection.mli}                                 &                                               \\ \hline
+        \multirow{3}{*}{Polynomial\_equation}                 & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/polynomial\_equation.ml}{lib/solver/polynomial\_equation.ml}             & \multirow{3}{3.4cm}{Алгебраическое уравнение} \\\nopagebreak \cline{2-2}
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/polynomial\_equation\_intf.ml}{lib/solver/polynomial\_equation\_intf.ml} &                                               \\\nopagebreak \cline{2-2}
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/polynomial\_equation.mli}{lib/solver/polynomial\_equation.mli}           &                                               \\ \hline
+    \end{longtable}
+\end{centering}
 
 \textbf{Промежуток}. Промежуток представлен алгебраическим типом данных
 (алгебраический тип данных в функциональном программировании~-- размеченное объединение
@@ -100,37 +125,49 @@
 
 \section{Движок}\label{engine}
 
-Архитектура движка имеет более плоскую и последовательную структуру, поэтому нет смысла приводить диаграмму. \TODO
+Архитектура движка имеет более плоскую и последовательную структуру, поэтому нет смысла приводить диаграмму.
+В таблице \ref{enginemodules} представлены названия модулей и файлы модулей, далее описана их работа.
 
-\vspace{-1em}
-\begin{center}
+\begin{centering}
     \begin{longtable}{|l|l|l|}
-        \caption{Таблица} \label{tab:long}                                                                                                            \\
+        \caption{Модули движка} \label{enginemodules}                                                                                             \\
 
-        \hline \multicolumn{1}{|c|}{\textbf{First column}} & \multicolumn{1}{c|}{\textbf{Second column}} & \multicolumn{1}{c|}{\textbf{Third column}} \\ \hline
+        \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}} & \multicolumn{1}{c|}{\textbf{Расшифровка}}   \\ \hline
         \endfirsthead
 
         \multicolumn{3}{c}%
-        {\hspace{-12.5cm}{Окончание таблицы \thetable} \vspace{1ex}}                                                                                  \\
-        \hline \multicolumn{1}{|c|}{\textbf{First column}} & \multicolumn{1}{c|}{\textbf{Second column}} & \multicolumn{1}{c|}{\textbf{Third column}} \\ \hline
+        {\hspace{-12.5cm}{Окончание таблицы \thetable} \vspace{1ex}}                                                                              \\
+        \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}} & \multicolumn{1}{c|}{\textbf{Расшифровка}}   \\ \hline
         \endhead
 
-        One                                                & abcdef ghjijklmn                            & 123.456778                                 \\ \hline
-        One                                                & abcdef ghjijklmn                            & 123.456778                                 \\ \hline
-        One                                                & abcdef ghjijklmn                            & 123.456778                                 \\ \hline
-        One                                                & abcdef ghjijklmn                            & 123.456778                                 \\ \hline
-        One                                                & abcdef ghjijklmn                            & 123.456778                                 \\ \hline
-        One                                                & abcdef ghjijklmn                            & 123.456778                                 \\ \hline
-        One                                                & abcdef ghjijklmn                            & 123.456778                                 \\ \hline
-        One                                                & abcdef ghjijklmn                            & 123.456778                                 \\ \hline
-        One                                                & abcdef ghjijklmn                            & 123.456778                                 \\ \hline
-        One                                                & abcdef ghjijklmn                            & 123.456778                                 \\ \hline
-        One                                                & abcdef ghjijklmn                            & 123.456778                                 \\ \hline
-        One                                                & abcdef ghjijklmn                            & 123.456778                                 \\ \hline
-        One                                                & abcdef ghjijklmn                            & 123.456778                                 \\ \hline
+        \multirow{2}{*}{Body}                                 & lib/engine/body.ml                  & \multirow{2}{*}{Тело}                       \\\nopagebreak \cline{2-2}
+                                                              & lib/engine/body.mli                 &                                             \\ \hline
+        \multirow{2}{*}{Bodies}                               & lib/engine/bodies.ml                & \multirow{2}{*}{Тела}                       \\\nopagebreak \cline{2-2}
+                                                              & lib/engine/bodies.mli               &                                             \\ \hline
+        \multirow{2}{*}{Collision\_detection}                 & lib/engine/collision\_detection.ml  & \multirow{2}{2cm}{Обнаружение столкновений} \\\nopagebreak \cline{2-2}
+                                                              & lib/engine/collision\_detection.mli &                                             \\ \hline
+        \multirow{2}{*}{Collision\_handle}                    & lib/engine/collision\_handle.ml     & \multirow{2}{*}{Обработка ударов}           \\\nopagebreak \cline{2-2}
+                                                              & lib/engine/collision\_handle.mli    &                                             \\ \hline
+        \multirow{2}{*}{Action}                               & lib/engine/action.ml                & \multirow{2}{*}{Действие}                   \\\nopagebreak \cline{2-2}
+                                                              & lib/engine/action.mli               &                                             \\ \hline
+        \multirow{2}{*}{Line}                                 & lib/engine/line.ml                  & \multirow{2}{*}{Линия}                      \\\nopagebreak \cline{2-2}
+                                                              & lib/engine/line.mli                 &                                             \\ \hline
+        \multirow{2}{*}{Model}                                & lib/engine/model.ml                 & \multirow{2}{*}{Модель}                     \\\nopagebreak \cline{2-2}
+                                                              & lib/engine/model.mli                &                                             \\ \hline
+        \multirow{2}{*}{Point}                                & lib/engine/point.ml                 & \multirow{2}{*}{Точка}                      \\\nopagebreak \cline{2-2}
+                                                              & lib/engine/point.mli                &                                             \\ \hline
+        \multirow{2}{*}{Rule}                                 & lib/engine/rule.ml                  & \multirow{2}{*}{Правило}                    \\\nopagebreak \cline{2-2}
+                                                              & lib/engine/rule.mli\TODO            &                                             \\ \hline
+        \multirow{2}{*}{Scene}                                & lib/engine/scene.ml                 & \multirow{2}{*}{Сцена}                      \\\nopagebreak \cline{2-2}
+                                                              & lib/engine/scene.mli\TODO           &                                             \\ \hline
+        \multirow{2}{*}{Scenes}                               & lib/engine/scenes.ml                & \multirow{2}{*}{Сцены}                      \\\nopagebreak \cline{2-2}
+                                                              & lib/engine/scenes.mli               &                                             \\ \hline
+        \multirow{2}{*}{Values}                               & lib/engine/values.ml                & \multirow{2}{*}{Значения}                   \\\nopagebreak \cline{2-2}
+                                                              & lib/engine/values.mli               &                                             \\ \hline
+        \multirow{2}{*}{Engine}                               & lib/engine/engine.ml                & \multirow{2}{*}{Движок}                     \\\nopagebreak \cline{2-2}
+                                                              & lib/engine/engine.mli               &                                             \\ \hline
     \end{longtable}
-\end{center}
-\vspace{-2em}
+\end{centering}
 
 \TODO
 
