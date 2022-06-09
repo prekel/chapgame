@@ -17,20 +17,23 @@ struct
 
   module Request = Protocol.Request
 
-  let update_room (room : Room.t) Request.{ time; speed; action } =
-    Lwt_mutex.with_lock room.lock (fun () ->
-        let%map model, diff =
-          match action with
-          | `Action _ as a ->
-            let%map model, diff =
-              Lwt_preemptive.detach
-                (fun (model, action) -> S.recv_with_diff model ~action)
-                (room.model, a)
-            in
-            model, Some diff
-          | `Replace model -> Lwt.return (model, None)
-        in
-        { room with model; time; speed }, diff)
+  let update_room (room : Room.t) = function
+    | Request.SetTime _ -> assert false
+    | SetSpeed _ -> assert false
+    | Action { time; speed; action } ->
+      Lwt_mutex.with_lock room.lock (fun () ->
+          let%map model, diff =
+            match action with
+            | `Action _ as a ->
+              let%map model, diff =
+                Lwt_preemptive.detach
+                  (fun (model, action) -> S.recv_with_diff model ~action)
+                  (room.model, a)
+              in
+              model, Some diff
+            | `Replace model -> Lwt.return (model, None)
+          in
+          { room with model; time; speed }, diff)
   ;;
 
   let action_route =

@@ -1,5 +1,6 @@
 open Core
 open Js_of_ocaml
+open Bonsai_web
 
 type t =
   { websocket : (WebSockets.webSocket Js.t[@sexp.opaque])
@@ -63,8 +64,9 @@ let use url =
   and websocket = Bonsai.Var.value websocket_var in
   let send_message msg =
     match websocket with
-    | Some websocket -> websocket##send (Js.string msg)
-    | None -> ()
+    | Some websocket ->
+      Effect.of_sync_fun (fun msg -> websocket##send msg) (Js.string msg)
+    | None -> Effect.Ignore
   in
   send_message, last_message
 ;;

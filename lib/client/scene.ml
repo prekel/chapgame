@@ -1757,7 +1757,9 @@ let scene
       ~default_model:init_until
   in
   let%sub time, set_time, time_panel = time_panel ~time_changed_manually in
-  let%sub speed, _, _, set_pause, speed_panel = speed_panel ~speed_changed_manually in
+  let%sub speed, set_speed, _, set_pause, speed_panel =
+    speed_panel ~speed_changed_manually
+  in
   let%sub prolong =
     let%arr dispatch = dispatch
     and until = until in
@@ -1862,11 +1864,15 @@ let scene
   and lines_table = lines_table
   and points_table = points_table
   and until_panel = until_panel
-  and g_panel = g_panel in
+  and g_panel = g_panel
+  and set_speed = set_speed
+  and set_time = set_time in
   let open Vdom in
   let open Node in
   let open Attr in
-  ( div
+  ( set_time
+  , set_speed
+  , div
       ~attr:(classes [])
       [ export_import_clear
       ; time_panel

@@ -105,26 +105,20 @@ struct
     [ Dream.post "/create" (fun request ->
           let rooms = Dream.field request rooms_field |> Option.value_exn in
           let token = Dream.query request "token" in
-          match Dream.query request "replay_id" with
-          | Some replay_id ->
-            let id = Room.Id.next () in
-            Hashtbl.add_exn
-              rooms
-              ~key:id
-              ~data:(Room.init ~token ~payload:Payload.empty (R.replay replay_id));
-            Dream_ext.sexp [%sexp (id : Room.Id.t)]
-          | None ->
-            let%bind body = Dream.body request in
-            let id = Room.Id.next () in
-            Hashtbl.add_exn
-              rooms
-              ~key:id
-              ~data:
-                (Room.init
-                   ~token
-                   ~payload:Payload.empty
-                   (body |> Sexp.of_string |> [%of_sexp: S.Model.t]));
-            Dream_ext.sexp [%sexp (id : Room.Id.t)])
+          let id = Room.Id.next () in
+          let%bind room =
+            match Dream.query request "replay_id" with
+            | Some replay_id ->
+              Lwt.return (Room.init ~token ~payload:Payload.empty (R.replay replay_id))
+            | None ->
+              let%map body = Dream.body request in
+              Room.init
+                ~token
+                ~payload:Payload.empty
+                (body |> Sexp.of_string |> [%of_sexp: S.Model.t])
+          in
+          Hashtbl.add_exn rooms ~key:id ~data:room;
+          Dream_ext.sexp [%sexp (id, room.token : Room.Id.t * string)])
     ; Dream.get "/:room_id" (fun request ->
           let _, room, _ = room_of_request request in
           Dream_ext.sexp [%sexp (room : Room.t)])

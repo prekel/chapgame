@@ -12,8 +12,5 @@ struct
     }
   [@@deriving sexp, equal]
 
-  type t =
-    | Full of f
-    | Chunk of Engine.Model.Diff.t
-  [@@deriving sexp, equal]
+  type t = Full of f [@@deriving sexp, equal]
 end

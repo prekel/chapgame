@@ -26,8 +26,8 @@ let createroom =
                          in
                          Cohttp_lwt.Body.to_string body)
                    in
-                   let id = id_str |> Sexp.of_string |> [%of_sexp: int] in
-                   Location.push (Online.route id None))
+                   let id, token = id_str |> Sexp.of_string |> [%of_sexp: int * string] in
+                   Location.push (Online.route id (Some token)))
              ])
         [ text "Create" ]
     ]
