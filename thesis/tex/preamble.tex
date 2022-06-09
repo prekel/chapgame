@@ -57,8 +57,12 @@
 \usepackage{longtable}
 
 % Пути к каталогам с изображениями
-\usepackage{graphicx} % Вставка картинок и дополнений
-\graphicspath{{images/}}
+\usepackage{graphicx,xcolor} % Вставка картинок и дополнений
+\usepackage{svg}
+\usepackage[off]{svg-extract}
+\svgsetup{clean=true}
+\usepackage{relsize}
+\graphicspath{ {../images/} }
 
 % Формат подрисуночных записей
 \usepackage{chngcntr}
