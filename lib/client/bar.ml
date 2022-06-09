@@ -150,7 +150,7 @@ let component ~inner ~outer ~opened_tab ~tab_click =
                   ; a
                       ~attr:
                         (href
-                           "https://github.com/prekel/chapgame/blob/master/thesis/thesis.pdf")
+                           "https://raw.githubusercontent.com/prekel/chapgame/master/thesis/thesis.pdf")
                       [ text "bachelor thesis (RU)." ]
                   ; hr ()
                   ; text
@@ -171,8 +171,8 @@ let component ~inner ~outer ~opened_tab ~tab_click =
                   ; a
                       ~attr:
                         (href
-                           "https://github.com/prekel/chapgame/blob/master/thesis/thesis.pdf")
-                      [ text "дипломной работе." ]
+                           "https://raw.githubusercontent.com/prekel/chapgame/master/thesis/thesis.pdf")
+                      [ text "бакалаврской работе (ВКР)." ]
                   ]
               ]
           ]

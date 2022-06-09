@@ -27,7 +27,11 @@
   b4-usage.tex
   c1-outro.tex
   c2-bibliography.tex
-  ../images/solver.pdf)
+  ../images/solver.pdf
+  ../images/libsdiagram.pdf
+  ../images/derivative.pdf
+  ../images/roots.pdf
+  ../images/exprdiagram.pdf)
  (action
   (progn
    (run %{bin:xelatex} "thesis.tex")

@@ -1,6 +1,7 @@
 (* open Core *)
 
-let content = {|\begingroup
+let content =
+  {|\begingroup
 \renewcommand{\section}[2]{\Anonchapter{Список использованных источников}\vspace{-1em}}
 \begin{thebibliography}{00}
 
@@ -190,6 +191,13 @@ let content = {|\begingroup
     \bibitem{bulma-vs-bootstrap}
     https://bulma.io/alternative-to-bootstrap/ \TODO
 
+    \bibitem{wiki-mlmodules}
+    https://ru.wikipedia.org/wiki/Язык\_модулей\_ML
+
+    \bibitem{functor-driven}
+    https://arxiv.org/abs/1905.02529 Programming Unikernels in the Large via Functor Driven
+    Development (Experience Report) \TODO Radanne G. et al. Programming unikernels in the large via functor driven development //arXiv preprint arXiv:1905.02529. – 2019.
+
     \bibitem{fprog-adt}
     https://www.fprog.ru/2009/issue2/practice-fp-2-compact.pdf 
     Алгебраические типы данных и их использование в программировании с. 49
@@ -198,6 +206,7 @@ let content = {|\begingroup
 \end{thebibliography}
 \endgroup
 |}
+;;
 
 let () =
   Stdio.Out_channel.with_file
