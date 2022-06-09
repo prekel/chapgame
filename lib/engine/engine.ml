@@ -239,4 +239,7 @@ let recv_with_diff model ~action =
   | `Action a ->
     let updated = recv model ~action:a in
     updated, Model.Diff.diff ~old:model updated
+  | `Prolong until ->
+    let updated = prolong model ~until in
+    updated, Model.Diff.diff ~old:model updated
 ;;

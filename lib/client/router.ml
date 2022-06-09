@@ -59,7 +59,7 @@ let router =
   | [ "online"; room_id ], token ->
     let%sub inner, outer =
       Online.component
-        ~room_id
+        ~room_id:(Bonsai.Value.map room_id ~f:Int.of_string)
         ~token:
           (Bonsai.Value.map token ~f:(fun token ->
                List.Assoc.find ~equal:String.equal token "token"))

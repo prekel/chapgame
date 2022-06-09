@@ -234,4 +234,7 @@ val update
        ]
   -> Model.t
 
-val recv_with_diff : Model.t -> action:[< `Action of Action.t ] -> Model.t * Model.Diff.t
+val recv_with_diff
+  :  Model.t
+  -> action:[< `Action of Action.t | `Prolong of Action.until ]
+  -> Model.t * Model.Diff.t

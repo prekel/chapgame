@@ -50,9 +50,12 @@ let connect' url ~on_message ~on_close =
   websocket
 ;;
 
-let use url =
+let _use url =
   let last_message_var = Bonsai.Var.create None in
   let websocket_var = Bonsai.Var.create None in
+  let%arr url = url
+  and last_message = Bonsai.Var.value last_message_var
+  and websocket = Bonsai.Var.value websocket_var in
   Bonsai.Var.set
     websocket_var
     (Some
@@ -60,13 +63,41 @@ let use url =
           url
           ~on_message:(fun msg -> Bonsai.Var.set last_message_var (Some msg))
           ~on_close:Fn.id));
-  let%arr last_message = Bonsai.Var.value last_message_var
-  and websocket = Bonsai.Var.value websocket_var in
   let send_message msg =
     match websocket with
     | Some websocket ->
       Effect.of_sync_fun (fun msg -> websocket##send msg) (Js.string msg)
     | None -> Effect.Ignore
+  in
+  send_message, last_message
+;;
+
+let use url =
+  let last_message_var = Bonsai.Var.create None in
+  let%sub initer =
+    let%arr url = url in
+    fun _ ->
+      connect'
+        url
+        ~on_message:(fun msg -> Bonsai.Var.set last_message_var (Some msg))
+        ~on_close:Fn.id
+  in
+  let%sub websocket, _ =
+    Bonsai_extra.state_dynamic_model
+      [%here]
+      (module struct
+        type t = WebSockets.webSocket Js.t
+
+        let sexp_of_t _ = Sexp.List []
+        let t_of_sexp _ = assert false
+        let equal = phys_equal
+      end)
+      ~model:(`Computed initer)
+  in
+  let%arr websocket = websocket
+  and last_message = Bonsai.Var.value last_message_var in
+  let send_message msg =
+    Effect.of_sync_fun (fun msg -> websocket##send msg) (Js.string msg)
   in
   send_message, last_message
 ;;

@@ -18,13 +18,13 @@ struct
   module Request = Protocol.Request
 
   let update_room (room : Room.t) = function
-    | Request.SetTime _ -> assert false
-    | SetSpeed _ -> assert false
-    | Action { time; speed; action } ->
+    | Request.SetTime time -> Lwt.return ({ room with time }, None)
+    | SetSpeed speed -> Lwt.return ({ room with speed }, None)
+    | Action action ->
       Lwt_mutex.with_lock room.lock (fun () ->
           let%map model, diff =
-            match action with
-            | `Action _ as a ->
+            match action.action with
+            | (`Prolong _ | `Action _) as a ->
               let%map model, diff =
                 Lwt_preemptive.detach
                   (fun (model, action) -> S.recv_with_diff model ~action)
@@ -33,7 +33,7 @@ struct
               model, Some diff
             | `Replace model -> Lwt.return (model, None)
           in
-          { room with model; time; speed }, diff)
+          { room with model; time = action.time; speed = action.speed }, diff)
   ;;
 
   let action_route =
@@ -44,12 +44,13 @@ struct
         | Some token when String.(token = room.token) ->
           let%bind body = Dream.body request in
           let r = body |> Sexp.of_string |> [%of_sexp: Request.t] in
-          let () =
-            Lwt.async (fun () ->
-                let%bind new_room, diff = update_room room r in
-                Hashtbl.update rooms room_id ~f:(fun _ -> new_room);
-                let response = Room.to_response ?diff new_room in
-                broadcast_response room.lock room.clients response)
+          let%bind () =
+            (* Lwt.async (fun () -> *)
+            let%bind new_room, diff = update_room room r in
+            Hashtbl.update rooms room_id ~f:(fun _ -> new_room);
+            let response = Room.to_response ?diff new_room in
+            broadcast_response room.lock room.clients response
+            (* ) *)
           in
           Dream.empty `Accepted
         | _ -> Dream.empty `Forbidden)

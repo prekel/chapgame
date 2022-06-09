@@ -1760,6 +1760,12 @@ let scene
   let%sub speed, set_speed, _, set_pause, speed_panel =
     speed_panel ~speed_changed_manually
   in
+  let%sub dispatch =
+    let%arr dispatch = dispatch
+    and time = time
+    and speed = speed in
+    dispatch time speed
+  in
   let%sub prolong =
     let%arr dispatch = dispatch
     and until = until in

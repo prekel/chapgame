@@ -25,6 +25,10 @@ struct
         ~apply_action:(fun ~inject:_ ~schedule_event:_ model action ->
           Engine.update model ~action)
     in
+    let%sub dispatch =
+      let%arr dispatch = dispatch in
+      fun _ _ -> dispatch
+    in
     let%sub scene =
       SC.scene
         ~model
