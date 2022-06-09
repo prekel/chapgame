@@ -20,9 +20,10 @@
 Проект состоит из нескольких подпроектов. На рисунке \ref{libsdiagramfig} представлена диаграмма зависимостей между ними.
 В таблице \ref{libstable} указано их место в исходном коде и соответствующий пункт ВКР.
 
+\pagebreak
 \begin{figure}[H]
     \centering
-    \includegraphics[width=15cm,trim={1cm 7cm 1cm 5cm},clip]{libsdiagram}
+    \includegraphics[width=15cm]{libsdiagram}
     \caption{Диаграмма зависимостей подпроектов\label{libsdiagramfig}}
 \end{figure}
 
@@ -60,7 +61,7 @@
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=10cm,trim={1cm 3cm 1cm 2cm},clip]{solver}
+    \includegraphics[width=10cm]{solver}
     \caption{Диаграмма модулей решателя алгебраических уравнений\label{solvermodules}}
 \end{figure}
 
@@ -114,7 +115,7 @@
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=12cm,trim={0cm 26cm 7cm 0cm},clip]{derivative}
+    \includegraphics[width=12cm]{derivative}
     \caption{Реализация функции нахождения производной многочлена\label{derivativecode}}
 \end{figure}
 
@@ -135,7 +136,7 @@
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=12cm,trim={0cm 23.5cm 6cm 0cm},clip]{roots}
+    \includegraphics[width=14cm]{roots}
     \caption{Реализация функции нахождения корней алгебраического уравнения\label{rootscode}}
 \end{figure}
 
@@ -144,12 +145,14 @@
 \section{Символьные вычисления}\label{expr}
 
 Это часть проекта призвана обобщить вычисление коэффициентов одночленов, когда требуется перемножать или складывать многочлены.
-Для этого выражание представлено \TODO
+Выражения можно строить из других выражений, вычислять значения подставляя значения на место переменных в подвыражениях.
+Выражения-многочлены можно складывать и перемножать, а так же вычисляя значения коэффициентов, приводить в вид многочлена,
+на основе которого решается алгебраическое уравнение.
 Диаграмма модулей приведена на рисунке \ref{exprdiagramfig}. В таблице \ref{exprtable} показано их место в реализации и расшифровка.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=8cm,trim={1cm 9cm 6cm 1cm},clip]{exprdiagram}
+    \includegraphics[width=8cm]{exprdiagram}
     \caption{Диаграмма модулей библиотеки символьных вычислений\label{exprdiagramfig}}
 \end{figure}
 
@@ -165,17 +168,51 @@
         \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                              & \multicolumn{1}{c|}{\textbf{Расшифровка}} \\ \hline
         \endhead
 
-        \multirow{2}{*}{Coeff}                                & \href{https://github.com/prekel/chapgame/blob/master/lib/expr/coeff.ml}{lib/expr/coeff.ml}                       & \multirow{2}{*}{Коэффициент}              \\*
+        \multirow{2}{*}{Coeff}                                & \href{https://github.com/prekel/chapgame/blob/master/lib/expr/coeff.ml}{lib/expr/coeff.ml}                       & \multirow{2}{*}{Выражение}                \\*
                                                               & \href{https://github.com/prekel/chapgame/blob/master/lib/expr/coeff\_intf.ml}{lib/expr/coeff\_intf.ml}           &                                           \\ \hline
-        \multirow{2}{*}{Polynomial}                           & \href{https://github.com/prekel/chapgame/blob/master/lib/expr/polynomial.ml}{lib/expr/polynomial.ml}             & \multirow{2}{*}{Многочлен}                \\*
+        \multirow{2}{*}{Polynomial}                           & \href{https://github.com/prekel/chapgame/blob/master/lib/expr/polynomial.ml}{lib/expr/polynomial.ml}             & \multirow{2}{*}{Выражение-многочлен}      \\*
                                                               & \href{https://github.com/prekel/chapgame/blob/master/lib/expr/polynomial\_intf.ml}{lib/expr/polynomial\_intf.ml} &                                           \\ \hline
     \end{longtable}
 \end{centering}
 
+\textbf{Выражение}. Представлено обобщённым алгебраическим типом данным (GADT), так как для вычисления уравнений требуется
+оперировать и скалярными, и векторными величинами. GADT позволяют построить тип так, чтобы статически разграничить выражения,
+результатом вычисления которых являются скалярные или векторные величины. При этом, для построения выражений, скалярные выражения
+могут использовать векторные, и наоборот, в зависимости от операции. Например, операция, получающая проекцию вектора на ось \(X\) (<<XOfVector>>),
+принимает векторное выражение и возвращает скалярное; а операция для получения вектора из его проекций, получает обе его проекции в виде скалярных выражений
+и возвращает векторное выражение (рисунок~\ref{exprgadtcode}). Такая структура является деревом, а его листья это либо константы, либо
+переменные, идентифицируемые отдельным типом. При этом если и полиморфные операции, такие как сумма или унарный минус, возвращающие выражение
+такого же типа, что и принимают. Кроме того, есть операция <<Scope>>, позволяющая как-бы <<навесить>> нижний индекс на все переменные,
+и при вычислении значения переменной, потребуется так же указать этот индекс, помимо имени переменной и её значения.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=10cm]{exprgadt}
+    \caption{Определение типа выражения\label{exprgadtcode}}
+\end{figure}
+
+Чтобы не строить выражения напрямую из конструкторов, были определены отдельные функции, в том числе инфиксные операторы для операций сложения, вычитания и т.д.,
+что позволило записывать выражения в привычном виде. На рисунке~\ref{exprtestfig} представлен юнит-тест, в котором строится выражение~(\ref{samleexpr}) и вычисляется
+его значение при \(x = 24\) и \(y = 4\).
+
+\begin{equation}\label{samleexpr}
+    \frac{xy - x + 8}{y^2}
+\end{equation}
+
+\vspace{-2em}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=10cm]{exprtest}
+    \caption{Реализация юнит-теста для выражения\label{exprtestfig}}
+\end{figure}
+
+\textbf{Выражение-многочлен}.\TODO
+
 \section{Движок}\label{engine}
 
 Архитектура движка имеет более плоскую и последовательную структуру, поэтому нет смысла приводить диаграмму.
-В таблице \ref{enginemodules} представлены названия модулей и файлы модулей, далее описана их работа.
+В таблице~\ref{enginemodules} представлены названия модулей и файлы модулей, далее описана их работа.
 
 \begin{centering}
     \begin{longtable}{|l|l|l|}

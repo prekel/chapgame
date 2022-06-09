@@ -31,7 +31,9 @@
   ../images/libsdiagram.pdf
   ../images/derivative.pdf
   ../images/roots.pdf
-  ../images/exprdiagram.pdf)
+  ../images/exprdiagram.pdf
+  ../images/exprtest.pdf
+  ../images/exprgadt.pdf)
  (action
   (progn
    (run %{bin:xelatex} "thesis.tex")
