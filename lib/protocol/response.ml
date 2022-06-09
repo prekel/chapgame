@@ -12,5 +12,9 @@ struct
     }
   [@@deriving sexp, equal]
 
-  type t = Full of f [@@deriving sexp, equal]
+  type t =
+    | Full of f
+    | TimeChanged of float
+    | SpeedChanged of float
+  [@@deriving sexp, equal]
 end

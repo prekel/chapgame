@@ -90,8 +90,13 @@ let component ~room_id ~token =
     let%arr dispatch = dispatch
     and send_msg = send_msg in
     fun time speed -> function
-      | action ->
+      | `Prolong _ as action ->
         let%bind.Effect () = dispatch (action :> Action.t) in
+        Protocol.Request.Action { time; speed; action }
+        |> [%sexp_of: Protocol.Request.t]
+        |> Sexp.to_string_hum
+        |> send_msg
+      | action ->
         Protocol.Request.Action { time; speed; action }
         |> [%sexp_of: Protocol.Request.t]
         |> Sexp.to_string_hum
@@ -120,6 +125,8 @@ let component ~room_id ~token =
           let%bind.Effect () = set_time time in
           let%bind.Effect () = set_speed speed in
           dispatch (diff :> Action.t)
+        | TimeChanged time -> set_time time
+        | SpeedChanged speed -> set_speed speed
       end
     | None -> Effect.Ignore
   in

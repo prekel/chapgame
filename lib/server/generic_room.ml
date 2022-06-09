@@ -92,16 +92,14 @@ struct
     rooms, Hashtbl.find_exn rooms room_id, room_id
   ;;
 
-  let broadcast_response _lock clients response =
-    (* Lwt_mutex.with_lock lock (fun () -> *)
-    let clients = Hashtbl.to_alist clients in
-    let message = response |> [%sexp_of: Response.t] |> Sexp.to_string_hum in
-    Lwt_list.iter_p
-      (fun (_id, Client.{ websocket }) -> Dream.send websocket message)
-      clients
+  let broadcast_response lock clients response =
+    Lwt_mutex.with_lock lock (fun () ->
+        let clients = Hashtbl.to_alist clients in
+        let message = response |> [%sexp_of: Response.t] |> Sexp.to_string_hum in
+        Lwt_list.iter_p
+          (fun (_id, Client.{ websocket }) -> Dream.send websocket message)
+          clients)
   ;;
-
-  (* ) *)
 
   let generic_routes =
     [ Dream.post "/create" (fun request ->
@@ -146,10 +144,9 @@ struct
                 match msg with
                 | Some _ -> loop ()
                 | None ->
-                  (* Lwt_mutex.with_lock room.lock (fun () -> *)
-                  Hashtbl.remove room.clients client_id;
-                  Dream.close_websocket client
-                (* ) *)
+                  Lwt_mutex.with_lock room.lock (fun () ->
+                      Hashtbl.remove room.clients client_id;
+                      Dream.close_websocket client)
               in
               loop ()))
     ]
