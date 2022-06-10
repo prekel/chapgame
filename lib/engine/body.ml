@@ -12,20 +12,6 @@ type t =
   }
 [@@deriving sexp, equal]
 
-let calc ~values ~rules ~scoped_values ~t =
-  let c = ExprCoef.calc ~values ~scoped_values (module Float) in
-  let calc_xy f =
-    Formula.to_map f ~values ~scoped_values |> Solver.P.of_map ~eps |> Solver.P.calc ~x:t
-  in
-  List.find_map rules ~f:(fun Rule.{ interval; x; y; v_x; v_y; after; _ } ->
-      match interval with
-      | `Interval (l, r) when Float.(c l <= t && t < c r) ->
-        Some ((calc_xy x, calc_xy y, calc_xy v_x, calc_xy v_y), after)
-      | `PosInfinity l when Float.(c l <= t) ->
-        Some ((calc_xy x, calc_xy y, calc_xy v_x, calc_xy v_y), after)
-      | _ -> None)
-;;
-
 let update_x0y0 ~body (x, y, v_x, v_y) ~rules =
   { body with
     values =
