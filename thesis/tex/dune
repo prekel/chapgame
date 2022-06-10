@@ -33,7 +33,9 @@
   ../images/roots.pdf
   ../images/exprdiagram.pdf
   ../images/exprtest.pdf
-  ../images/exprgadt.pdf)
+  ../images/exprgadt.pdf
+  ../images/exprpolytest.pdf
+  ../images/samplepolyplot.png)
  (action
   (progn
    (run %{bin:xelatex} "thesis.tex")

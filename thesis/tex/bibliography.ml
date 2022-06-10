@@ -203,6 +203,9 @@ let content =
     Алгебраические типы данных и их использование в программировании с. 49
     Роман Душкин \TODO
 
+    \bibitem{rwo-gadt}
+    https://dev.realworldocaml.org/gadts.html \TODO
+
 \end{thebibliography}
 \endgroup
 |}
