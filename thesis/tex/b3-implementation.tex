@@ -67,24 +67,24 @@
 
 \begin{centering}
     \begin{longtable}{|l|l|l|}
-        \caption{Модули решателя алгебраических уравнений} \label{solvermodulestable}                                                                                                                                                                    \\
+        \caption{Модули решателя алгебраических уравнений} \label{solvermodulestable}                                                                                                                                                                                              \\
 
-        \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                                                      & \multicolumn{1}{c|}{\textbf{Расшифровка}}     \\ \hline
+        \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                                                      & \multicolumn{1}{c|}{\textbf{Расшифровка}}                               \\ \hline
         \endfirsthead
 
         \multicolumn{3}{c}%
-        {\hspace{-12.5cm}{Окончание таблицы \thetable} \vspace{1ex}}                                                                                                                                                                                     \\
-        \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                                                      & \multicolumn{1}{c|}{\textbf{Расшифровка}}     \\ \hline
+        {\hspace{-12.5cm}{Окончание таблицы \thetable} \vspace{1ex}}                                                                                                                                                                                                               \\
+        \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                                                      & \multicolumn{1}{c|}{\textbf{Расшифровка}}                               \\ \hline
         \endhead
 
-        \multirow{2}{*}{Interval}                             & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/interval.ml}{lib/solver/interval.ml}                                     & \multirow{2}{*}{Промежуток}                   \\*
-                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/interval\_intf.ml}{lib/solver/interval\_intf.ml}                         &                                               \\ \hline
-        \multirow{2}{*}{Polynomial}                           & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/polynomial.ml}{lib/solver/polynomial.ml}                                 & \multirow{2}{*}{Многочлен}                    \\*
-                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/polynomial\_intf.ml}{lib/solver/polynomial\_intf.ml}                     &                                               \\ \hline
-        \multirow{2}{*}{Bisection}                            & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/bisection.ml}{lib/solver/bisection.ml}                                   & \multirow{2}{*}{Бисекция}                     \\*
-                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/bisection\_intf.ml}{lib/solver/bisection\_intf.ml}                       &                                               \\ \hline
-        \multirow{2}{*}{Polynomial\_equation}                 & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/polynomial\_equation.ml}{lib/solver/polynomial\_equation.ml}             & \multirow{2}{3.4cm}{Алгебраическое уравнение} \\*
-                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/polynomial\_equation\_intf.ml}{lib/solver/polynomial\_equation\_intf.ml} &                                               \\ \hline
+        \multirow{2}{*}{Interval}                             & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/interval.ml}{lib/solver/interval.ml}                                     & \multirow{2}{*}{\hyperref[intervaldescr]{Промежуток}}                   \\*
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/interval\_intf.ml}{lib/solver/interval\_intf.ml}                         &                                                                         \\ \hline
+        \multirow{2}{*}{Polynomial}                           & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/polynomial.ml}{lib/solver/polynomial.ml}                                 & \multirow{2}{*}{\hyperref[polynomialdescr]{Многочлен}}                  \\*
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/polynomial\_intf.ml}{lib/solver/polynomial\_intf.ml}                     &                                                                         \\ \hline
+        \multirow{2}{*}{Bisection}                            & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/bisection.ml}{lib/solver/bisection.ml}                                   & \multirow{2}{*}{\hyperref[bisectiondescr]{Бисекция}}                    \\*
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/bisection\_intf.ml}{lib/solver/bisection\_intf.ml}                       &                                                                         \\ \hline
+        \multirow{2}{*}{Polynomial\_equation}                 & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/polynomial\_equation.ml}{lib/solver/polynomial\_equation.ml}             & \multirow{2}{3.4cm}{\hyperref[equationdescr]{Алгебраическое уравнение}} \\*
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/polynomial\_equation\_intf.ml}{lib/solver/polynomial\_equation\_intf.ml} &                                                                         \\ \hline
     \end{longtable}
 \end{centering}
 
@@ -102,7 +102,7 @@
 \end{itemize}
 
 Так же в этом модуле представлены функции для конвертации в кортеж, создания промежутка,
-разбиения списка значений на промежутки, вычисления разности между правым и левым значением.
+разбиения списка значений на промежутки, вычисления разности между правым и левым значением.\label{intervaldescr}
 
 \textbf{Многочлен}. Многочлен представлен иммутабельным словарём, ключом которого является целое число (представляющее степень одночлена),
 значением является вещественное число (представляющее коэффициент одночлена).
@@ -111,7 +111,7 @@
 <<Пары ключ-значения из словаря, которым представлен многочлен, фильтруются так, чтобы остались только с ненулевой степенью,
 и заодно коэффициент преобразовывается в коэффициент производной, умножаясь на степень; далее все ключи отображаются так, чтобы стали на единицу меньше
 (при этом степень не может стать отрицательной, потому что многочлен нельзя создать с отрицательной степенью у одночлена,
-а на предыдущем шаге мы исключили одночлен с нулевой степенью)>>.
+а на предыдущем шаге мы исключили одночлен с нулевой степенью)>>.\label{polynomialdescr}
 
 \begin{figure}[H]
     \centering
@@ -122,7 +122,7 @@
 \textbf{Бисекция}. Этот модуль представляет функцию, принимающую другую функцию \(f(x)\), точность \(\varepsilon\)
 и промежуток, на котором надо искать такой \(x\), что \(\left|f(x)\right| < \varepsilon\). Предполагается, что
 функция монотонно возрастает или убывает на требуемом промежутке. Кроме самого метода бисекции, в ней реализован алгоритм,
-позволяющий находить значения на бесконечном и полубесконечном промежутке, который описан в пункте~\ref{bisection}.
+позволяющий находить значения на бесконечном и полубесконечном промежутке, который описан в пункте~\ref{bisection}.\label{bisectiondescr}
 
 \textbf{Алгебраическое уравнение}. Этот модуль, используя все 3 вышеописанных, предоставляет главную функцию~-- принимающую
 точность вычислений \(\varepsilon\) и многочлен \(P(x)\), и возвращающую список таких \(x\), что \(\left|P(x)\right| < \varepsilon\).
@@ -132,7 +132,7 @@
 Если она нулевая или отрицательная, то вернуть пустой список.
 Если равна единице, решить как линейное уравнение и преобразовать в список.
 Если равна двум, решить как квадратное уравнение, учитывая точность.
-Иначе, вычислить производную многочлена и найти её корни; разбить список корней на промежутки и методом бисекции найти корни на промежутках>>.
+Иначе, вычислить производную многочлена и найти её корни; разбить список корней на промежутки и методом бисекции найти корни на промежутках>>.\label{equationdescr}
 
 \begin{figure}[H]
     \centering
@@ -168,9 +168,9 @@
         \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                              & \multicolumn{1}{c|}{\textbf{Расшифровка}} \\ \hline
         \endhead
 
-        \multirow{2}{*}{Coeff}                                & \href{https://github.com/prekel/chapgame/blob/master/lib/expr/coeff.ml}{lib/expr/coeff.ml}                       & \multirow{2}{*}{Выражение}                \\*
+        \multirow{2}{*}{Coeff}                                & \href{https://github.com/prekel/chapgame/blob/master/lib/expr/coeff.ml}{lib/expr/coeff.ml}                       & \multirow{2}{*}{\hyperref[exprdescr]{Выражение}}                \\*
                                                               & \href{https://github.com/prekel/chapgame/blob/master/lib/expr/coeff\_intf.ml}{lib/expr/coeff\_intf.ml}           &                                           \\ \hline
-        \multirow{2}{*}{Polynomial}                           & \href{https://github.com/prekel/chapgame/blob/master/lib/expr/polynomial.ml}{lib/expr/polynomial.ml}             & \multirow{2}{*}{Выражение-многочлен}      \\*
+        \multirow{2}{*}{Polynomial}                           & \href{https://github.com/prekel/chapgame/blob/master/lib/expr/polynomial.ml}{lib/expr/polynomial.ml}             & \multirow{2}{*}{\hyperref[exprpolydescr]{Выражение-многочлен}}      \\*
                                                               & \href{https://github.com/prekel/chapgame/blob/master/lib/expr/polynomial\_intf.ml}{lib/expr/polynomial\_intf.ml} &                                           \\ \hline
     \end{longtable}
 \end{centering}
@@ -193,7 +193,7 @@
 
 Чтобы не строить выражения напрямую из конструкторов, были определены отдельные функции, в том числе инфиксные операторы для операций сложения, вычитания и т.д.,
 что позволило записывать выражения в привычном виде. На рисунке~\ref{exprtestfig} представлен юнит-тест, в котором строится выражение~(\ref{samleexpr}) и вычисляется
-его значение при \(x = 24\) и \(y = 4\).
+его значение при \(x = 24\) и \(y = 4\).\label{exprdescr}
 
 \begin{equation}\label{samleexpr}
     \frac{xy - x + 8}{y^2}
@@ -210,7 +210,7 @@
 \textbf{Выражение-многочлен}. Этот модуль представляет одноместный многочлен, коэффициентами которого
 являются выражения, описанные ранее. Для представления используется иммутабельный словарь, ключами которого являются целые числа~-- степень одночлена,
 значения~-- выражения, описывающие коэффициенты этого одночлена. Пример использования: на рисунке~\ref{exprpolytestcode} представлен юнит-тест, в котором строится
-многочлен~(\ref{samplepolyexpr}) и подставляются \(x = 24\) и \(y = 4\).
+многочлен~(\ref{samplepolyexpr}) и подставляются \(x = 24\) и \(y = 4\).\label{exprpolydescr}
 
 \begin{align}\label{samplepolyexpr}
     P_1(t) & = (-x + y)t^2 + (x \cdot (-y))t \nonumber           \\
@@ -245,45 +245,45 @@
 
 \begin{centering}
     \begin{longtable}{|l|l|l|}
-        \caption{Модули движка} \label{enginemodules}                                                                                                                                                                                        \\
+        \caption{Модули движка} \label{enginemodules}                                                                                                                                                                                                                            \\
 
-        \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                                            & \multicolumn{1}{c|}{\textbf{Расшифровка}}   \\ \hline
+        \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                                            & \multicolumn{1}{c|}{\textbf{Расшифровка}}                                       \\ \hline
         \endfirsthead
 
         \multicolumn{3}{c}%
-        {\hspace{-12.5cm}{Окончание таблицы \thetable} \vspace{1ex}}                                                                                                                                                                         \\
-        \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                                            & \multicolumn{1}{c|}{\textbf{Расшифровка}}   \\ \hline
+        {\hspace{-12.5cm}{Окончание таблицы \thetable} \vspace{1ex}}                                                                                                                                                                                                             \\
+        \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                                            & \multicolumn{1}{c|}{\textbf{Расшифровка}}                                       \\ \hline
         \endhead
 
         \hline
         \endfoot
 
-        \multirow{2}{*}{Point}                                & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/point.ml}{lib/engine/point.ml}                                 & \multirow{2}{*}{Точка}                      \\*
-                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/point.mli}{lib/engine/point.mli}                               &                                             \\ \hline
-        \multirow{2}{*}{Line}                                 & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/line.ml}{lib/engine/line.ml}                                   & \multirow{2}{*}{Линия}                      \\*
-                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/line.mli}{lib/engine/line.mli}                                 &                                             \\ \hline
-        \multirow{2}{*}{Values}                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/values.ml}{lib/engine/values.ml}                               & \multirow{2}{*}{Значения}                   \\*
-                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/values.mli}{lib/engine/values.mli}                             &                                             \\ \hline
-        \multirow{2}{*}{Rule}                                 & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/rule.ml}{lib/engine/rule.ml}                                   & \multirow{2}{*}{Правило}                    \\*
-                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/rule.mli}{lib/engine/rule.mli}\TODO                            &                                             \\ \hline
-        \multirow{2}{*}{Body}                                 & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/body.ml}{lib/engine/body.ml}                                   & \multirow{2}{*}{Тело}                       \\*
-                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/body.mli}{lib/engine/body.mli}                                 &                                             \\ \hline
-        \multirow{2}{*}{Bodies}                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/bodies.ml}{lib/engine/bodies.ml}                               & \multirow{2}{*}{Тела}                       \\*
-                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/bodies.mli}{lib/engine/bodies.mli}                             &                                             \\ \hline
-        \multirow{2}{*}{Collision\_detection}                 & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/collision\_detection.ml}{lib/engine/collision\_detection.ml}   & \multirow{2}{2cm}{Обнаружение столкновений} \\*
-                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/collision\_detection.mli}{lib/engine/collision\_detection.mli} &                                             \\ \hline
-        \multirow{2}{*}{Collision\_handle}                    & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/collision\_handle.ml}{lib/engine/collision\_handle.ml}         & \multirow{2}{*}{Обработка ударов}           \\*
-                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/collision\_handle.mli}{lib/engine/collision\_handle.mli}       &                                             \\ \hline
-        \multirow{2}{*}{Scene}                                & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/scene.ml}{lib/engine/scene.ml}                                 & \multirow{2}{*}{Сцена}                      \\*
-                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/scene.mli}{lib/engine/scene.mli}\TODO                          &                                             \\ \hline
-        \multirow{2}{*}{Scenes}                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/scenes.ml}{lib/engine/scenes.ml}                               & \multirow{2}{*}{Сцены}                      \\*
-                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/scenes.mli}{lib/engine/scenes.mli}                             &                                             \\ \hline
-        \multirow{2}{*}{Action}                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/action.ml}{lib/engine/action.ml}                               & \multirow{2}{*}{Действие}                   \\*
-                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/action.mli}{lib/engine/action.mli}                             &                                             \\ \hline
-        \multirow{2}{*}{Model}                                & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/model.ml}{lib/engine/model.ml}                                 & \multirow{2}{*}{Модель}                     \\*
-                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/model.mli}{lib/engine/model.mli}                               &                                             \\ \hline
-        \multirow{2}{*}{Engine}                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/engine.ml}{lib/engine/engine.ml}                               & \multirow{2}{*}{Движок}                     \\*
-                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/engine.mli}{lib/engine/engine.mli}                             &                                             \\ \hline
+        \multirow{2}{*}{Point}                                & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/point.ml}{lib/engine/point.ml}                                 & \multirow{2}{*}{\hyperref[pointlinedescr]{Точка}}                               \\*
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/point.mli}{lib/engine/point.mli}                               &                                                                                 \\ \hline
+        \multirow{2}{*}{Line}                                 & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/line.ml}{lib/engine/line.ml}                                   & \multirow{2}{*}{\hyperref[pointlinedescr]{Линия}}                               \\*
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/line.mli}{lib/engine/line.mli}                                 &                                                                                 \\ \hline
+        \multirow{2}{*}{Values}                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/values.ml}{lib/engine/values.ml}                               & \multirow{2}{*}{\hyperref[valuesdescr]{Значения}}                               \\*
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/values.mli}{lib/engine/values.mli}                             &                                                                                 \\ \hline
+        \multirow{2}{*}{Rule}                                 & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/rule.ml}{lib/engine/rule.ml}                                   & \multirow{2}{*}{\hyperref[rulesdescr]{Правило}}                                 \\*
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/rule.mli}{lib/engine/rule.mli}\TODO                            &                                                                                 \\ \hline
+        \multirow{2}{*}{Body}                                 & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/body.ml}{lib/engine/body.ml}                                   & \multirow{2}{*}{\hyperref[bodydescr]{Тело}}                                     \\*
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/body.mli}{lib/engine/body.mli}                                 &                                                                                 \\ \hline
+        \multirow{2}{*}{Bodies}                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/bodies.ml}{lib/engine/bodies.ml}                               & \multirow{2}{*}{\hyperref[bodydescr]{Тела}}                                     \\*
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/bodies.mli}{lib/engine/bodies.mli}                             &                                                                                 \\ \hline
+        \multirow{2}{*}{Collision\_detection}                 & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/collision\_detection.ml}{lib/engine/collision\_detection.ml}   & \multirow{2}{2cm}{\hyperref[collisiondetectiondescr]{Обнаружение столкновений}} \\*
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/collision\_detection.mli}{lib/engine/collision\_detection.mli} &                                                                                 \\ \hline
+        \multirow{2}{*}{Collision\_handle}                    & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/collision\_handle.ml}{lib/engine/collision\_handle.ml}         & \multirow{2}{*}{\hyperref[collisionhandledescr]{Обработка ударов}}              \\*
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/collision\_handle.mli}{lib/engine/collision\_handle.mli}       &                                                                                 \\ \hline
+        \multirow{2}{*}{Scene}                                & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/scene.ml}{lib/engine/scene.ml}                                 & \multirow{2}{*}{\hyperref[scenedescr]{Сцена}}                                   \\*
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/scene.mli}{lib/engine/scene.mli}\TODO                          &                                                                                 \\ \hline
+        \multirow{2}{*}{Scenes}                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/scenes.ml}{lib/engine/scenes.ml}                               & \multirow{2}{*}{\hyperref[scenedescr]{Сцены}}                                   \\*
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/scenes.mli}{lib/engine/scenes.mli}                             &                                                                                 \\ \hline
+        \multirow{2}{*}{Action}                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/action.ml}{lib/engine/action.ml}                               & \multirow{2}{*}{\hyperref[actiondescr]{Действие}}                               \\*
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/action.mli}{lib/engine/action.mli}                             &                                                                                 \\ \hline
+        \multirow{2}{*}{Model}                                & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/model.ml}{lib/engine/model.ml}                                 & \multirow{2}{*}{\hyperref[modeldescr]{Модель}}                                  \\*
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/model.mli}{lib/engine/model.mli}                               &                                                                                 \\ \hline
+        \multirow{2}{*}{Engine}                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/engine.ml}{lib/engine/engine.ml}                               & \multirow{2}{*}{\hyperref[enginedescr]{Движок}}                                 \\*
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/engine.mli}{lib/engine/engine.mli}                             &                                                                                 \\ \hline
     \end{longtable}
 \end{centering}
 
@@ -305,10 +305,10 @@
     \(p_1\)~-- первая точка прямой;
 
     \(p_2\)~-- вторая точка прямой.
-\end{Underequation}
+\end{Underequation}\label{pointlinedescr}
 
 \textbf{Значения}. Служит для хранения значений величин. Определены через иммутабельный словарь, ключами которого являются
-идентификаторы величин, а значениями являются значения величин. \TODO
+идентификаторы величин, а значениями являются значения величин. \TODO\label{valuesdescr}
 
 \textbf{Правило}. Определяет выражения-многочлены для положения и скорости тела.
 При этом учитывается временной промежуток, на которых это правило действует. Правила образуют набор правил,
@@ -319,7 +319,7 @@
 и набор из единственного правила для случая, когда тела не движется (по формулам~(\ref{rules0_0})).
 При этом правило из первого набора для случая, когда \(\Constrainttge\),
 указывает на второй набор правил, как тот, который следует использовать далее.
-Остальные правила указывают на тот же набор правил, в котором определены.
+Остальные правила указывают на тот же набор правил, в котором определены.\label{rulesdescr}
 
 \begin{align}\label{rules0_0}
      & v_x(t)  = 0 \nonumber   \\
@@ -352,7 +352,7 @@
 Тело определено его идентификатором, набором значений величин, и набором правил. Набор тел
 представлен иммутабельным словарём, ключи которого~-- идентификаторы тела, значения~-- тела.
 Предоставляет функцию для вычисления положения тел, принимающую набор тел и момент времени
-и возвращающую новый набор тел.
+и возвращающую новый набор тел.\label{bodydescr}
 
 \textbf{Обнаружение столкновений}. Задача функций в этом модуле вычислять время столкновения.
 Для этого, уравнения, описанные в пункте~\ref{collisiondetectioneqs}, строятся путём, описанным в пункте~\ref{expr}.
@@ -368,7 +368,7 @@
 угол \(\angle A_2 B_2 C_2\) тупой, когда в левом соответствующий угол \(\angle A_1 B_1 C_1\) острый.
 Это можно проверить через скалярное произведение векторов \(\vec{BA}\) и \(\vec{BC}\): если выполняется условие~(\ref{dotprodbabc}), значит этот угол острый
 и тело действительно столкнулось с отрезком. Таким же образом надо проверить и угол, образованный второй точкой отрезка
-(поменяв местами точки \(A\) и \(B\) в условии) и подобным образом проверяется столкновение с лучом.
+(поменяв местами точки \(A\) и \(B\) в условии) и подобным образом проверяется столкновение с лучом.\label{collisiondetectiondescr}
 
 \begin{equation}\label{dotprodbabc}
     \langle \vec{BA}, \vec{BC} \rangle > 0
@@ -386,15 +386,22 @@
     \caption{Проверка столкновения тела с отрезком\label{dotprdfig}}
 \end{figure}
 
-\textbf{Обработка ударов}. \TODO
+\textbf{Обработка ударов}. Этот модуль реализует формулы~(\ref{collisionhandle}) и~(\ref{collisionhandleafterlim}) и
+предоставляет 3 функции:\label{collisionhandledescr}
 
-\textbf{Сцена} и \textbf{сцены}. \TODO
+\begin{itemize}
+    \item для вычисления новых скоростей при столкновении двух тел;
+    \item для вычисления новой скорости тела при столкновении с точной;
+    \item для вычисления новой скорости тела при столкновении с прямой (лучом, отрезком).
+\end{itemize}
 
-\textbf{Действие}. \TODO
+\textbf{Сцена} и \textbf{сцены}. \TODO\label{scenedescr}
 
-\textbf{Модель}. \TODO
+\textbf{Действие}. \TODO\label{actiondescr}
 
-\textbf{Движок}. \TODO
+\textbf{Модель}. \TODO\label{modeldescr}
+
+\textbf{Движок}. \TODO\label{enginedescr}
 
 \TODO
 
