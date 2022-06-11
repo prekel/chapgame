@@ -158,20 +158,20 @@
 
 \begin{centering}
     \begin{longtable}{|l|l|l|}
-        \caption{Модули библиотеки символьных вычислений} \label{exprtable}                                                                                                                                                  \\
+        \caption{Модули библиотеки символьных вычислений} \label{exprtable}                                                                                                                                                                       \\
 
-        \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                              & \multicolumn{1}{c|}{\textbf{Расшифровка}} \\ \hline
+        \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                              & \multicolumn{1}{c|}{\textbf{Расшифровка}}                      \\ \hline
         \endfirsthead
 
         \multicolumn{3}{c}%
-        {\hspace{-12.5cm}{Окончание таблицы \thetable} \vspace{1ex}}                                                                                                                                                         \\
-        \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                              & \multicolumn{1}{c|}{\textbf{Расшифровка}} \\ \hline
+        {\hspace{-12.5cm}{Окончание таблицы \thetable} \vspace{1ex}}                                                                                                                                                                              \\
+        \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                              & \multicolumn{1}{c|}{\textbf{Расшифровка}}                      \\ \hline
         \endhead
 
-        \multirow{2}{*}{Coeff}                                & \href{https://github.com/prekel/chapgame/blob/master/lib/expr/coeff.ml}{lib/expr/coeff.ml}                       & \multirow{2}{*}{\hyperref[exprdescr]{Выражение}}                \\*
-                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/expr/coeff\_intf.ml}{lib/expr/coeff\_intf.ml}           &                                           \\ \hline
-        \multirow{2}{*}{Polynomial}                           & \href{https://github.com/prekel/chapgame/blob/master/lib/expr/polynomial.ml}{lib/expr/polynomial.ml}             & \multirow{2}{*}{\hyperref[exprpolydescr]{Выражение-многочлен}}      \\*
-                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/expr/polynomial\_intf.ml}{lib/expr/polynomial\_intf.ml} &                                           \\ \hline
+        \multirow{2}{*}{Coeff}                                & \href{https://github.com/prekel/chapgame/blob/master/lib/expr/coeff.ml}{lib/expr/coeff.ml}                       & \multirow{2}{*}{\hyperref[exprdescr]{Выражение}}               \\*
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/expr/coeff\_intf.ml}{lib/expr/coeff\_intf.ml}           &                                                                \\ \hline
+        \multirow{2}{*}{Polynomial}                           & \href{https://github.com/prekel/chapgame/blob/master/lib/expr/polynomial.ml}{lib/expr/polynomial.ml}             & \multirow{2}{*}{\hyperref[exprpolydescr]{Выражение-многочлен}} \\*
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/expr/polynomial\_intf.ml}{lib/expr/polynomial\_intf.ml} &                                                                \\ \hline
     \end{longtable}
 \end{centering}
 
@@ -265,7 +265,7 @@
         \multirow{2}{*}{Values}                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/values.ml}{lib/engine/values.ml}                               & \multirow{2}{*}{\hyperref[valuesdescr]{Значения}}                               \\*
                                                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/values.mli}{lib/engine/values.mli}                             &                                                                                 \\ \hline
         \multirow{2}{*}{Rule}                                 & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/rule.ml}{lib/engine/rule.ml}                                   & \multirow{2}{*}{\hyperref[rulesdescr]{Правило}}                                 \\*
-                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/rule.mli}{lib/engine/rule.mli}\TODO                            &                                                                                 \\ \hline
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/rule.mli}{lib/engine/rule.mli}                                 &                                                                                 \\ \hline
         \multirow{2}{*}{Body}                                 & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/body.ml}{lib/engine/body.ml}                                   & \multirow{2}{*}{\hyperref[bodydescr]{Тело}}                                     \\*
                                                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/body.mli}{lib/engine/body.mli}                                 &                                                                                 \\ \hline
         \multirow{2}{*}{Bodies}                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/bodies.ml}{lib/engine/bodies.ml}                               & \multirow{2}{*}{\hyperref[bodydescr]{Тела}}                                     \\*
@@ -275,11 +275,11 @@
         \multirow{2}{*}{Collision\_handle}                    & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/collision\_handle.ml}{lib/engine/collision\_handle.ml}         & \multirow{2}{*}{\hyperref[collisionhandledescr]{Обработка ударов}}              \\*
                                                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/collision\_handle.mli}{lib/engine/collision\_handle.mli}       &                                                                                 \\ \hline
         \multirow{2}{*}{Scene}                                & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/scene.ml}{lib/engine/scene.ml}                                 & \multirow{2}{*}{\hyperref[scenedescr]{Сцена}}                                   \\*
-                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/scene.mli}{lib/engine/scene.mli}\TODO                          &                                                                                 \\ \hline
-        \multirow{2}{*}{Scenes}                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/scenes.ml}{lib/engine/scenes.ml}                               & \multirow{2}{*}{\hyperref[scenedescr]{Сцены}}                                   \\*
-                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/scenes.mli}{lib/engine/scenes.mli}                             &                                                                                 \\ \hline
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/scene.mli}{lib/engine/scene.mli}                               &                                                                                 \\ \hline
         \multirow{2}{*}{Action}                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/action.ml}{lib/engine/action.ml}                               & \multirow{2}{*}{\hyperref[actiondescr]{Действие}}                               \\*
                                                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/action.mli}{lib/engine/action.mli}                             &                                                                                 \\ \hline
+        \multirow{2}{*}{Scenes}                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/scenes.ml}{lib/engine/scenes.ml}                               & \multirow{2}{*}{\hyperref[scenedescr]{Сцены}}                                   \\*
+                                                              & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/scenes.mli}{lib/engine/scenes.mli}                             &                                                                                 \\ \hline
         \multirow{2}{*}{Model}                                & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/model.ml}{lib/engine/model.ml}                                 & \multirow{2}{*}{\hyperref[modeldescr]{Модель}}                                  \\*
                                                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/model.mli}{lib/engine/model.mli}                               &                                                                                 \\ \hline
         \multirow{2}{*}{Engine}                               & \href{https://github.com/prekel/chapgame/blob/master/lib/engine/engine.ml}{lib/engine/engine.ml}                               & \multirow{2}{*}{\hyperref[enginedescr]{Движок}}                                 \\*
@@ -315,7 +315,7 @@
 которые в совокупности определяют положение и скорость тела для \(t \geqslant 0\). При этом правила определяют
 ещё и набор правил, который будет использоваться далее при срабатывания этого правила.
 Это сделано чтобы определить правила для случаев, когда тело не движется. Т.е. определены 2 набора правил:
-тот, который отражает формулы~(\ref{v_x_1}),~(\ref{v_y_1}),~(\ref{r_x_1})~(\ref{r_y_1});
+тот, который отражает формулы~(\ref{v_x_1}),~(\ref{v_y_1}),~(\ref{r_x_1})~(\ref{r_y_1}),~(\ref{acceleration123});
 и набор из единственного правила для случая, когда тела не движется (по формулам~(\ref{rules0_0})).
 При этом правило из первого набора для случая, когда \(\Constrainttge\),
 указывает на второй набор правил, как тот, который следует использовать далее.
@@ -377,7 +377,7 @@
 \begin{Underequation}
     \(\vec{BA}\)~-- вектор из проверяемой точки отрезка во вторую точку отрезка;
 
-    \(\vec{BC}\)-- вектор из проверяемой точки отрезка в центр тела.
+    \(\vec{BC}\)~-- вектор из проверяемой точки отрезка в центр тела.
 \end{Underequation}
 
 \begin{figure}[H]
@@ -395,9 +395,41 @@
     \item для вычисления новой скорости тела при столкновении с прямой (лучом, отрезком).
 \end{itemize}
 
-\textbf{Сцена} и \textbf{сцены}. \TODO\label{scenedescr}
+\textbf{Действие}. Этот модуль описывает тип действия, которое можно применить к модели.
+Он включает в себя время действия (т.е. время, когда это действие должно быть применено), вид действия,
+параметры расчёта следующих состояний модели. Вид действия может быть одним из:
 
-\textbf{Действие}. \TODO\label{actiondescr}
+\begin{itemize}
+    \item добавить тело со следующими параметрами: идентификатор, координаты положения, радиус, коэффициент трения, масса;
+    \item добавить тело, присвоив ему параметры из переданного ассоциативного списка <<идентификатор переменной>>-<<значение>>;
+    \item добавить точку;
+    \item добавить линию (луч, отрезок);
+    \item придать скорость телу, передаётся идентификатор тела и новая скорость;
+    \item удалить тело по его идентификатору;
+    \item удалить точку;
+    \item удалить линию (луч, отрезок);
+    \item обновить параметры тела по его идентификатору и ассоциативному списку значений;
+    \item обновить глобальный параметр.
+\end{itemize}
+
+Параметры расчёта задаются:
+
+\begin{itemize}
+    \item промежутком времени, на которое следует просчитать состояния модели, начиная от времени совершения действия;
+    \item количеством столкновений, которое следует просчитать начиная от времени совершения действия.
+\end{itemize}
+
+Оба параметра являются опциональными. Если заданы оба~-- расчёт происходит до того, который наступит быстрее.
+Если не задан никакой~-- то рассчитываются все столкновения до того момента, пока тела не остановятся.
+Если у какого-то тела коэффициент равен нулю, или ускорение свободного падение равно нулю, то ускорения одного или всех тел будет равно нулю.
+В таком случае, тела могут не остановиться никогда: если эти тела находятся в замкнутом пространстве, то столкновения будут происходить бесконечно
+и при попытке рассчитать, не указав параметры, произойдёт бесконечное зацикливание. Обработка таких ситуаций не предусмотрена и программу придётся перезапускать,
+так что подбор оптимальных параметров расчёта ложится на пользователя. Однако, если тела могут продолжить двигаться и между ними не будет проииходить столкновений,
+такая ситуация успешно обработается, что позволит, например, вычислять число \(\pi\) методом Гальперина, что описано в пункте~\ref{pipool}.
+\label{actiondescr}
+
+\textbf{Сцена} и \textbf{сцены}. \TODO
+\label{scenedescr}
 
 \textbf{Модель}. \TODO\label{modeldescr}
 

@@ -72,6 +72,8 @@ let init ~g =
 ;;
 
 module Diff = struct
+  type tt = t
+
   type t =
     { new_time : float
     ; bodies_diff : Bodies.Diff.t
