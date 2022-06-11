@@ -35,7 +35,8 @@
   ../images/exprtest.pdf
   ../images/exprgadt.pdf
   ../images/exprpolytest.pdf
-  ../images/samplepolyplot.png)
+  ../images/samplepolyplot.png
+  ../images/dotprd.pdf)
  (action
   (progn
    (run %{bin:xelatex} "thesis.tex")
