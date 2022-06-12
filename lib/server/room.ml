@@ -22,6 +22,17 @@ struct
         let%map model, diff =
           match action.action with
           | (`Prolong _ | `Action _) as a ->
+            let a =
+              match a with
+              | `Prolong { timespan = None; quantity = None } ->
+                `Prolong Engine.Action.{ timespan = None; quantity = Some 500 }
+              | `Action ({ until = { timespan = None; quantity = None }; _ } as ac) ->
+                `Action
+                  { ac with
+                    until = Engine.Action.{ timespan = None; quantity = Some 500 }
+                  }
+              | _ -> a
+            in
             let%map model, diff =
               Lwt_preemptive.detach
                 (fun (model, action) -> S.recv_with_diff model ~action)

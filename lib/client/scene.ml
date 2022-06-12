@@ -3,7 +3,6 @@ open Bonsai_web
 open Bonsai.Let_syntax
 open Js_of_ocaml
 module Svg = Virtual_dom_svg
-module S = Engine
 module V = Common.Vector.Make (Float)
 
 let format_float = sprintf "%.2f"
@@ -382,9 +381,9 @@ let calc_new_time_every ~timeout ~time ~set_time ~speed ~prolong =
 ;;
 
 let circle (id, figure) ~body_click =
-  let x = S.Values.get_scalar_exn (S.Body.get_values figure) ~var:S.Var.x0 in
-  let y = S.Values.get_scalar_exn (S.Body.get_values figure) ~var:S.Var.y0 in
-  let r = S.Values.get_scalar_exn (S.Body.get_values figure) ~var:S.Var.r in
+  let x = Engine.Values.get_scalar_exn (Engine.Body.get_values figure) ~var:Engine.Var.x0 in
+  let y = Engine.Values.get_scalar_exn (Engine.Body.get_values figure) ~var:Engine.Var.y0 in
+  let r = Engine.Values.get_scalar_exn (Engine.Body.get_values figure) ~var:Engine.Var.r in
   let on_click id (evt : Dom_html.mouseEvent Js.t) =
     let sx, sy = svg_click_coords evt in
     let nx = sx -. x in
@@ -393,7 +392,7 @@ let circle (id, figure) ~body_click =
   in
   let open Vdom in
   Svg.Node.circle
-    ~key:(S.Body.Id.to_string id)
+    ~key:(Engine.Body.Id.to_string id)
     ~attr:
       (Attr.many
          [ Svg.Attr.cx x; Svg.Attr.cy y; Svg.Attr.r r; Attr.on_click (on_click id) ])
@@ -401,8 +400,8 @@ let circle (id, figure) ~body_click =
 ;;
 
 let line line =
-  let p1, p2 = S.Line.to_points line in
-  let kind = S.Line.kind line in
+  let p1, p2 = Engine.Line.to_points line in
+  let kind = Engine.Line.kind line in
   let open Float in
   let x1, y1, x2, y2 = p1.x, p1.y, p2.x, p2.y in
   let dx, dy = x2 - x1, y2 - y1 in
@@ -415,7 +414,7 @@ let line line =
   in
   let open Vdom in
   Svg.Node.line
-    ~key:(Sexp.to_string [%sexp (line : S.Line.t)])
+    ~key:(Sexp.to_string [%sexp (line : Engine.Line.t)])
     ~attr:
       (Attr.many
          [ Svg.Attr.x1 x1
@@ -427,17 +426,17 @@ let line line =
     []
 ;;
 
-let point (S.Point.{ x; y } as point) =
+let point (Engine.Point.{ x; y } as point) =
   let open Vdom in
   Svg.Node.circle
-    ~key:(Sexp.to_string [%sexp (point : S.Point.t)])
+    ~key:(Sexp.to_string [%sexp (point : Engine.Point.t)])
     ~attr:(Attr.many [ Svg.Attr.cx x; Svg.Attr.cy y; Svg.Attr.r 1. ])
     []
 ;;
 
 let scene_frame
     ~scene
-    ~(body_click : (S.Body.Id.t -> float -> float -> float -> unit Ui_effect.t) Value.t)
+    ~(body_click : (Engine.Body.Id.t -> float -> float -> float -> unit Ui_effect.t) Value.t)
     ~time
   =
   let%sub scale, set_scale = Bonsai.state [%here] (module Float) ~default_model:1. in
@@ -459,7 +458,7 @@ let scene_frame
       let%bind.Effect () = set_min_x (min_x +. dx) in
       set_min_y (min_y +. dy)
   in
-  let%arr (scene : S.Scene.t) = scene
+  let%arr (scene : Engine.Scene.t) = scene
   and body_click = body_click
   and time = time
   and min_x = min_x
@@ -475,12 +474,12 @@ let scene_frame
   let t = time -. scene.time in
   let circles =
     scene.bodies
-    |> S.Bodies.calc ~t ~global_values:scene.global_values
-    |> S.Bodies.to_sequence
+    |> Engine.Bodies.calc ~t ~global_values:scene.global_values
+    |> Engine.Bodies.to_sequence
     |> Sequence.map ~f:(circle ~body_click)
   in
-  let lines = scene.lines |> S.Lines.to_sequence |> Sequence.map ~f:line in
-  let points = scene.points |> S.Points.to_sequence |> Sequence.map ~f:point in
+  let lines = scene.lines |> Engine.Lines.to_sequence |> Sequence.map ~f:line in
+  let points = scene.points |> Engine.Points.to_sequence |> Sequence.map ~f:point in
   let all =
     circles |> Sequence.append lines |> Sequence.append points |> Sequence.to_list
   in
@@ -568,7 +567,7 @@ let export_import_clear ~model ~set_model ~set_pause =
     function
     | true ->
       let%bind.Effect () =
-        model |> [%sexp_of: S.Model.t] |> Sexp.to_string_hum ~indent:2 |> set_text_state
+        model |> [%sexp_of: Engine.Model.t] |> Sexp.to_string_hum ~indent:2 |> set_text_state
       in
       let%bind.Effect was = set_pause true in
       let%bind.Effect () = set_was_paused was in
@@ -578,7 +577,7 @@ let export_import_clear ~model ~set_model ~set_pause =
       let%bind.Effect _ = set_pause was_paused in
       set_modal_is_open false
   in
-  let%sub stats_modal, set_stats_modal = Bonsai.state_opt [%here] (module S.Model) in
+  let%sub stats_modal, set_stats_modal = Bonsai.state_opt [%here] (module Engine.Model) in
   let%sub set_stats_modal =
     let%arr set_stats_modal = set_stats_modal
     and set_pause = set_pause
@@ -624,7 +623,7 @@ let export_import_clear ~model ~set_model ~set_pause =
                ~attr:
                  (many
                     [ classes [ "button"; "is-fullwidth" ]
-                    ; on_click (fun _ -> set_model @@ S.Model.init ~g:1.)
+                    ; on_click (fun _ -> set_model @@ Engine.Model.init ~g:1.)
                     ])
                [ text "Clear" ]
            ]
@@ -695,7 +694,7 @@ let export_import_clear ~model ~set_model ~set_pause =
                                     let%bind.Effect () =
                                       text_state
                                       |> Sexp.of_string
-                                      |> [%of_sexp: S.Model.t]
+                                      |> [%of_sexp: Engine.Model.t]
                                       |> set_model
                                     in
                                     set_modal_is_open false)
@@ -736,10 +735,10 @@ let export_import_clear ~model ~set_model ~set_pause =
                               ])
                          []
                      ]
-                 ; (let scenes_seq = model.scenes |> S.Scenes.to_map |> Map.to_sequence in
+                 ; (let scenes_seq = model.scenes |> Engine.Scenes.to_map |> Map.to_sequence in
                     let total_count =
                       ( "Scene changes"
-                      , model.scenes |> S.Scenes.to_map |> Map.length |> Int.to_string )
+                      , model.scenes |> Engine.Scenes.to_map |> Map.length |> Int.to_string )
                     in
                     let cause_count =
                       ( "Causes of the scene change"
@@ -752,7 +751,7 @@ let export_import_clear ~model ~set_model ~set_pause =
                       scenes_seq
                       |> Sequence.map ~f:(fun (_, scene) ->
                              List.count scene.cause ~f:(function
-                                 | `Collision (S.Scene.Collision.Collision _) -> true
+                                 | `Collision (Engine.Scene.Collision.Collision _) -> true
                                  | _ -> false))
                       |> Sequence.sum (module Int) ~f:Fn.id
                     in
@@ -760,7 +759,7 @@ let export_import_clear ~model ~set_model ~set_pause =
                       scenes_seq
                       |> Sequence.map ~f:(fun (_, scene) ->
                              List.count scene.cause ~f:(function
-                                 | `Collision (S.Scene.Collision.CollisionWithLine _) ->
+                                 | `Collision (Engine.Scene.Collision.CollisionWithLine _) ->
                                    true
                                  | _ -> false))
                       |> Sequence.sum (module Int) ~f:Fn.id
@@ -769,7 +768,7 @@ let export_import_clear ~model ~set_model ~set_pause =
                       scenes_seq
                       |> Sequence.map ~f:(fun (_, scene) ->
                              List.count scene.cause ~f:(function
-                                 | `Collision (S.Scene.Collision.CollisionWithPoint _) ->
+                                 | `Collision (Engine.Scene.Collision.CollisionWithPoint _) ->
                                    true
                                  | _ -> false))
                       |> Sequence.sum (module Int) ~f:Fn.id
@@ -808,7 +807,7 @@ let export_import_clear ~model ~set_model ~set_pause =
                     in
                     let last_scene_time =
                       ( "Last scene change time"
-                      , (model.scenes |> S.Scenes.last_exn).time |> format_float )
+                      , (model.scenes |> Engine.Scenes.last_exn).time |> format_float )
                     in
                     let show (label, value) =
                       p [ text label; text ": "; strong [ text value ] ]
@@ -863,7 +862,7 @@ let edit_body_modal body ~close ~set_values =
     Bonsai.Edge.on_change
       [%here]
       (module struct
-        type t = S.Body.t option [@@deriving sexp, equal]
+        type t = Engine.Body.t option [@@deriving sexp, equal]
       end)
       body
       ~callback:reset_fields
@@ -872,14 +871,14 @@ let edit_body_modal body ~close ~set_values =
     let%arr body = body in
     match body with
     | Some body ->
-      let x = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Var.x0 in
-      let y = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Var.y0 in
-      let vx = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Var.v0_x in
-      let vy = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Var.v0_y in
-      let mu = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Var.mu in
-      let m = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Var.m in
-      let r = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Var.r in
-      Some (S.Body.get_id body), Some x, Some y, Some vx, Some vy, Some mu, Some m, Some r
+      let x = Engine.Values.get_scalar_exn (Engine.Body.get_values body) ~var:Engine.Var.x0 in
+      let y = Engine.Values.get_scalar_exn (Engine.Body.get_values body) ~var:Engine.Var.y0 in
+      let vx = Engine.Values.get_scalar_exn (Engine.Body.get_values body) ~var:Engine.Var.v0_x in
+      let vy = Engine.Values.get_scalar_exn (Engine.Body.get_values body) ~var:Engine.Var.v0_y in
+      let mu = Engine.Values.get_scalar_exn (Engine.Body.get_values body) ~var:Engine.Var.mu in
+      let m = Engine.Values.get_scalar_exn (Engine.Body.get_values body) ~var:Engine.Var.m in
+      let r = Engine.Values.get_scalar_exn (Engine.Body.get_values body) ~var:Engine.Var.r in
+      Some (Engine.Body.get_id body), Some x, Some y, Some vx, Some vy, Some mu, Some m, Some r
     | None -> None, None, None, None, None, None, None, None
   in
   let%sub is_acceptable =
@@ -987,13 +986,13 @@ let edit_body_modal body ~close ~set_values =
                      ; (if is_acceptable then empty else disabled)
                      ; on_click (fun _ ->
                            let values =
-                             [ S.Var.x0, x
-                             ; S.Var.y0, y
-                             ; S.Var.v0_x, vx
-                             ; S.Var.v0_y, vy
-                             ; S.Var.mu, mu
-                             ; S.Var.r, r
-                             ; S.Var.m, m
+                             [ Engine.Var.x0, x
+                             ; Engine.Var.y0, y
+                             ; Engine.Var.v0_x, vx
+                             ; Engine.Var.v0_y, vy
+                             ; Engine.Var.mu, mu
+                             ; Engine.Var.r, r
+                             ; Engine.Var.m, m
                              ]
                              |> List.filter_map ~f:(fun (k, v) ->
                                     Option.map v ~f:(fun v -> k, v))
@@ -1029,7 +1028,7 @@ let set_modal_open_and_pause ~set_modal_open ~set_pause =
 ;;
 
 let bodies_table ~scene ~time ~remove_body ~set_values ~set_pause =
-  let%sub modal_body, set_modal_body = Bonsai.state_opt [%here] (module S.Body) in
+  let%sub modal_body, set_modal_body = Bonsai.state_opt [%here] (module Engine.Body) in
   let%sub modal_open, set_modal_open =
     Bonsai.state [%here] (module Bool) ~default_model:false
   in
@@ -1051,22 +1050,22 @@ let bodies_table ~scene ~time ~remove_body ~set_values ~set_pause =
   and set_modal_body = set_modal_body
   and edit_body_modal = edit_body_modal in
   let bodies =
-    scene.S.Scene.bodies
-    |> S.Bodies.calc ~t:(time -. scene.time) ~global_values:scene.global_values
+    scene.Engine.Scene.bodies
+    |> Engine.Bodies.calc ~t:(time -. scene.time) ~global_values:scene.global_values
   in
   let open Vdom in
   let open Node in
   let open Attr in
   let body_tr body =
-    let id = S.Body.get_id body |> S.Body.Id.to_string in
-    let x = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Var.x0 in
-    let y = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Var.y0 in
-    let mu = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Var.mu in
-    let m = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Var.m in
-    let r = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Var.r in
-    let v_x = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Var.v0_x in
-    let v_y = S.Values.get_scalar_exn (S.Body.get_values body) ~var:S.Var.v0_y in
-    let ((a_x, a_y) as a_vec) = S.Body.calc_a ~global_values:scene.global_values body in
+    let id = Engine.Body.get_id body |> Engine.Body.Id.to_string in
+    let x = Engine.Values.get_scalar_exn (Engine.Body.get_values body) ~var:Engine.Var.x0 in
+    let y = Engine.Values.get_scalar_exn (Engine.Body.get_values body) ~var:Engine.Var.y0 in
+    let mu = Engine.Values.get_scalar_exn (Engine.Body.get_values body) ~var:Engine.Var.mu in
+    let m = Engine.Values.get_scalar_exn (Engine.Body.get_values body) ~var:Engine.Var.m in
+    let r = Engine.Values.get_scalar_exn (Engine.Body.get_values body) ~var:Engine.Var.r in
+    let v_x = Engine.Values.get_scalar_exn (Engine.Body.get_values body) ~var:Engine.Var.v0_x in
+    let v_y = Engine.Values.get_scalar_exn (Engine.Body.get_values body) ~var:Engine.Var.v0_y in
+    let ((a_x, a_y) as a_vec) = Engine.Body.calc_a ~global_values:scene.global_values body in
     let v_len = V.len (v_x, v_y) in
     let a_len = V.len a_vec in
     tr
@@ -1100,7 +1099,7 @@ let bodies_table ~scene ~time ~remove_body ~set_values ~set_pause =
               ~attr:
                 (many
                    [ class_ "delete"
-                   ; on_click (fun _ -> remove_body (S.Body.get_id body))
+                   ; on_click (fun _ -> remove_body (Engine.Body.get_id body))
                    ])
               []
           ]
@@ -1189,7 +1188,7 @@ let bodies_table ~scene ~time ~remove_body ~set_values ~set_pause =
                    ]
                ; tbody
                    (bodies
-                   |> S.Bodies.to_sequence
+                   |> Engine.Bodies.to_sequence
                    |> Sequence.map ~f:snd
                    |> Sequence.map ~f:body_tr
                    |> Sequence.to_list)
@@ -1267,7 +1266,7 @@ let line_add_modal ~add_line ~set_pause =
     Bonsai.state_opt
       [%here]
       (module struct
-        type t = S.Line.kind [@@deriving sexp, equal]
+        type t = Engine.Line.kind [@@deriving sexp, equal]
       end)
       ~default_model:`Segment
   in
@@ -1317,9 +1316,9 @@ let line_add_modal ~add_line ~set_pause =
         | Some p1x, Some p1y, Some p2x, Some p2y, Some kind ->
           let%bind.Effect () =
             add_line
-              (S.Line.of_points
-                 ~p1:S.Point.{ x = p1x; y = p1y }
-                 ~p2:S.Point.{ x = p2x; y = p2y }
+              (Engine.Line.of_points
+                 ~p1:Engine.Point.{ x = p1x; y = p1y }
+                 ~p2:Engine.Point.{ x = p2x; y = p2y }
                  ~kind)
           in
           Effect.return true
@@ -1373,18 +1372,18 @@ let line_add_modal ~add_line ~set_pause =
                                (many
                                   [ on_change (fun _ s ->
                                         Sexp.of_string s
-                                        |> [%of_sexp: S.Line.kind]
+                                        |> [%of_sexp: Engine.Line.kind]
                                         |> Option.some
                                         |> set_kind)
                                   ])
                              [ option
-                                 [ text (Sexp.to_string [%sexp (`Line : S.Line.kind)]) ]
+                                 [ text (Sexp.to_string [%sexp (`Line : Engine.Line.kind)]) ]
                              ; option
                                  ~attr:selected
-                                 [ text (Sexp.to_string [%sexp (`Segment : S.Line.kind)])
+                                 [ text (Sexp.to_string [%sexp (`Segment : Engine.Line.kind)])
                                  ]
                              ; option
-                                 [ text (Sexp.to_string [%sexp (`Ray : S.Line.kind)]) ]
+                                 [ text (Sexp.to_string [%sexp (`Ray : Engine.Line.kind)]) ]
                              ]
                          ]
                      ]
@@ -1403,7 +1402,7 @@ let lines_table ~lines ~remove_line ~add_line ~set_pause =
   let open Node in
   let open Attr in
   let line_tr line =
-    let p1, p2 = S.Line.to_points line in
+    let p1, p2 = Engine.Line.to_points line in
     tr
       [ td [ text (format_float p1.x) ]
       ; td [ text (format_float p1.y) ]
@@ -1413,7 +1412,7 @@ let lines_table ~lines ~remove_line ~add_line ~set_pause =
           [ p
               ~attr:(many [ style (Css_gen.font_size (`Em_float 0.85)) ])
               [ text
-                  (match S.Line.kind line with
+                  (match Engine.Line.kind line with
                   | `Segment -> "Segment"
                   | `Line -> "Line"
                   | `Ray -> "Ray")
@@ -1521,7 +1520,7 @@ let point_add_modal ~add_point ~set_pause =
       ~on_ok:(fun () ->
         match x, y with
         | Some x, Some y ->
-          let%bind.Effect () = add_point S.Point.{ x; y } in
+          let%bind.Effect () = add_point Engine.Point.{ x; y } in
           Effect.return true
         | _ -> Effect.return false)
       (div
@@ -1548,7 +1547,7 @@ let points_table ~points ~remove_point ~set_pause ~add_point =
   let open Attr in
   let point_tr point =
     tr
-      [ td [ text (format_float point.S.Point.x) ]
+      [ td [ text (format_float point.Engine.Point.x) ]
       ; td [ text (format_float point.y) ]
       ; td
           [ button
@@ -1587,7 +1586,7 @@ let points_table ~points ~remove_point ~set_pause ~add_point =
     ]
 ;;
 
-let until_panel ~(until : S.Action.until Value.t) ~set_until ~current =
+let until_panel ~(until : Engine.Action.until Value.t) ~set_until ~current =
   let%sub timespan_h, set_timespan_h =
     Bonsai.state [%here] (module Float) ~default_model:10.
   in
@@ -1742,7 +1741,7 @@ let until_panel ~(until : S.Action.until Value.t) ~set_until ~current =
 ;;
 
 let scene
-    ~(model : S.Model.t Value.t)
+    ~(model : Engine.Model.t Value.t)
     ~dispatch
     ~time_changed_manually
     ~speed_changed_manually
@@ -1752,7 +1751,7 @@ let scene
     Bonsai.state
       [%here]
       (module struct
-        type t = S.Action.until [@@deriving sexp, equal]
+        type t = Engine.Action.until [@@deriving sexp, equal]
       end)
       ~default_model:init_until
   in
@@ -1779,7 +1778,7 @@ let scene
     let%arr dispatch = dispatch
     and time = time
     and until = until in
-    fun action -> `Action S.Action.{ time; action; until } |> dispatch
+    fun action -> `Action Engine.Action.{ time; action; until } |> dispatch
   in
   let%sub () =
     calc_new_time_every
@@ -1792,12 +1791,12 @@ let scene
   let%sub body_click =
     let%arr dispatch = dispatch in
     fun id x y r ->
-      dispatch (S.Action.GiveVelocity { id; v0 = Float.(x / r * -200., y / r * -200.) })
+      dispatch (Engine.Action.GiveVelocity { id; v0 = Float.(x / r * -200., y / r * -200.) })
   in
   let%sub scene =
     let%arr model = model
     and time = time in
-    model.S.Model.scenes |> S.Scenes.before ~time |> snd
+    model.Engine.Model.scenes |> Engine.Scenes.before ~time |> snd
   in
   let%sub frame = scene_frame ~scene ~body_click ~time in
   let%sub export_import_clear =
@@ -1805,42 +1804,42 @@ let scene
   in
   let%sub remove_body =
     let%arr dispatch = dispatch in
-    fun id -> S.Action.RemoveBody id |> dispatch
+    fun id -> Engine.Action.RemoveBody id |> dispatch
   in
   let%sub set_values =
     let%arr dispatch = dispatch in
     fun id values ->
       match id with
-      | Some id -> S.Action.UpdateBody (id, values) |> dispatch
-      | None -> S.Action.AddBodyOfValues (None, values) |> dispatch
+      | Some id -> Engine.Action.UpdateBody (id, values) |> dispatch
+      | None -> Engine.Action.AddBodyOfValues (None, values) |> dispatch
   in
   let%sub bodies_table = bodies_table ~scene ~time ~remove_body ~set_values ~set_pause in
   let%sub remove_line =
     let%arr dispatch = dispatch in
-    fun line -> S.Action.RemoveLine line |> dispatch
+    fun line -> Engine.Action.RemoveLine line |> dispatch
   in
   let%sub add_line =
     let%arr dispatch = dispatch in
-    fun line -> S.Action.AddLineWithPoints line |> dispatch
+    fun line -> Engine.Action.AddLineWithPoints line |> dispatch
   in
   let%sub lines_table =
     lines_table
-      ~lines:(Bonsai.Value.map scene ~f:(fun scene -> scene.lines |> S.Lines.to_list))
+      ~lines:(Bonsai.Value.map scene ~f:(fun scene -> scene.lines |> Engine.Lines.to_list))
       ~remove_line
       ~add_line
       ~set_pause
   in
   let%sub remove_point =
     let%arr dispatch = dispatch in
-    fun point -> S.Action.RemovePoint point |> dispatch
+    fun point -> Engine.Action.RemovePoint point |> dispatch
   in
   let%sub add_point =
     let%arr dispatch = dispatch in
-    fun point -> S.Action.AddPoint point |> dispatch
+    fun point -> Engine.Action.AddPoint point |> dispatch
   in
   let%sub points_table =
     points_table
-      ~points:(Bonsai.Value.map scene ~f:(fun scene -> scene.points |> S.Points.to_list))
+      ~points:(Bonsai.Value.map scene ~f:(fun scene -> scene.points |> Engine.Points.to_list))
       ~remove_point
       ~set_pause
       ~add_point
@@ -1853,13 +1852,13 @@ let scene
   in
   let%sub g_changed_manually =
     let%arr dispatch = dispatch in
-    fun g -> dispatch (S.Action.UpdateGlobal (S.Var.g, g))
+    fun g -> dispatch (Engine.Action.UpdateGlobal (Engine.Var.g, g))
   in
   let%sub g_panel =
     g_panel
       ~g:
         (Bonsai.Value.map scene ~f:(fun scene ->
-             S.Values.get_scalar_exn scene.global_values ~var:S.Var.g))
+             Engine.Values.get_scalar_exn scene.global_values ~var:Engine.Var.g))
       ~g_changed_manually
   in
   let%arr frame = frame
