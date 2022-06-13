@@ -250,17 +250,29 @@ HTTP-обработчики представлены функциями, кот�
 
 \section{Выбор библиотек и подходов}
 
-Окончательный перечень используемых средств разработки таков:
+Окончательный перечень используемых средств разработки представлен в таблице~\ref{usedtoolstable}.
 
-\begin{itemize}
-      \item OCaml~-- язык программирования;
-      \item Js\_of\_ocaml~-- компилятор OCaml в JavaScript;
-      \item Lwt~-- библиотека для конкурентного программирования;
-      \item Core~-- стандартная библиотека;
-      \item Dream~-- web-фреймворк;
-      \item ppx\_inline\_test,~ppx\_expect~-- библиотеки юнит-тестирования;
-      \item Sexplib~-- библиотека для сериализации и десериализации S-выражений;
-      \item Bulma~-- CSS-фреймворк;
-      \item Dune, opam~-- система сборки и пакетный менеджер;
-      \item VS Code, OCaml Platform~-- среда разработки и плагин для работы с OCaml.
-\end{itemize}
+\begin{centering}
+      \begin{longtable}{|l|p{8cm}|}
+            \caption{Используемые средства разработки} \label{usedtoolstable}                                                                                                                                              \\
+
+            \hline \multicolumn{1}{|c|}{\textbf{Название}}                                                                                                      & \multicolumn{1}{c|}{\textbf{Описание}}                   \\ \hline
+            \endfirsthead
+
+            \multicolumn{2}{c}%
+            {\hspace{-12.5cm}{Окончание таблицы \thetable} \vspace{1ex}}                                                                                                                                                   \\
+            \hline \multicolumn{1}{|c|}{\textbf{Название}}                                                                                                      & \multicolumn{1}{c|}{\textbf{Описание}}                   \\ \hline
+            \endhead
+
+            \href{https://ocaml.org/}{OCaml}                                                                                                                    & язык программирования                                    \\ \hline
+            \href{http://ocsigen.org/js_of_ocaml/}{Js\_of\_ocaml}                                                                                               & компилятор OCaml в JavaScript                            \\ \hline
+            \href{https://ocsigen.org/lwt/}{Lwt}                                                                                                                & библиотека для конкурентного программирования            \\ \hline
+            \href{https://opensource.janestreet.com/core/}{Core}                                                                                                & стандартная библиотека                                   \\ \hline
+            \href{https://aantron.github.io/dream/}{Dream}                                                                                                      & web-фреймворк                                            \\ \hline
+            \href{https://github.com/janestreet/ppx_inline_test}{ppx\_inline\_test}, \href{https://github.com/janestreet/ppx_expect}{ppx\_expect}               & библиотеки юнит-тестирования                             \\ \hline
+            \href{https://github.com/janestreet/sexplib}{Sexplib}                                                                                               & библиотека для сериализации и десериализации S-выражений \\ \hline
+            \href{https://bulma.io/}{Bulma}                                                                                                                     & CSS-фреймворк                                            \\ \hline
+            \href{https://dune.build/}{Dune}, \href{https://opam.ocaml.org/}{opam}                                                                              & система сборки и пакетный менеджер                       \\ \hline
+            \href{https://code.visualstudio.com/}{VS Code}, \href{https://marketplace.visualstudio.com/items?itemName=ocamllabs.ocaml-platform}{OCaml~Platform} & среда разработки и плагин для работы с OCaml             \\ \hline
+      \end{longtable}
+\end{centering}
