@@ -234,7 +234,7 @@ let update model ~action =
   | `Prolong until -> prolong model ~until
 ;;
 
-let recv_with_diff model ~action =
+let update_with_diff model ~action =
   match action with
   | `Action a ->
     let updated = recv model ~action:a in

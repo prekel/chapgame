@@ -38,7 +38,13 @@
   ../images/samplepolyplot.png
   ../images/dotprd.pdf
   ../images/screen1.png
-  ../images/screen2.png)
+  ../images/screen2.png
+  ../images/pistep1.png
+  ../images/pistep2.png
+  ../images/pistep3.png
+  ../images/pistep4.png
+  ../images/pistep5.png
+  ../images/pistep6.png)
  (action
   (progn
    (run %{bin:xelatex} "thesis.tex")

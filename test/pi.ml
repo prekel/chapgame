@@ -112,7 +112,7 @@ let model_pi m2 =
          ; action = GiveVelocity { id = id2; v0 = -100., 0. }
          ; until = { timespan = Some 0.; quantity = None }
          }
-  |> S.prolong ~until:{ timespan = None; quantity = None }
+  |> S.update ~action:(`Prolong S.Action.{ timespan = None; quantity = None })
 ;;
 
 let model_to_pi S.Model.{ scenes; _ } =

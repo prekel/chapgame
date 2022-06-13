@@ -35,7 +35,7 @@ struct
             in
             let%map model, diff =
               Lwt_preemptive.detach
-                (fun (model, action) -> S.recv_with_diff model ~action)
+                (fun (model, action) -> S.update_with_diff model ~action)
                 (room.model, a)
             in
             model, Some diff

@@ -221,9 +221,6 @@ module Model : sig
   end
 end
 
-val recv : Model.t -> action:Action.t -> Model.t
-val prolong : Model.t -> until:Action.until -> Model.t
-
 val update
   :  Model.t
   -> action:
@@ -234,7 +231,7 @@ val update
        ]
   -> Model.t
 
-val recv_with_diff
+val update_with_diff
   :  Model.t
   -> action:[< `Action of Action.t | `Prolong of Action.until ]
   -> Model.t * Model.Diff.t

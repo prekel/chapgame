@@ -80,8 +80,11 @@ module Replays = struct
     lazy
       (actions
       |> List.fold ~init:(S.Model.init ~g:1.) ~f:(fun acc action ->
-             S.recv
-               ~action:{ time = 0.; action; until = { timespan = None; quantity = None } }
+             S.update
+               ~action:
+                 (`Action
+                   S.Action.
+                     { time = 0.; action; until = { timespan = None; quantity = None } })
                acc))
   ;;
 
@@ -101,9 +104,11 @@ module Replays = struct
     lazy
       (actions
       |> List.fold ~init:(S.Model.init ~g:1.) ~f:(fun acc action ->
-             S.recv
+             S.update
                ~action:
-                 { time = 0.; action; until = { timespan = None; quantity = Some 1 } }
+                 (`Action
+                   S.Action.
+                     { time = 0.; action; until = { timespan = None; quantity = Some 1 } })
                acc))
   ;;
 
@@ -121,7 +126,7 @@ module Replays = struct
                  { id = Some id
                  ; x0 = Random.float_range (left + r) (right - r)
                  ; y0 = Random.float_range (top + r) (bottom - r)
-                 ; r = r
+                 ; r
                  ; mu = 0.
                  ; m = 1.
                  }

@@ -290,6 +290,12 @@ let content =
 |}
   ; LabeledRaw
       { label = "rwo-gadt"; raw = {|https://dev.realworldocaml.org/gadts.html \TODO|} }
+  ; LabeledRaw
+      { label = "poolpi"
+      ; raw =
+          {|https://www.maths.tcd.ie/~lebed/Galperin.%20Playing%20pool%20with%20pi.pdf \TODO|}
+      }
+  ; LabeledRaw { label = "habrpi"; raw = {|https://habr.com/ru/post/533454/ \TODO|} }
   ; Raw {|\end{thebibliography}
 \endgroup
 |}
