@@ -289,6 +289,10 @@ let content =
     Роман Душкин \TODO
 |}
   ; LabeledRaw
+      { label = "mdnsvgtag"
+      ; raw = {|https://developer.mozilla.org/en-US/docs/Web/SVG/Element/svg|}
+      }
+  ; LabeledRaw
       { label = "rwo-gadt"; raw = {|https://dev.realworldocaml.org/gadts.html \TODO|} }
   ; LabeledRaw
       { label = "poolpi"
@@ -296,6 +300,19 @@ let content =
           {|https://www.maths.tcd.ie/~lebed/Galperin.%20Playing%20pool%20with%20pi.pdf \TODO|}
       }
   ; LabeledRaw { label = "habrpi"; raw = {|https://habr.com/ru/post/533454/ \TODO|} }
+  ; LabeledRaw
+      { label = "browniankrugosvet"
+      ; raw =
+          {|https://www.krugosvet.ru/enc/nauka\_i\_tehnika/fizika/BROUNOVSKOE\_DVIZHENIE.html \TODO|}
+      }
+  ; LabeledRaw
+      { label = "infoqmulticore"
+      ; raw = {|https://www.infoq.com/news/2021/10/ocaml-5-multicore/ \TODO|}
+      }
+  ; LabeledRaw
+      { label = "domainslibgithub"
+      ; raw = {|https://github.com/ocaml-multicore/domainslib \TODO |}
+      }
   ; Raw {|\end{thebibliography}
 \endgroup
 |}
