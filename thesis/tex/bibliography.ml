@@ -306,6 +306,19 @@ let content =
           {|https://www.krugosvet.ru/enc/nauka\_i\_tehnika/fizika/BROUNOVSKOE\_DVIZHENIE.html \TODO|}
       }
   ; LabeledRaw
+      { label = "wiki-chapaev"
+      ; raw =
+          {|https://ru.wikipedia.org/wiki/%D0%A7%D0%B0%D0%BF%D0%B0%D0%B5%D0%B2\_(%D0%B8%D0%B3%D1%80%D0%B0) \TODO|}
+      }
+  ; LabeledRaw
+      { label = "smeshariki-fandom"
+      ; raw =
+          {|https://shararam.fandom.com/wiki/%D0%A1%D0%BC%D0%B5%D1%88%D0%B0%D1%80%D0%B8%D0%BA%D0%B8\_(%D0%B8%D0%B3%D1%80%D0%B0) \TODO|}
+      }
+  ; LabeledRaw { label = "vk-games"; raw = {|https://dev.vk.com/games/overview \TODO|} }
+  ; LabeledRaw
+      { label = "tg-games"; raw = {|https://core.telegram.org/bots/games \TODO|} }
+  ; LabeledRaw
       { label = "infoqmulticore"
       ; raw = {|https://www.infoq.com/news/2021/10/ocaml-5-multicore/ \TODO|}
       }
