@@ -1,6 +1,7 @@
 open Core
 
 type t =
+  | Done of string
   | Raw of string
   | LabeledRaw of
       { label : string
@@ -13,9 +14,10 @@ type t =
       }
 
 let print = function
-  | Raw s -> s
+  | Done s -> s
+  | Raw s -> sprintf "%s \\TODO" s
   | LabeledRaw { label; raw } -> sprintf {|\bibitem{%s}
-    %s
+    \TODO %s
     |} label raw
   | EDN { label; raw_before_edn; edn } ->
     sprintf
@@ -31,7 +33,7 @@ let print = function
 let print_list list = list |> List.map ~f:print |> String.concat ~sep:"\n"
 
 let content =
-  [ Raw
+  [ Done
       {|\begingroup
 \renewcommand{\section}[2]{\Anonchapter{Список использованных источников}\vspace{-1em}}
 \begin{thebibliography}{00}
@@ -47,7 +49,7 @@ let content =
     «Мысль»
     Москва - 1964. \TODO
     |}
-  ; Raw
+  ; Done
       {|\bibitem{rowellherbert}
     Роуэлл, Г. Физика : учебное издание / Г. Роуэлл, С. Герберт. -- Москва : Просвещение, 1994. -- 576 с. -- ISBN 5-09-002920-2.
     |}
@@ -291,6 +293,14 @@ let content =
     Роман Душкин \TODO
 |}
   ; LabeledRaw
+      { label = "mdn-wheel"
+      ; raw = {|https://developer.mozilla.org/en-US/docs/Web/API/Element/wheel\_event|}
+      }
+  ; LabeledRaw
+      { label = "jsoo-issue-1272"
+      ; raw = {|https://github.com/ocsigen/js\_of\_ocaml/issues/1272|}
+      }
+  ; LabeledRaw
       { label = "mdnsvgtag"
       ; raw = {|https://developer.mozilla.org/en-US/docs/Web/SVG/Element/svg|}
       }
@@ -328,7 +338,7 @@ let content =
       { label = "domainslibgithub"
       ; raw = {|https://github.com/ocaml-multicore/domainslib \TODO |}
       }
-  ; Raw {|\end{thebibliography}
+  ; Done {|\end{thebibliography}
 \endgroup
 |}
   ]
