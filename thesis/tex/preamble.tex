@@ -135,6 +135,7 @@
 % Содержание
 \usepackage{tocloft}
 \renewcommand{\cfttoctitlefont}{\vspace{-2.5cm}\hspace{0.38\textwidth}\bfseries\MakeTextUppercase} % СОДЕРЖАНИЕ
+\renewcommand\cftaftertoctitle{\vspace{-2em}}
 \renewcommand{\cftsecfont}{\hspace{0pt}}            % Имена секций в содержании не жирным шрифтом
 \renewcommand\cftsecleader{\cftdotfill{\cftdotsep}} % Точки для секций в содержании
 \renewcommand\cftsecpagefont{\mdseries}
@@ -144,6 +145,9 @@
 \setlength{\cftbeforechapskip}{0em}            % Номера страниц не жирные
 \setlength{\cftbeforesecskip}{0em}
 \setlength{\cftbeforesubsecskip}{0em}
+\setlength{\cftchapindent}{0em}
+\setlength{\cftsecindent}{1em}
+\setlength{\cftsubsecindent}{2em}
 % \setlength{\cftbeforesubsubsecskip}{0em}
 \setcounter{tocdepth}{3}                            % Глубина оглавления, до subsubsection
 
