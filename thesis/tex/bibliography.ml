@@ -282,6 +282,8 @@ let content =
     https://arxiv.org/abs/1905.02529 Programming Unikernels in the Large via Functor Driven
     Development (Experience Report) \TODO Radanne G. et al. Programming unikernels in the large via functor driven development //arXiv preprint arXiv:1905.02529. – 2019.
     |}
+  ; LabeledRaw
+      { label = "intftrick"; raw = {|https://www.craigfe.io/posts/the-intf-trick \TODO|} }
   ; Raw
       {|\bibitem{fprog-adt}
     https://www.fprog.ru/2009/issue2/practice-fp-2-compact.pdf 

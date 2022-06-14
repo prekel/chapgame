@@ -41,13 +41,18 @@
         solver                                                    & \href{https://github.com/prekel/chapgame/blob/master/lib/solver}{lib/solver}     & \ref{solverimpl}                        \\ \hline
         expr                                                      & \href{https://github.com/prekel/chapgame/blob/master/lib/expr}{lib/expr}         & \ref{expr}                              \\ \hline
         engine                                                    & \href{https://github.com/prekel/chapgame/blob/master/lib/engine}{lib/engine}     & \ref{engine}                            \\ \hline
-        protocol                                                  & \href{https://github.com/prekel/chapgame/blob/master/lib/protocol}{lib/protocol} & \ref{clientonlineimpl}                  \\ \hline
-        server                                                    & \href{https://github.com/prekel/chapgame/blob/master/lib/server}{lib/server}     & \multirow{2}{*}{\ref{serverimpl}}       \\*
-        server\_bin                                               & \href{https://github.com/prekel/chapgame/blob/master/bin/server}{bin/server}     &                                         \\ \hline
         client                                                    & \href{https://github.com/prekel/chapgame/blob/master/lib/client}{lib/client}     & \multirow{2}{*}{\ref{clientimpl}}       \\*
         client\_bin                                               & \href{https://github.com/prekel/chapgame/blob/master/bin/client}{bin/client}     &                                         \\ \hline
+        protocol                                                  & \href{https://github.com/prekel/chapgame/blob/master/lib/protocol}{lib/protocol} & \multirow{3}{*}{\ref{serverimpl}}       \\ \cline{1-2}
+        server                                                    & \href{https://github.com/prekel/chapgame/blob/master/lib/server}{lib/server}     &                                         \\*
+        server\_bin                                               & \href{https://github.com/prekel/chapgame/blob/master/bin/server}{bin/server}     &                                         \\ \hline
     \end{longtable}
 \end{centering}
+
+При использовании функторов, был использован <<трюк \_intf>>, который позволил вывести сигнатуру выходного модуля
+в отдельный файл, что позволяет не дублировать её и в файле, где функтор реализован~\cite{intftrick}.
+Т.е. в таблицах~\ref{solvermodulestable}~и~\ref{exprtable} сигнатуры выведены в файл заканчивающийся на <<\_intf.ml>>.
+Там, где функторы не используются (таблица~\ref{enginemodules}), файл сигнатур имеет суффикс~<<.mli>>.
 
 На рисунках~\ref{solvermodules} и~\ref{exprdiagramfig} представлены диаграммы с функторами,
 ромбовидная стрелка из \(F\) в \(S\) означает, что функтор \(F\) параметризируется модулем, имеющим сигнатуру \(S\);
@@ -504,7 +509,7 @@
 для единицы расстояния 1 пиксель. Для массы выбирать конкретную единицу измерения не имеет смысла, потому что во всех
 использованных формулах, в которых присутствует масса, единицы измерения сокращаются.
 
-\section{Клиентская часть, одиночный режим}\label{clientimpl}
+\section{Клиентская часть}\label{clientimpl}
 
 Как указано ранее, клиентская часть реализована в виде браузерного одностраничного приложения.
 Оно может может работать независимо от серверной части: тогда будет доступен только одиночный режим,
@@ -597,11 +602,10 @@
 API многопользовательского режима представляет REST-подобный интерфейс,
 с помощью которого можно создать <<комнату>> (т.е. модель, ассоциированную с подключёнными клиентами),
 послать действие, которое применится к модели на сервере, и послать запрос, который инициализирует WebSocket-соединение,
-по которому будут приходить изменения (разница) модели.
+по которому будут приходить изменения (разница) модели. Кроме модели, в комнате храниться время и скорость,
+изменения которых так же синхронизируются с клиентами. Для передачи данных используется формат S-выражений.
 
-\section{Клиентская часть, многопользовательский режим}\label{clientonlineimpl}
-
-\TODO
+Статика встраивается статически в исполняемый файл сервера, поэтому на рисунке~\ref{libsdiagramfig} библиотека сервера зависит от клиента.
 
 Вместе с ответом на HTTP-запрос корневого HTML-документа, сервер посылает cookie со специальным значением,
 которое затем программно считывается на клиентской части, что позволяет в ней активировать дополнительную функциональность~--
@@ -616,5 +620,3 @@ API многопользовательского режима представл
 
 При создании комнаты автоматически назначается токен, который в адресную строку передаётся как query-параметр,
 без которого можно только наблюдать за состоянием комнаты без права посылать действия.
-
-\TODO
