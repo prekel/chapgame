@@ -27,7 +27,7 @@ struct
     in
     let%sub dispatch =
       let%arr dispatch = dispatch in
-      fun _ _ -> dispatch
+      fun _ _ _ _ -> dispatch
     in
     let%sub scene =
       SC.scene

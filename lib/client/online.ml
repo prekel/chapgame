@@ -87,11 +87,17 @@ let component ~room_id ~token =
       |> send_msg
   in
   let%sub dispatch_with_send =
-    let%arr dispatch = dispatch
+    let%arr _dispatch = dispatch
+    and model = model
     and send_msg = send_msg in
-    fun time speed -> function
+    fun time speed set_time set_speed -> function
       | `Prolong _ as action ->
-        let%bind.Effect () = dispatch (action :> Action.t) in
+        let%bind.Effect () =
+          match model with
+          | Some { timeout = Some timeout; _ } -> set_time timeout
+          | _ -> set_time (time -. (speed /. 60.))
+        in
+        let%bind.Effect () = set_speed 0. in
         Protocol.Request.Action { time; speed; action }
         |> [%sexp_of: Protocol.Request.t]
         |> Sexp.to_string_hum

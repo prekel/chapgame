@@ -44,7 +44,8 @@
   ../images/pistep3.png
   ../images/pistep4.png
   ../images/pistep5.png
-  ../images/pistep6.png)
+  ../images/pistep6.png
+  ../images/brownian.pdf)
  (action
   (progn
    (run %{bin:xelatex} "thesis.tex")
