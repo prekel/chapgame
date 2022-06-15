@@ -14,7 +14,7 @@ type t =
       }
 
 let print = function
-  | Done s -> s
+  | Done s -> [%string "%{s}"]
   | Raw s -> sprintf "%s \\TODO" s
   | LabeledRaw { label; raw } -> sprintf {|\bibitem{%s}
     \TODO %s
@@ -38,31 +38,33 @@ let content =
 \renewcommand{\section}[2]{\Anonchapter{Список использованных источников}\vspace{-1em}}
 \begin{thebibliography}{00}
 |}
-  ; Raw
+  ; Done
       {|\bibitem{kant}
-    Критика чистого разума
-    Сочинения в шести томах.
-    Том 3
-    Академия наук СССР
-    Институт философии
-    Издательство социально-экономической литературы
-    «Мысль»
-    Москва - 1964. \TODO
+      Кант,~И. Сочинения в шести томах. Том 3.~/ И. Кант. [Под общ.~ред. В.~Ф.~Асмуса, А.~В.~Гулыги, Т.~И.~Ойзермана.]~--
+      Москва~: Мысль, 1964.~--
+      799~с.
     |}
   ; Done
       {|\bibitem{rowellherbert}
-    Роуэлл, Г. Физика : учебное издание / Г. Роуэлл, С. Герберт. -- Москва : Просвещение, 1994. -- 576 с. -- ISBN 5-09-002920-2.
-    |}
-  ; Raw
+      Роуэлл,~Г. Физика~: учебное издание~/ Г.~Роуэлл, С.~Герберт.~--
+      Москва~: Просвещение, 1994.~--
+      576~с.~--
+      ISBN 5-09-002920-2.
+      |}
+  ; Done
       {|\bibitem{mathforprogrammers}
-    Math for Progammers \TODO
-    https://www.manning.com/books/math-for-programmers
+      Orland~P. Math for Progammers~: 3D graphics, machine learning, and simulations with Python~/ P. Orland.~--
+      Shelter Island, NY~: Manning, 2020.~--
+      688~p.~--
+      ISBN 978-1617295355
     |}
-  ; Raw
+  ; Done
       {|\bibitem{larson}
-    Larson R., Hostetler R. . Precalculus: A Concise Course. — Boston:
-    Houghton Mifflin, 2007. — xvii + 526 + 102 p. — ISBN 0-618-62719-7. \TODO
-    |}
+      Larson~R. Precalculus~: a concise course~/ R. Larson, R. Hostetler~--
+      Boston~: Houghton Mifflin, 2007.~--
+      656~p.~--
+      ISBN 0-618-62719-7.
+      |}
   ; Raw
       {|\bibitem{alekseevabel}
     Алексеев, В. Б. Теорема Абеля в задачах и решениях. — М.: МЦНМО, 2001. — 192 с. — ISBN 5-900916-86-3. \TODO
