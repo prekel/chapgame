@@ -7,6 +7,10 @@ type t =
       { label : string
       ; raw : string
       }
+  | Labeled of
+      { label : string
+      ; raw : string
+      }
   | EDN of
       { label : string
       ; raw_before_edn : string
@@ -18,6 +22,9 @@ let print = function
   | Raw s -> sprintf "%s \\TODO\n" s
   | LabeledRaw { label; raw } -> sprintf {|\bibitem{%s}
     \TODO %s
+    |} label raw
+  | Labeled { label; raw } -> sprintf {|\bibitem{%s}
+    %s
     |} label raw
   | EDN { label; raw_before_edn; edn } ->
     sprintf
@@ -80,6 +87,15 @@ let doi
   |}]
 ;;
 
+let site ~label ~title ~sitename ~url ?(urlref = url) ~accessdate () =
+  Done
+    [%string
+      {|\bibitem{%{label}}
+      %{title}~// %{sitename}.~--
+      URL: \underline{\smash{\href{%{urlref}}{%{url}}}}
+      (дата~обращения: %{accessdate}). |}]
+;;
+
 let content =
   [ Done
       {|\begingroup
@@ -127,9 +143,11 @@ let content =
       URL: \underline{\smash{\href{https://nm.mathforcollege.com/mws/gen/03nle/mws\_gen\_nle\_txt\_bisection.pdf}{https://nm.mathforcollege.com/mws/gen/03nle/mws\_gen\_nle\_txt\_bisection.pdf}}}.~--
       Publication date: 15.01.2012.
       |}
-  ; Raw
+  ; Done
       {|\bibitem{wiki-ellastic-collision}
-      https://en.wikipedia.org/wiki/Elastic\_collision \TODO
+      Elastic collision~// Wikipedia~: the free encyclopedia.~--
+      URL: \underline{\smash{\href{https://en.wikipedia.org/wiki/Elastic\_collision}{https://en.wikipedia.org/wiki/Elastic\_collision}}}
+      (дата~обращения: 26.05.2022).
       |}
   ; Raw
       {|\bibitem{mdn-spa}
@@ -146,17 +164,23 @@ let content =
       URL: \underline{\smash{\href{https://dl.acm.org/doi/pdf/10.1145/3062341.3062363}{https://dl.acm.org/doi/pdf/10.1145/3062341.3062363}}}.~--
       Publication date: 14.06.2017.
       |}
-  ; Raw
+  ; Done
       {|\bibitem{emscripten-about}
-    https://emscripten.org/docs/introducing\_emscripten/about\_emscripten.html \TODO
-    |}
-  ; Raw
+      About Emscripten~// Emscripten documentation.~--
+      URL: \underline{\smash{\href{https://emscripten.org/docs/introducing\_emscripten/about\_emscripten.html}{https://emscripten.org/docs/introducing\_emscripten/about\_emscripten.html}}}
+      (дата~обращения: 26.05.2022).
+      |}
+  ; Done
       {|\bibitem{rust-wasm}
-    https://rustwasm.github.io/docs/book/why-rust-and-webassembly.html \TODO
+      Why Rust and WebAssembly?~// Rust and WebAssembly~: [документация].~--
+      URL: \underline{\smash{\href{https://rustwasm.github.io/docs/book/why-rust-and-webassembly.html}{https://rustwasm.github.io/docs/book/why-rust-and-webassembly.html}}}
+      (дата~обращения: 27.05.2022).
     |}
-  ; Raw
+  ; Done
       {|\bibitem{blazor-ru}
-    https://docs.microsoft.com/ru-ru/aspnet/core/blazor \TODO
+      ASP.NET Core Blazor~// ASP.NET Core~: [документация].~--
+      URL: \underline{\smash{\href{https://docs.microsoft.com/ru-ru/aspnet/core/blazor}{https://docs.microsoft.com/ru-ru/aspnet/core/blazor}}}
+      (дата~обращения: 27.05.2022).
     |}
   ; Raw {|\bibitem{fsbolero}
     https://fsbolero.io/docs/ \TODO
@@ -245,10 +269,13 @@ let content =
       ~urlref:
         "https://www.irif.fr/\\~balat/publications/vouillon\_balat-js\_of\_ocaml.pdf"
       ~accessdate:"30.05.2022"
-  ; Raw
-      {|\bibitem{bobzhang-rawlambda}
-    https://github.com/ocsigen/js\_of\_ocaml/issues/338 \TODO
-    |}
+  ; site
+      ~label:"bobzhang-rawlambda"
+      ~title:"Compiling rawlambda output to javascript~: discuss"
+      ~sitename:"GitHub~: js\_of\_ocaml"
+      ~url:"https://github.com/ocsigen/js\_of\_ocaml/issues/338"
+      ~accessdate:"28.05.2022"
+      ()
   ; Raw
       {|\bibitem{rescript-introduction}
     https://rescript-lang.org/docs/manual/latest/introduction \TODO
@@ -288,18 +315,23 @@ let content =
       {|\bibitem{announcing-async}
     https://blog.janestreet.com/announcing-async/ \TODO
     |}
-  ; Raw
+  ; Done
       {|\bibitem{rgrinberg-async}
-    http://rgrinberg.com/posts/abandoning-async/ \TODO
+      Grinberg, R. Abandoning Async~/ Rudi Grinberg.~--
+      URL: \underline{\smash{\href{http://rgrinberg.com/posts/abandoning-async/}{http://rgrinberg.com/posts/abandoning-async/}}}
+      (дата обращения: 27.05.2022).
     |}
   ; Raw
       {|\bibitem{jsoo-react}
     https://github.com/ml-in-barcelona/jsoo-react \TODO
     |}
-  ; Raw
-      {|\bibitem{elm-architecture}
-    https://guide.elm-lang.org/architecture/ \TODO
-    |}
+  ; site
+      ~label:"elm-architecture"
+      ~title:"The Elm Architecture~: An Introduction to Elm"
+      ~sitename:"Elm~: [документация]"
+      ~url:"https://guide.elm-lang.org/architecture/"
+      ~accessdate:"28.05.2022"
+      ()
   ; Raw {|\bibitem{lexifi-vdom}
     https://github.com/LexiFi/ocaml-vdom \TODO
     |}
@@ -311,10 +343,13 @@ let content =
       {|\bibitem{bonsai-history}
     https://github.com/janestreet/bonsai/blob/master/docs/blogs/history.md \TODO
     |}
-  ; Raw
-      {|\bibitem{janestreet-bonsai}
-    https://opensource.janestreet.com/bonsai/ \TODO
-    |}
+  ; site
+      ~label:"janestreet-bonsai"
+      ~title:"Bonsai"
+      ~sitename:"Jane Street Open Source"
+      ~url:"https://opensource.janestreet.com/bonsai/"
+      ~accessdate:"28.05.2022"
+      ()
   ; Done
       {|\bibitem{react-book}
       Бэнкс,~A. React и Redux: функциональная веб-разработка~/ А.~Бэнкс, Е.~Порселло.~--
@@ -330,13 +365,18 @@ let content =
       URL: \underline{\smash{\href{https://www.youtube.com/watch?v=R3xX37RGJKE}{https://www.youtube.com/watch?v=R3xX37RGJKE}}}
       (дата~обращения: 27.05.2022).
       |}
-  ; Raw
-      {|\bibitem{mdn-websocket}
-    https://developer.mozilla.org/ru/docs/Web/API/WebSocket \TODO 
-    |}
-  ; Raw {|\bibitem{dream}
-    https://aantron.github.io/dream \TODO
-    |}
+  ; site
+      ~label:"mdn-websocket"
+      ~title:"WebSocket~: Интерфейсы веб API"
+      ~sitename:"MDN Web Docs"
+      ~url:"https://developer.mozilla.org/ru/docs/Web/API/WebSocket"
+      ~accessdate:"28.05.2022"
+      ()
+  ; Done
+      {|\bibitem{dream}
+        Dream : Tidy, feature-complete web framework.~--
+        URL: \underline{\smash{\href{https://aantron.github.io/dream/}{https://aantron.github.io/dream/}}}
+        (дата~обращения: 27.05.2022). |}
   ; rwo2nd
       ~label:"rwo-testing"
       ~title:"Testing"
@@ -365,14 +405,20 @@ let content =
       ~label:"rwo-platform"
       ~title:"The OCaml Platform"
       ~url:"https://dev.realworldocaml.org/platform.html"
-  ; Raw
-      {|\bibitem{bulma-vs-bootstrap}
-    https://bulma.io/alternative-to-bootstrap/ \TODO
-    |}
-  ; Raw
-      {|\bibitem{wiki-mlmodules}
-    https://ru.wikipedia.org/wiki/Язык\_модулей\_ML
-    |}
+  ; site
+      ~label:"bulma-vs-bootstrap"
+      ~title:"An alternative to Bootstrap"
+      ~sitename:"Bulma~: [документация]"
+      ~url:"https://bulma.io/alternative-to-bootstrap/"
+      ~accessdate:"28.05.2022"
+      ()
+  ; site
+      ~label:"wiki-mlmodules"
+      ~title:"Язык модулей ML"
+      ~sitename:"Википедия~: свободная энциклопедия"
+      ~url:"https://ru.wikipedia.org/wiki/Язык\_модулей\_ML"
+      ~accessdate:"28.05.2022"
+      ()
   ; arxiv
       ~label:"functor-driven"
       ~arxiv:"1905.02529"
@@ -381,8 +427,13 @@ let content =
       ~authors:"Gabriel Radanne, Thomas Gazagnaire, Anil Madhavapeddy [et~al.]"
       ~year:"2019"
       ~pubdate:"07.05.2019"
-  ; LabeledRaw
-      { label = "intftrick"; raw = {|https://www.craigfe.io/posts/the-intf-trick \TODO|} }
+  ; Labeled
+      { label = "intftrick"
+      ; raw =
+          {|Ferguson,~C. The \_intf trick / Craig Ferguson.~--
+            URL: \underline{\smash{\href{https://www.craigfe.io/posts/the-intf-trick}{https://www.craigfe.io/posts/the-intf-trick}}}
+            (дата~обращения: 27.05.2022).|}
+      }
   ; Done
       {|\bibitem{fprog-adt}
       Душкин,~Р. Алгебраические типы данных и их использование в программировании~/
@@ -397,18 +448,27 @@ let content =
       ~label:"rwo-gadt"
       ~title:"GADTs"
       ~url:"https://dev.realworldocaml.org/gadts.html"
-  ; LabeledRaw
-      { label = "mdnsvgtag"
-      ; raw = {|https://developer.mozilla.org/en-US/docs/Web/SVG/Element/svg|}
-      }
-  ; LabeledRaw
-      { label = "mdn-wheel"
-      ; raw = {|https://developer.mozilla.org/en-US/docs/Web/API/Element/wheel\_event|}
-      }
-  ; LabeledRaw
-      { label = "jsoo-issue-1272"
-      ; raw = {|https://github.com/ocsigen/js\_of\_ocaml/issues/1272|}
-      }
+  ; site
+      ~label:"mdnsvgtag"
+      ~title:"<svg>~: SVG element reference"
+      ~sitename:"MDN Web Docs"
+      ~url:"https://developer.mozilla.org/en-US/docs/Web/SVG/Element/svg"
+      ~accessdate:"28.05.2022"
+      ()
+  ; site
+      ~label:"mdn-wheel"
+      ~title:"Element: wheel event~: Web APIs"
+      ~sitename:"MDN Web Docs"
+      ~url:"https://developer.mozilla.org/en-US/docs/Web/API/Element/wheel\_event"
+      ~accessdate:"28.05.2022"
+      ()
+  ; site
+      ~label:"jsoo-issue-1272"
+      ~title:"Wheel event bindings~: feature request"
+      ~sitename:"GitHub~: js\_of\_ocaml"
+      ~url:"https://github.com/ocsigen/js\_of\_ocaml/issues/1272"
+      ~accessdate:"28.05.2022"
+      ()
   ; doi
       ~label:"poolpi"
       ~doi:"10.1070/RD2003v008n04ABEH000252"
@@ -422,20 +482,25 @@ let content =
          pi.pdf"
       ~urlref:"https://www.maths.tcd.ie/\\~lebed/Galperin. Playing pool with pi.pdf"
       ~accessdate:"08.06.2022"
-    (* ; LabeledRaw { label = "poolpi" ; raw =
-       {|https://www.maths.tcd.ie/~lebed/Galperin.%20Playing%20pool%20with%20pi.pdf
-       \TODO|} } *)
-  ; LabeledRaw { label = "habrpi"; raw = {|https://habr.com/ru/post/533454/ \TODO|} }
+  ; site
+      ~label:"habrpi"
+      ~title:"Как увидеть π? Нужно швырнуть π в стену"
+      ~sitename:"Habr"
+      ~url:"https://habr.com/ru/post/533454/"
+      ~accessdate:"29.05.2022"
+      ()
   ; LabeledRaw
       { label = "browniankrugosvet"
       ; raw =
           {|https://www.krugosvet.ru/enc/nauka\_i\_tehnika/fizika/BROUNOVSKOE\_DVIZHENIE.html \TODO|}
       }
-  ; LabeledRaw
-      { label = "wiki-chapaev"
-      ; raw =
-          {|https://ru.wikipedia.org/wiki/%D0%A7%D0%B0%D0%BF%D0%B0%D0%B5%D0%B2\_(%D0%B8%D0%B3%D1%80%D0%B0) \TODO|}
-      }
+  ; site
+      ~label:"wiki-chapaev"
+      ~title:"Чапаев (игра)"
+      ~sitename:"Википедия~: свободная энциклопедия"
+      ~url:"https://ru.wikipedia.org/wiki/Чапаев (игра)"
+      ~accessdate:"29.05.2022"
+      ()
   ; LabeledRaw
       { label = "smeshariki-fandom"
       ; raw =
