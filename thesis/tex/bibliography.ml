@@ -475,13 +475,13 @@ let content =
       ~title:"Playing pool with π (the number π from a billiard point of view)"
       ~author:"Galperin.~G."
       ~authors:"G.~Galperin"
-      ~journal:"Regualar \\& Chaotic Dynamics"
-      ~yearvolumeissuepages:"2003, Vol.~8, Number~4, P.~375--394"
+      ~journal:"Regualar and Chaotic Dynamics"
+      ~yearvolumeissuepages:"2003.~-- Vol.~8, №~4.~-- P.~375--394"
       ~url:
         "https://www.maths.tcd.ie/{\\textasciitilde}lebed/Galperin. Playing pool with \
          pi.pdf"
       ~urlref:"https://www.maths.tcd.ie/\\~lebed/Galperin. Playing pool with pi.pdf"
-      ~accessdate:"08.06.2022"
+      ~accessdate:"25.05.2022"
   ; site
       ~label:"habrpi"
       ~title:"Как увидеть π? Нужно швырнуть π в стену"
