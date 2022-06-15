@@ -36,10 +36,10 @@ let rwo2nd ~label ~title ~url =
   Done
     [%string
       {|\bibitem{%{label}}
-      Minsky,~Y. %{title} : Real World OCaml~/
+      Minsky,~Y. %{title}~: Real World OCaml~/
       Yaron Minsky, Anil Madhavapeddy~//
-      Real World OCaml : Functional programming for the masses (2nd Edition).~--
-      URL: \underline{\smash{\href{%{url}}{%{url}}}} (дата обращения: 25.05.2022).
+      Real World OCaml~: Functional programming for the masses (2nd~Edition).~--
+      URL: \underline{\smash{\href{%{url}}{%{url}}}} (дата~обращения: 25.05.2022).
       |}]
 ;;
 
@@ -50,8 +50,34 @@ let arxiv ~label ~arxiv ~title ~author ~authors ~year ~pubdate =
     %{author} %{title}~/ %{authors}.~--
     %{year}.~--
     arXiv: \href{https://arxiv.org/abs/%{arxiv}}{%{arxiv}}.~--
-    URL: \underline{\smash{\href{https://arxiv.org/pdf/%{arxiv}.pdf}{https://arxiv.org/pdf/%{arxiv}.pdf}}}.~--Publication date: %{pubdate}.
+    URL: \underline{\smash{\href{https://arxiv.org/pdf/%{arxiv}.pdf}{https://arxiv.org/pdf/%{arxiv}.pdf}}}.~--
+    Publication date: %{pubdate}.
     |}]
+;;
+
+let doi
+    ~label
+    ~doi
+    ~title
+    ~author
+    ~authors
+    ~journal
+    ~yearvolumeissuepages
+    ~url
+    ~urlref
+    ~accessdate
+  =
+  Done
+    [%string
+      {|\bibitem{%{label}}
+      %{author} %{title}~/
+      %{authors}.~--
+  DOI~\href{https://doi.org/%{doi}}{%{doi}}~//
+  %{journal}.~--
+  %{yearvolumeissuepages}.~--
+  URL: \underline{\smash{\href{%{urlref}}{%{url}}}}
+  (access~date: %{accessdate}).
+  |}]
 ;;
 
 let content =
@@ -67,13 +93,6 @@ let content =
       799~с.
     |}
   ; Done
-      {|\bibitem{rowellherbert}
-      Роуэлл,~Г. Физика~: учебное издание~/ Г.~Роуэлл, С.~Герберт.~--
-      Москва~: Просвещение, 1994.~--
-      576~с.~--
-      ISBN 5-09-002920-2.
-      |}
-  ; Done
       {|\bibitem{mathforprogrammers}
       Orland,~P. Math for Progammers~: 3D graphics, machine learning, and simulations with Python~/ P. Orland.~--
       Shelter Island, NY~: Manning, 2020.~--
@@ -88,15 +107,18 @@ let content =
       ISBN 0-618-62719-7.
       |}
   ; Done
+      {|\bibitem{rowellherbert}
+      Роуэлл,~Г. Физика~: учебное издание~/ Г.~Роуэлл, С.~Герберт.~--
+      Москва~: Просвещение, 1994.~--
+      576~с.~--
+      ISBN 5-09-002920-2.
+      |}
+  ; Done
       {|\bibitem{alekseevabel}
       Алексеев,~В.~Б. Теорема Абеля в задачах и решениях~/ В.~Б.~Алексеев.~--
       Москва~: МЦНМО, 2001.~--
       192~с.~--
       ISBN 5-900916-86-3.
-      |}
-  ; Raw
-      {|\bibitem{wiki-ellastic-collision}
-      https://en.wikipedia.org/wiki/Elastic\_collision \TODO
       |}
   ; Done
       {|\bibitem{bisectionkaw}
@@ -104,6 +126,10 @@ let content =
       Textbook: Numerical Methods with Applications.~--
       URL: \underline{\smash{\href{https://nm.mathforcollege.com/mws/gen/03nle/mws\_gen\_nle\_txt\_bisection.pdf}{https://nm.mathforcollege.com/mws/gen/03nle/mws\_gen\_nle\_txt\_bisection.pdf}}}.~--
       Publication date: 15.01.2012.
+      |}
+  ; Raw
+      {|\bibitem{wiki-ellastic-collision}
+      https://en.wikipedia.org/wiki/Elastic\_collision \TODO
       |}
   ; Raw
       {|\bibitem{mdn-spa}
@@ -206,10 +232,19 @@ let content =
       ~label:"rwo-backend"
       ~title:"The Compiler Backend: Bytecode and Native code"
       ~url:"https://dev.realworldocaml.org/compiler-backend.html"
-  ; Raw
-      {|\bibitem{vouillon-jsoo}
-    https://www.irif.fr/~balat/publications/vouillon\_balat-js\_of\_ocaml.pdf \TODO
-    |}
+  ; doi
+      ~label:"vouillon-jsoo"
+      ~doi:"10.1002/spe.2187"
+      ~title:"From bytecode to JavaScript: the Js\_of\_ocaml compiler"
+      ~author:"Vouillon J."
+      ~authors:"Jérôme Vouillon, Vincent Balat"
+      ~journal:"Software: Practice and Experience"
+      ~yearvolumeissuepages:"2014.~-- Vol.~44, Iss.~8.~-- P.~951--972"
+      ~url:
+        "https://www.irif.fr/{\\textasciitilde}balat/publications/vouillon\_balat-js\_of\_ocaml.pdf"
+      ~urlref:
+        "https://www.irif.fr/\\~balat/publications/vouillon\_balat-js\_of\_ocaml.pdf"
+      ~accessdate:"30.05.2022"
   ; Raw
       {|\bibitem{bobzhang-rawlambda}
     https://github.com/ocsigen/js\_of\_ocaml/issues/338 \TODO
@@ -238,11 +273,17 @@ let content =
       ~label:"rwo-async"
       ~title:"Concurrent Programming with Async"
       ~url:"https://dev.realworldocaml.org/concurrent-programming.html"
-  ; Raw
-      {|\bibitem{vouillon-lwt}
-    Jerome Vouillon Lwt: a Cooperative Thread Library \TODO
-    https://www.irif.fr/\~vouillon/publi/lwt.pdf
-    |}
+  ; doi
+      ~label:"vouillon-lwt"
+      ~doi:"10.1145/1411304.1411307"
+      ~title:"Lwt: a cooperative thread library"
+      ~author:"Vouillon, J."
+      ~authors:"Jérôme Vouillon"
+      ~journal:"ML '08: Proceedings of the 2008 ACM SIGPLAN workshop on ML"
+      ~yearvolumeissuepages:"2008.~-- P.~3--12"
+      ~url:"https://www.irif.fr//{\\textasciitilde}vouillon/publi/lwt.pdf"
+      ~urlref:"https://www.irif.fr//\\~vouillon/publi/lwt.pdf"
+      ~accessdate:"28.05.2022"
   ; Raw
       {|\bibitem{announcing-async}
     https://blog.janestreet.com/announcing-async/ \TODO
@@ -274,17 +315,24 @@ let content =
       {|\bibitem{janestreet-bonsai}
     https://opensource.janestreet.com/bonsai/ \TODO
     |}
-  ; Raw
+  ; Done
       {|\bibitem{react-book}
-    А. Бэнкс, Е. Порселло. React и Redux: функциональная веб-разработка ISBN 978-5-4461-0668-4 \TODO
+      Бэнкс,~A. React и Redux: функциональная веб-разработка~/ А.~Бэнкс, Е.~Порселло.~--
+      Санкт-Петербург~: Питер, 2019.~--
+      336~с.~--
+      ISBN 978-5-4461-0668-4.
     |}
-  ; Raw
+  ; Done
       {|\bibitem{minsky-incrdom}
-    https://www.youtube.com/watch?v=R3xX37RGJKE \TODO
-    |}
+      Minsky,~Y. Data Driven UIs, Incrementally~: [доклад]~/ Yaron Minsky~//
+      Strange Loop Conference.~--
+      2018.~--
+      URL: \underline{\smash{\href{https://www.youtube.com/watch?v=R3xX37RGJKE}{https://www.youtube.com/watch?v=R3xX37RGJKE}}}
+      (дата~обращения: 27.05.2022).
+      |}
   ; Raw
       {|\bibitem{mdn-websocket}
-    https://developer.mozilla.org/ru/docs/Web/API/WebSocket \TODO
+    https://developer.mozilla.org/ru/docs/Web/API/WebSocket \TODO 
     |}
   ; Raw {|\bibitem{dream}
     https://aantron.github.io/dream \TODO
@@ -305,9 +353,13 @@ let content =
       ~label:"rwo-sexp"
       ~title:"Data Serialization with S-Expressions"
       ~url:"https://dev.realworldocaml.org/data-serialization.html"
-  ; Raw
+  ; Done
       {|\bibitem{anil-gemma-qcon}
-    https://www.infoq.com/presentations/ocaml-browser-iot/ \TODO
+      Madhavapeddy, A. Fast, Flexible and Functional Programming with OCaml~/
+      Anil Madhavapeddy, Gemma Gordon~// QCon Software Development Conference.~--
+      London, 2018.~--
+      URL: \underline{\smash{\href{https://www.infoq.com/presentations/ocaml-browser-iot/}{https://www.infoq.com/presentations/ocaml-browser-iot/}}}
+      (access date: 29.05.2022).
     |}
   ; rwo2nd
       ~label:"rwo-platform"
@@ -331,12 +383,24 @@ let content =
       ~pubdate:"07.05.2019"
   ; LabeledRaw
       { label = "intftrick"; raw = {|https://www.craigfe.io/posts/the-intf-trick \TODO|} }
-  ; Raw
+  ; Done
       {|\bibitem{fprog-adt}
-    https://www.fprog.ru/2009/issue2/practice-fp-2-compact.pdf 
-    Алгебраические типы данных и их использование в программировании с. 49
-    Роман Душкин \TODO
-|}
+      Душкин,~Р. Алгебраические типы данных и их использование в программировании~/
+      Р. Душкин~// Практика функционального программирования~: журнал~--
+      2009.~--
+      выпуск~2.~--
+      С.~49--60.~--
+      URL: \underline{\smash{\href{https://www.fprog.ru/2009/issue2/practice-fp-2-compact.pdf}{https://www.fprog.ru/2009/issue2/practice-fp-2-compact.pdf}}}
+      (дата~обращения: 29.05.2022).
+      |}
+  ; rwo2nd
+      ~label:"rwo-gadt"
+      ~title:"GADTs"
+      ~url:"https://dev.realworldocaml.org/gadts.html"
+  ; LabeledRaw
+      { label = "mdnsvgtag"
+      ; raw = {|https://developer.mozilla.org/en-US/docs/Web/SVG/Element/svg|}
+      }
   ; LabeledRaw
       { label = "mdn-wheel"
       ; raw = {|https://developer.mozilla.org/en-US/docs/Web/API/Element/wheel\_event|}
@@ -345,19 +409,22 @@ let content =
       { label = "jsoo-issue-1272"
       ; raw = {|https://github.com/ocsigen/js\_of\_ocaml/issues/1272|}
       }
-  ; LabeledRaw
-      { label = "mdnsvgtag"
-      ; raw = {|https://developer.mozilla.org/en-US/docs/Web/SVG/Element/svg|}
-      }
-  ; rwo2nd
-      ~label:"rwo-gadt"
-      ~title:"GADTs"
-      ~url:"https://dev.realworldocaml.org/gadts.html"
-  ; LabeledRaw
-      { label = "poolpi"
-      ; raw =
-          {|https://www.maths.tcd.ie/~lebed/Galperin.%20Playing%20pool%20with%20pi.pdf \TODO|}
-      }
+  ; doi
+      ~label:"poolpi"
+      ~doi:"10.1070/RD2003v008n04ABEH000252"
+      ~title:"Playing pool with π (the number π from a billiard point of view)"
+      ~author:"Galperin.~G."
+      ~authors:"G.~Galperin"
+      ~journal:"Regualar \\& Chaotic Dynamics"
+      ~yearvolumeissuepages:"2003, Vol.~8, Number~4, P.~375--394"
+      ~url:
+        "https://www.maths.tcd.ie/{\\textasciitilde}lebed/Galperin. Playing pool with \
+         pi.pdf"
+      ~urlref:"https://www.maths.tcd.ie/\\~lebed/Galperin. Playing pool with pi.pdf"
+      ~accessdate:"08.06.2022"
+    (* ; LabeledRaw { label = "poolpi" ; raw =
+       {|https://www.maths.tcd.ie/~lebed/Galperin.%20Playing%20pool%20with%20pi.pdf
+       \TODO|} } *)
   ; LabeledRaw { label = "habrpi"; raw = {|https://habr.com/ru/post/533454/ \TODO|} }
   ; LabeledRaw
       { label = "browniankrugosvet"
