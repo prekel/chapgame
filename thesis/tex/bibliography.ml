@@ -15,7 +15,7 @@ type t =
 
 let print = function
   | Done s -> [%string "%{s}"]
-  | Raw s -> sprintf "%s \\TODO" s
+  | Raw s -> sprintf "%s \\TODO\n" s
   | LabeledRaw { label; raw } -> sprintf {|\bibitem{%s}
     \TODO %s
     |} label raw
@@ -31,6 +31,28 @@ let print = function
 ;;
 
 let print_list list = list |> List.map ~f:print |> String.concat ~sep:"\n"
+
+let rwo2nd ~label ~title ~url =
+  Done
+    [%string
+      {|\bibitem{%{label}}
+      Minsky,~Y. %{title} : Real World OCaml~/
+      Yaron Minsky, Anil Madhavapeddy~//
+      Real World OCaml : Functional programming for the masses (2nd Edition).~--
+      URL: \underline{\smash{\href{%{url}}{%{url}}}} (дата обращения: 25.05.2022).
+      |}]
+;;
+
+let arxiv ~label ~arxiv ~title ~author ~authors ~year ~pubdate =
+  Done
+    [%string
+      {|\bibitem{%{label}}
+    %{author} %{title}~/ %{authors}.~--
+    %{year}.~--
+    arXiv: \href{https://arxiv.org/abs/%{arxiv}}{%{arxiv}}.~--
+    URL: \underline{\smash{\href{https://arxiv.org/pdf/%{arxiv}.pdf}{https://arxiv.org/pdf/%{arxiv}.pdf}}}.~--Publication date: %{pubdate}.
+    |}]
+;;
 
 let content =
   [ Done
@@ -53,41 +75,51 @@ let content =
       |}
   ; Done
       {|\bibitem{mathforprogrammers}
-      Orland~P. Math for Progammers~: 3D graphics, machine learning, and simulations with Python~/ P. Orland.~--
+      Orland,~P. Math for Progammers~: 3D graphics, machine learning, and simulations with Python~/ P. Orland.~--
       Shelter Island, NY~: Manning, 2020.~--
       688~p.~--
-      ISBN 978-1617295355
-    |}
+      ISBN 978-1617295355.
+      |}
   ; Done
       {|\bibitem{larson}
-      Larson~R. Precalculus~: a concise course~/ R. Larson, R. Hostetler~--
+      Larson,~R. Precalculus~: a concise course~/ R.~Larson, R.~Hostetler~--
       Boston~: Houghton Mifflin, 2007.~--
       656~p.~--
       ISBN 0-618-62719-7.
       |}
-  ; Raw
+  ; Done
       {|\bibitem{alekseevabel}
-    Алексеев, В. Б. Теорема Абеля в задачах и решениях. — М.: МЦНМО, 2001. — 192 с. — ISBN 5-900916-86-3. \TODO
-    |}
+      Алексеев,~В.~Б. Теорема Абеля в задачах и решениях~/ В.~Б.~Алексеев.~--
+      Москва~: МЦНМО, 2001.~--
+      192~с.~--
+      ISBN 5-900916-86-3.
+      |}
   ; Raw
       {|\bibitem{wiki-ellastic-collision}
-    https://en.wikipedia.org/wiki/Elastic\_collision \TODO
-    |}
-  ; Raw
-      {| \bibitem{bisectionkaw}
-    \TODO Autar K Kaw Numerical Methods with Applications Chapter 03.03 Bisection Method
-    |}
+      https://en.wikipedia.org/wiki/Elastic\_collision \TODO
+      |}
+  ; Done
+      {|\bibitem{bisectionkaw}
+      Autar Kaw. Bisection Method of Solving a Nonlinear Equation~: [textbook chapter]~/ Autar K Kaw //
+      Textbook: Numerical Methods with Applications.~--
+      URL: \underline{\smash{\href{https://nm.mathforcollege.com/mws/gen/03nle/mws\_gen\_nle\_txt\_bisection.pdf}{https://nm.mathforcollege.com/mws/gen/03nle/mws\_gen\_nle\_txt\_bisection.pdf}}}.~--
+      Publication date: 15.01.2012.
+      |}
   ; Raw
       {|\bibitem{mdn-spa}
     https://developer.mozilla.org/en-US/docs/Glossary/SPA \TODO
     |}
-  ; Raw
+  ; Done
       {|\bibitem{wasm}
-    Andreas Haas, Andreas Rossberg, Derek L. Schuff, Ben L. Titzer, Michael Holman, Dan Gohman, Luke Wagner, Alon Zakai, and JF Bastien.
-    2017. Bringing the web up to speed with WebAssembly.
-    In Proceedings of the 38th ACM SIGPLAN Conference on Programming Language Design and Implementation (PLDI 2017).
-    Association for Computing Machinery, New York, NY, USA, 185–200. https://doi.org/10.1145/3062341.3062363 \TODO
-    |}
+      Haas,~A. Bringing the web up to speed with WebAssembly~/
+      Andreas Haas, Andreas Rossberg, Derek L. Schuff [et~al.].~--
+      DOI~\href{https://doi.org/10.1145/3062341.3062363}{10.1145/3062341.3062363}~//
+      In Proceedings of the 38th ACM SIGPLAN Conference on Programming Language Design and Implementation (PLDI 2017).~--
+      2017.~--
+      P.~185--200.~--
+      URL: \underline{\smash{\href{https://dl.acm.org/doi/pdf/10.1145/3062341.3062363}{https://dl.acm.org/doi/pdf/10.1145/3062341.3062363}}}.~--
+      Publication date: 14.06.2017.
+      |}
   ; Raw
       {|\bibitem{emscripten-about}
     https://emscripten.org/docs/introducing\_emscripten/about\_emscripten.html \TODO
@@ -107,12 +139,17 @@ let content =
       {|\bibitem{wasm-iwantto}
     https://webassembly.org/getting-started/developers-guide/ \TODO
     |}
-  ; Raw
+  ; Done
       {|\bibitem{dsyme-hopl}
-    https://fsharp.org/history/hopl-final/hopl-fsharp.pdf
-    Don Syme. 2020. The early history of F\#. Proc. ACM Program. Lang. 4, HOPL, Article 75 (June 2020), 58 pages. https://doi.org/10.1145/3386325
-    \TODO
-    |}
+      Syme,~D. The early history of F\#~/ Don Syme.~--
+      DOI~\href{https://doi.org/10.1145/3386325}{10.1145/3386325}~//
+      Proceedings of the ACM on Programming Languages.~--
+      2020.~--
+      Vol.~4, Iss.~HOPL.~--
+      P.~1--58.~--
+      URL: \underline{\smash{\href{https://dl.acm.org/doi/pdf/10.1145/3386325}{https://dl.acm.org/doi/pdf/10.1145/3386325}}}.~--
+      Publication date: 12.06.2020.
+      |}
   ; EDN
       { label = "typescript-mayorov"
       ; raw_before_edn =
@@ -136,15 +173,21 @@ let content =
   ; Raw {|\bibitem{ocamlorg}
     https://ocaml.org/ \TODO
     |}
-  ; Raw
+  ; Done
       {|\bibitem{yaron2011}
-    Yaron Minsky. OCaml for the Masses. ACM Queue, Sep 27, 2011 \TODO
-    |}
-  ; Raw
-      {|\bibitem{rwo-prologue}
-    Real World OCaml. 2nd Edition. Yaron Minsky. Anil Madhavapeddy.
-    https://dev.realworldocaml.org/prologue.html \TODO
-    |}
+      Minsky,~Y. OCaml for the Masses: Why the next language you learn should be functional~/ Yaron Minsky.~--
+      DOI~\href{https://doi.org/10.1145/2030256.2038036}{10.1145/2030256.2038036}~//
+      ACM Queue.~--
+      2011.~--
+      Vol.~9, Iss.~9.~--
+      P.~40--49.~--
+      URL: \underline{\smash{\href{https://dl.acm.org/doi/pdf/10.1145/2030256.2038036}{https://dl.acm.org/doi/pdf/10.1145/2030256.2038036}}}.~--
+      Publication date: 27.09.2011.
+      |}
+  ; rwo2nd
+      ~label:"rwo-prologue"
+      ~title:"Prologue"
+      ~url:"https://dev.realworldocaml.org/prologue.html"
   ; Raw {|\bibitem{opam}
     https://opam.ocaml.org/ \TODO
     |}
@@ -159,10 +202,10 @@ let content =
   ; Raw {|\bibitem{ocamljs-lambda}
     https://jaked.org/ocamljs/Jscomp.html \TODO
     |}
-  ; Raw
-      {|\bibitem{rwo-backend}
-    https://dev.realworldocaml.org/compiler-backend.html \TODO
-    |}
+  ; rwo2nd
+      ~label:"rwo-backend"
+      ~title:"The Compiler Backend: Bytecode and Native code"
+      ~url:"https://dev.realworldocaml.org/compiler-backend.html"
   ; Raw
       {|\bibitem{vouillon-jsoo}
     https://www.irif.fr/~balat/publications/vouillon\_balat-js\_of\_ocaml.pdf \TODO
@@ -191,14 +234,10 @@ let content =
       {|\bibitem{janestreet-opensource}
     https://opensource.janestreet.com/ \TODO
     |}
-  ; Raw
-      {|\bibitem{rwo-ru}
-    Мински Я., Мадхавапедди А., Хикки Дж.
-    М57 Программирование на языке OCaml / пер. с анг.л А. Н. Киселева. –
-    М.: ДМК Пресс, 2014. – 536 с.: ил.
-    ISBN 978-5-97060-102-0
-    \TODO
-    |}
+  ; rwo2nd
+      ~label:"rwo-async"
+      ~title:"Concurrent Programming with Async"
+      ~url:"https://dev.realworldocaml.org/concurrent-programming.html"
   ; Raw
       {|\bibitem{vouillon-lwt}
     Jerome Vouillon Lwt: a Cooperative Thread Library \TODO
@@ -250,29 +289,30 @@ let content =
   ; Raw {|\bibitem{dream}
     https://aantron.github.io/dream \TODO
     |}
-  ; Raw {|\bibitem{rwo-testing}
-    https://dev.realworldocaml.org/testing.html
-    |}
-  ; Raw
-      {|\bibitem{rwo-runtime-memory}
-    https://dev.realworldocaml.org/runtime-memory-layout.html \TODO
-
-    |}
-  ; Raw {|\bibitem{rwo-json}
-    https://dev.realworldocaml.org/json.html \TODO
-    |}
-  ; Raw
-      {|\bibitem{rwo-sexp}
-    https://dev.realworldocaml.org/data-serialization.html \TODO
-    |}
+  ; rwo2nd
+      ~label:"rwo-testing"
+      ~title:"Testing"
+      ~url:"https://dev.realworldocaml.org/testing.html"
+  ; rwo2nd
+      ~label:"rwo-runtime-memory"
+      ~title:"Memory Representation of Values"
+      ~url:"https://dev.realworldocaml.org/runtime-memory-layout.html"
+  ; rwo2nd
+      ~label:"rwo-json"
+      ~title:"Handling JSON Data"
+      ~url:"https://dev.realworldocaml.org/json.html"
+  ; rwo2nd
+      ~label:"rwo-sexp"
+      ~title:"Data Serialization with S-Expressions"
+      ~url:"https://dev.realworldocaml.org/data-serialization.html"
   ; Raw
       {|\bibitem{anil-gemma-qcon}
     https://www.infoq.com/presentations/ocaml-browser-iot/ \TODO
     |}
-  ; Raw
-      {|\bibitem{rwo-platform}
-    https://dev.realworldocaml.org/platform.html \TODO
-    |}
+  ; rwo2nd
+      ~label:"rwo-platform"
+      ~title:"The OCaml Platform"
+      ~url:"https://dev.realworldocaml.org/platform.html"
   ; Raw
       {|\bibitem{bulma-vs-bootstrap}
     https://bulma.io/alternative-to-bootstrap/ \TODO
@@ -281,11 +321,14 @@ let content =
       {|\bibitem{wiki-mlmodules}
     https://ru.wikipedia.org/wiki/Язык\_модулей\_ML
     |}
-  ; Raw
-      {|\bibitem{functor-driven}
-    https://arxiv.org/abs/1905.02529 Programming Unikernels in the Large via Functor Driven
-    Development (Experience Report) \TODO Radanne G. et al. Programming unikernels in the large via functor driven development //arXiv preprint arXiv:1905.02529. – 2019.
-    |}
+  ; arxiv
+      ~label:"functor-driven"
+      ~arxiv:"1905.02529"
+      ~title:"Programming Unikernels in the Large via Functor Driven Development"
+      ~author:"Radanne,~G."
+      ~authors:"Gabriel Radanne, Thomas Gazagnaire, Anil Madhavapeddy [et~al.]"
+      ~year:"2019"
+      ~pubdate:"07.05.2019"
   ; LabeledRaw
       { label = "intftrick"; raw = {|https://www.craigfe.io/posts/the-intf-trick \TODO|} }
   ; Raw
@@ -306,8 +349,10 @@ let content =
       { label = "mdnsvgtag"
       ; raw = {|https://developer.mozilla.org/en-US/docs/Web/SVG/Element/svg|}
       }
-  ; LabeledRaw
-      { label = "rwo-gadt"; raw = {|https://dev.realworldocaml.org/gadts.html \TODO|} }
+  ; rwo2nd
+      ~label:"rwo-gadt"
+      ~title:"GADTs"
+      ~url:"https://dev.realworldocaml.org/gadts.html"
   ; LabeledRaw
       { label = "poolpi"
       ; raw =
