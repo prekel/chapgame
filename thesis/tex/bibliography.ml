@@ -149,10 +149,13 @@ let content =
       URL: \underline{\smash{\href{https://en.wikipedia.org/wiki/Elastic\_collision}{https://en.wikipedia.org/wiki/Elastic\_collision}}}
       (дата~обращения: 26.05.2022).
       |}
-  ; Raw
-      {|\bibitem{mdn-spa}
-    https://developer.mozilla.org/en-US/docs/Glossary/SPA \TODO
-    |}
+  ; site
+      ~label:"mdn-spa"
+      ~title:"SPA (Single-page application)"
+      ~sitename:"MDN Web Docs"
+      ~url:"https://developer.mozilla.org/en-US/docs/Glossary/SPA"
+      ~accessdate:"26.05.2022"
+      ()
   ; Done
       {|\bibitem{wasm}
       Haas,~A. Bringing the web up to speed with WebAssembly~/
@@ -182,13 +185,20 @@ let content =
       URL: \underline{\smash{\href{https://docs.microsoft.com/ru-ru/aspnet/core/blazor}{https://docs.microsoft.com/ru-ru/aspnet/core/blazor}}}
       (дата~обращения: 27.05.2022).
     |}
-  ; Raw {|\bibitem{fsbolero}
-    https://fsbolero.io/docs/ \TODO
-    |}
-  ; Raw
-      {|\bibitem{wasm-iwantto}
-    https://webassembly.org/getting-started/developers-guide/ \TODO
-    |}
+  ; site
+      ~label:"fsbolero"
+      ~title:"Getting started"
+      ~sitename:"Bolero: F\# in WebAssembly"
+      ~url:"https://fsbolero.io/docs/"
+      ~accessdate:"27.05.2022"
+      ()
+  ; site
+      ~label:"wasm-iwantto"
+      ~title:"I want to..."
+      ~sitename:"WebAssembly"
+      ~url:"https://webassembly.org/getting-started/developers-guide/"
+      ~accessdate:"27.05.2022"
+      ()
   ; Done
       {|\bibitem{dsyme-hopl}
       Syme,~D. The early history of F\#~/ Don Syme.~--
@@ -216,12 +226,18 @@ let content =
     – Челябинск: Общество с ограниченной ответственностью "Аэтерна", 2018. – С. 120-122.|}
       ; edn = "XPWRYL"
       }
-  ; Raw
-      {|\bibitem{camlhistory}
-    https://caml.inria.fr/about/history.en.html \TODO
-    |}
-  ; Raw {|\bibitem{ocamlorg}
-    https://ocaml.org/ \TODO
+  ; site
+      ~label:"camlhistory"
+      ~title:"A History of Caml"
+      ~sitename:"The Caml Language"
+      ~url:"https://caml.inria.fr/about/history.en.html"
+      ~accessdate:"27.05.2022"
+      ()
+  ; Done
+      {|\bibitem{ocamlorg}
+      OCaml~: [оффициальный сайт].~--
+      URL: \underline{\smash{\href{https://ocaml.org/}{https://ocaml.org/}}}
+      (дата~обращения: 27.05.2022).
     |}
   ; Done
       {|\bibitem{yaron2011}
@@ -238,20 +254,34 @@ let content =
       ~label:"rwo-prologue"
       ~title:"Prologue"
       ~url:"https://dev.realworldocaml.org/prologue.html"
-  ; Raw {|\bibitem{opam}
-    https://opam.ocaml.org/ \TODO
-    |}
-  ; Raw
+  ; site
+      ~label:"opam"
+      ~title:"OCaml Package Manager"
+      ~sitename:"OPAM"
+      ~url:"https://opam.ocaml.org/"
+      ~accessdate:"29.05.2022"
+      ()
+  ; Done
       {|\bibitem{npmjs}
-    https://www.npmjs.com/ \TODO Режим доступа: для зарегистрированных пользователей.
-    |}
-  ; Raw
+      npm.~--
+      URL: \underline{\smash{\href{https://www.npmjs.com/}{https://www.npmjs.com/}}}
+      (дата~обращения: 29.05.2022).~--
+      Режим доступа: для зарегистрированных пользователей.
+      |}
+  ; Done
       {|\bibitem{crockford}
-    https://www.crockford.com/javascript/javascript.html \TODO
-    |}
-  ; Raw {|\bibitem{ocamljs-lambda}
-    https://jaked.org/ocamljs/Jscomp.html \TODO
-    |}
+      Crockford, D. JavaScript: The World's Most Misunderstood Programming Language~/ Douglas Crockford.~--
+      2001.~--
+      URL: \underline{\smash{\href{https://www.crockford.com/javascript/javascript.html}{https://www.crockford.com/javascript/javascript.html}}}
+      (дата~обращения: 29.05.2022).
+      |}
+  ; site
+      ~label:"ocamljs-lambda"
+      ~title:"How ocamljs compiles OCaml to Javascript"
+      ~sitename:"[ocamljs~: документация]"
+      ~url:"https://jaked.org/ocamljs/Jscomp.html"
+      ~accessdate:"29.05.2022"
+      ()
   ; rwo2nd
       ~label:"rwo-backend"
       ~title:"The Compiler Backend: Bytecode and Native code"
@@ -276,26 +306,38 @@ let content =
       ~url:"https://github.com/ocsigen/js\_of\_ocaml/issues/338"
       ~accessdate:"28.05.2022"
       ()
-  ; Raw
-      {|\bibitem{rescript-introduction}
-    https://rescript-lang.org/docs/manual/latest/introduction \TODO
-    |}
-  ; Raw
+  ; site
+      ~label:"rescript-introduction"
+      ~title:"Introduction"
+      ~sitename:"ReScript Language Manual"
+      ~url:"https://rescript-lang.org/docs/manual/latest/introduction"
+      ~accessdate:"29.05.2022"
+      ()
+  ; Done
       {|\bibitem{melange}
-    https://anmonteiro.com/2021/03/on-ocaml-and-the-js-platform/ \TODO
+      Monteiro,~A. On OCaml and the JS platform~/ Antonio Nuno Monteiro.~--
+      URL: \underline{\smash{\href{https://anmonteiro.com/2021/03/on-ocaml-and-the-js-platform/}{https://anmonteiro.com/2021/03/on-ocaml-and-the-js-platform/}}}
+      (дата~обращения: 29.05.2022).
     |}
-  ; Raw
+  ; Done
       {|\bibitem{ocaml-wasm}
-    https://okcdz.medium.com/run-ocaml-in-the-browser-by-webassembly-31ce464594c6 \TODO
-    |}
-  ; Raw
-      {|\bibitem{ocamlverse-libraries}
-    https://ocamlverse.github.io/content/standard\_libraries.html \TODO
-    |}
-  ; Raw
+      Chan, V. Run OCaml in the browser by WebAssembly~/ Vincent Chan.~--
+      URL: \underline{\smash{\href{https://okcdz.medium.com/run-ocaml-in-the-browser-by-webassembly-31ce464594c6}{https://okcdz.medium.com/run-ocaml-in-the-browser-by-webassembly-31ce464594c6}}}
+      (дата~обращения: 29.05.2022).
+      |}
+  ; site
+      ~label:"ocamlverse-libraries"
+      ~title:"Standard Libraries"
+      ~sitename:"OCamlverse"
+      ~url:"https://ocamlverse.github.io/content/standard\_libraries.html"
+      ~accessdate:"29.05.2022"
+      ()
+  ; Done
       {|\bibitem{janestreet-opensource}
-    https://opensource.janestreet.com/ \TODO
-    |}
+      Jane Street Open Source.~--
+      URL: \underline{\smash{\href{https://opensource.janestreet.com/}{https://opensource.janestreet.com/}}}
+      (дата~обращения: 29.05.2022).
+      |}
   ; rwo2nd
       ~label:"rwo-async"
       ~title:"Concurrent Programming with Async"
@@ -311,20 +353,26 @@ let content =
       ~url:"https://www.irif.fr//{\\textasciitilde}vouillon/publi/lwt.pdf"
       ~urlref:"https://www.irif.fr//\\~vouillon/publi/lwt.pdf"
       ~accessdate:"28.05.2022"
-  ; Raw
-      {|\bibitem{announcing-async}
-    https://blog.janestreet.com/announcing-async/ \TODO
-    |}
+  ; site
+      ~label:"announcing-async"
+      ~title:"Announcing Async"
+      ~sitename:"Jane Street Tech Blog"
+      ~url:"https://blog.janestreet.com/announcing-async/"
+      ~accessdate:"28.05.2022"
+      ()
   ; Done
       {|\bibitem{rgrinberg-async}
       Grinberg, R. Abandoning Async~/ Rudi Grinberg.~--
       URL: \underline{\smash{\href{http://rgrinberg.com/posts/abandoning-async/}{http://rgrinberg.com/posts/abandoning-async/}}}
       (дата обращения: 27.05.2022).
     |}
-  ; Raw
-      {|\bibitem{jsoo-react}
-    https://github.com/ml-in-barcelona/jsoo-react \TODO
-    |}
+  ; site
+      ~label:"jsoo-react"
+      ~title:"jsoo-react"
+      ~sitename:"GitHub"
+      ~url:"https://github.com/ml-in-barcelona/jsoo-react"
+      ~accessdate:"29.05.2022"
+      ()
   ; site
       ~label:"elm-architecture"
       ~title:"The Elm Architecture~: An Introduction to Elm"
@@ -332,17 +380,27 @@ let content =
       ~url:"https://guide.elm-lang.org/architecture/"
       ~accessdate:"28.05.2022"
       ()
-  ; Raw {|\bibitem{lexifi-vdom}
-    https://github.com/LexiFi/ocaml-vdom \TODO
-    |}
-  ; Raw
-      {|\bibitem{janestreet-virtualdom}
-    https://github.com/janestreet/virtual\_dom \TODO
-    |}
-  ; Raw
-      {|\bibitem{bonsai-history}
-    https://github.com/janestreet/bonsai/blob/master/docs/blogs/history.md \TODO
-    |}
+  ; site
+      ~label:"lexifi-vdom"
+      ~title:"ocaml-vdom"
+      ~sitename:"GitHub"
+      ~url:"https://github.com/LexiFi/ocaml-vdom"
+      ~accessdate:"28.05.2022"
+      ()
+  ; site
+      ~label:"janestreet-virtualdom"
+      ~title:"virtual\_dom"
+      ~sitename:"GitHub"
+      ~url:"https://github.com/janestreet/virtual\_dom"
+      ~accessdate:"28.05.2022"
+      ()
+  ; site
+      ~label:"bonsai-history"
+      ~title:"The History of Bonsai.t"
+      ~sitename:"Github~: bonsai"
+      ~url:"https://github.com/janestreet/bonsai/blob/master/docs/blogs/history.md"
+      ~accessdate:"28.05.2022"
+      ()
   ; site
       ~label:"janestreet-bonsai"
       ~title:"Bonsai"
@@ -489,11 +547,12 @@ let content =
       ~url:"https://habr.com/ru/post/533454/"
       ~accessdate:"29.05.2022"
       ()
-  ; LabeledRaw
-      { label = "browniankrugosvet"
-      ; raw =
-          {|https://www.krugosvet.ru/enc/nauka\_i\_tehnika/fizika/BROUNOVSKOE\_DVIZHENIE.html \TODO|}
-      }
+  ; Done
+      {|\bibitem{browniankrugosvet}
+      БРОУНОВСКОЕ ДВИЖЕНИЕ~// Энциклопедия Кругосвет.~--
+        URL: \underline{\smash{\href{https://www.krugosvet.ru/enc/nauka\_i\_tehnika/fizika/BROUNOVSKOE\_DVIZHENIE.html}{https://www.krugosvet.ru/enc/nauka\_i\_tehnika/fizika/}}}
+        \underline{\smash{\href{https://www.krugosvet.ru/enc/nauka\_i\_tehnika/fizika/BROUNOVSKOE\_DVIZHENIE.html}{BROUNOVSKOE\_DVIZHENIE.html}}}
+        (дата~обращения: 30.05.2022). |}
   ; site
       ~label:"wiki-chapaev"
       ~title:"Чапаев (игра)"
@@ -501,22 +560,41 @@ let content =
       ~url:"https://ru.wikipedia.org/wiki/Чапаев (игра)"
       ~accessdate:"29.05.2022"
       ()
-  ; LabeledRaw
-      { label = "smeshariki-fandom"
-      ; raw =
-          {|https://shararam.fandom.com/wiki/%D0%A1%D0%BC%D0%B5%D1%88%D0%B0%D1%80%D0%B8%D0%BA%D0%B8\_(%D0%B8%D0%B3%D1%80%D0%B0) \TODO|}
-      }
-  ; LabeledRaw { label = "vk-games"; raw = {|https://dev.vk.com/games/overview \TODO|} }
-  ; LabeledRaw
-      { label = "tg-games"; raw = {|https://core.telegram.org/bots/games \TODO|} }
-  ; LabeledRaw
-      { label = "infoqmulticore"
-      ; raw = {|https://www.infoq.com/news/2021/10/ocaml-5-multicore/ \TODO|}
-      }
-  ; LabeledRaw
-      { label = "domainslibgithub"
-      ; raw = {|https://github.com/ocaml-multicore/domainslib \TODO |}
-      }
+  ; site
+      ~label:"smeshariki-fandom"
+      ~title:"Смешарики (игра)"
+      ~sitename:"Шарарам вики"
+      ~url:"https://shararam.fandom.com/wiki/Смешарики\_(игра)"
+      ~accessdate:"29.05.2022"
+      ()
+  ; site
+      ~label:"vk-games"
+      ~title:"Игровая платформа"
+      ~sitename:"VK для разработчиков"
+      ~url:"https://dev.vk.com/games/overview"
+      ~accessdate:"29.05.2022"
+      ()
+  ; site
+      ~label:"tg-games"
+      ~title:"Gaming Platform"
+      ~sitename:"Telegram Bots~: [документация]"
+      ~url:"https://core.telegram.org/bots/games"
+      ~accessdate:"29.05.2022"
+      ()
+  ; site
+      ~label:"infoqmulticore"
+      ~title:"OCaml 5 Will Include Multicore Support"
+      ~sitename:"InfoQ"
+      ~url:"https://www.infoq.com/news/2021/10/ocaml-5-multicore/"
+      ~accessdate:"29.05.2022"
+      ()
+  ; site
+      ~label:"domainslibgithub"
+      ~title:"domainslib"
+      ~sitename:"GitHub"
+      ~url:"https://github.com/ocaml-multicore/domainslib"
+      ~accessdate:"29.05.2022"
+      ()
   ; Done {|\end{thebibliography}
 \endgroup
 |}
