@@ -595,7 +595,9 @@ let content =
       ~url:"https://github.com/ocaml-multicore/domainslib"
       ~accessdate:"29.05.2022"
       ()
-  ; Done {|\end{thebibliography}
+  ; Done {|
+  
+  \end{thebibliography}
 \endgroup
 |}
   ]
