@@ -56,7 +56,7 @@ let arxiv ~label ~arxiv ~title ~author ~authors ~year ~pubdate =
       {|\bibitem{%{label}}
     %{author} %{title}~/ %{authors}.~--
     %{year}.~--
-    arXiv: \href{https://arxiv.org/abs/%{arxiv}}{%{arxiv}}.~--
+    arXiv \href{https://arxiv.org/abs/%{arxiv}}{%{arxiv}}.~--
     URL: \underline{\smash{\href{https://arxiv.org/pdf/%{arxiv}.pdf}{https://arxiv.org/pdf/%{arxiv}.pdf}}}.~--
     Publication date: %{pubdate}.
     |}]
