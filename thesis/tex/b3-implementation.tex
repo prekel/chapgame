@@ -30,12 +30,12 @@
     \begin{longtable}{|l|l|l|}
         \caption{Подпроекты} \label{libstable}                                                                                                                                                 \\
 
-        \hline \multicolumn{1}{|c|}{\textbf{Название подпроекта}} & \multicolumn{1}{c|}{\textbf{Каталог}}                                            & \multicolumn{1}{c|}{\textbf{Пункт ВКР}} \\ \hline
+        \hline \multicolumn{1}{|c|}{\textbf{Название подпроекта}} & \multicolumn{1}{c|}{\textbf{Каталог}}                                            & \multicolumn{1}{c|}{\textbf{Пункт ВКР}} \\ \hhline{|=|=|=|}
         \endfirsthead
 
         \multicolumn{3}{c}%
         {\hspace{-12.5cm}{Окончание таблицы \thetable} \vspace{1ex}}                                                                                                                           \\
-        \hline \multicolumn{1}{|c|}{\textbf{Название подпроекта}} & \multicolumn{1}{c|}{\textbf{Каталог}}                                            & \multicolumn{1}{c|}{\textbf{Пункт ВКР}} \\ \hline
+        \hline \multicolumn{1}{|c|}{\textbf{Название подпроекта}} & \multicolumn{1}{c|}{\textbf{Каталог}}                                            & \multicolumn{1}{c|}{\textbf{Пункт ВКР}} \\ \hhline{|=|=|=|}
         \endhead
 
         solver                                                    & \href{https://github.com/prekel/chapgame/blob/master/lib/solver}{lib/solver}     & \ref{solverimpl}                        \\ \hline
@@ -73,12 +73,12 @@
     \begin{longtable}{|l|l|l|}
         \caption{Модули решателя алгебраических уравнений} \label{solvermodulestable}                                                                                                                                                                                              \\
 
-        \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                                                      & \multicolumn{1}{c|}{\textbf{Расшифровка}}                               \\ \hline
+        \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                                                      & \multicolumn{1}{c|}{\textbf{Расшифровка}}                               \\ \hhline{|=|=|=|}
         \endfirsthead
 
         \multicolumn{3}{c}%
         {\hspace{-12.5cm}{Окончание таблицы \thetable} \vspace{1ex}}                                                                                                                                                                                                               \\
-        \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                                                      & \multicolumn{1}{c|}{\textbf{Расшифровка}}                               \\ \hline
+        \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                                                      & \multicolumn{1}{c|}{\textbf{Расшифровка}}                               \\ \hhline{|=|=|=|}
         \endhead
 
         \multirow{2}{*}{Interval}                             & \href{https://github.com/prekel/chapgame/blob/master/lib/solver/interval.ml}{lib/solver/interval.ml}                                     & \multirow{2}{*}{\hyperref[intervaldescr]{Промежуток}}                   \\*
@@ -167,12 +167,12 @@
     \begin{longtable}{|l|l|l|}
         \caption{Модули библиотеки символьных вычислений} \label{exprtable}                                                                                                                                                                       \\
 
-        \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                              & \multicolumn{1}{c|}{\textbf{Расшифровка}}                      \\ \hline
+        \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                              & \multicolumn{1}{c|}{\textbf{Расшифровка}}                      \\ \hhline{|=|=|=|}
         \endfirsthead
 
         \multicolumn{3}{c}%
         {\hspace{-12.5cm}{Окончание таблицы \thetable} \vspace{1ex}}                                                                                                                                                                              \\
-        \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                              & \multicolumn{1}{c|}{\textbf{Расшифровка}}                      \\ \hline
+        \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                              & \multicolumn{1}{c|}{\textbf{Расшифровка}}                      \\ \hhline{|=|=|=|}
         \endhead
 
         \multirow{2}{*}{Coeff}                                & \href{https://github.com/prekel/chapgame/blob/master/lib/expr/coeff.ml}{lib/expr/coeff.ml}                       & \multirow{2}{*}{\hyperref[exprdescr]{Выражение}}               \\*
@@ -223,7 +223,9 @@
 
 \begin{align}\label{samplepolyexpr}
     P_1(t) & = (-x + y)t^2 + (x \cdot (-y))t \nonumber           \\
+    & \nonumber\\
     P_2(t) & = (x - y)t^2 + (x \cdot (-y))t + (-x + y) \nonumber \\
+    & \nonumber\\
     P_1(t) & P_2(t) - P_1(t) + P_2(t)
 \end{align}
 
@@ -256,12 +258,12 @@
     \begin{longtable}{|l|l|l|}
         \caption{Модули движка} \label{enginemodules}                                                                                                                                                                                                                            \\
 
-        \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                                            & \multicolumn{1}{c|}{\textbf{Расшифровка}}                                       \\ \hline
+        \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                                            & \multicolumn{1}{c|}{\textbf{Расшифровка}}                                       \\ \hhline{|=|=|=|}
         \endfirsthead
 
         \multicolumn{3}{c}%
         {\hspace{-12.5cm}{Окончание таблицы \thetable} \vspace{1ex}}                                                                                                                                                                                                             \\
-        \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                                            & \multicolumn{1}{c|}{\textbf{Расшифровка}}                                       \\ \hline
+        \hline \multicolumn{1}{|c|}{\textbf{Название модуля}} & \multicolumn{1}{c|}{\textbf{Файлы}}                                                                                            & \multicolumn{1}{c|}{\textbf{Расшифровка}}                                       \\ \hhline{|=|=|=|}
         \endhead
 
         \hline
@@ -332,13 +334,15 @@
 указывает на второй набор правил, как тот, который следует использовать далее.
 Остальные правила указывают на тот же набор правил, в котором определены.
 
-\begin{align}\label{rules0_0}
+\begin{equation}\label{rules0_0}
+\begin{cases}
      & v_x(t)  = 0 \nonumber   \\
      & v_y(t)  = 0 \nonumber   \\
      & x(t)    = x_0           \\
      & y(t)    = y_0 \nonumber \\
      & t \geqslant 0 \nonumber
-\end{align}
+\end{cases}
+\end{equation}
 
 \begin{Underequation}
     \(v_x(t)\)~-- проекция вектора скорости тела \(\vec{v}(t)\) в момент времени \(t\) на ось \(X\);
