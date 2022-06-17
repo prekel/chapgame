@@ -23,11 +23,19 @@
 \usecolortheme{seahorse}
 \setbeamersize{text margin left=7mm,text margin right=7mm} 
 
+\beamertemplatenavigationsymbolsempty
+\addtobeamertemplate{navigation symbols}{}{%
+    \usebeamerfont{footline}%
+    \usebeamercolor[fg]{footline}%
+    \hspace{1em}%
+    \insertframenumber/\inserttotalframenumber
+}
+
 \title{Выпуская квалификационная работа}
 \subtitle{Система физического моделирования на основе априорного подхода обнаружения столкновений}
 \author{Владислав Прекель}
-\institute{ИКИТ СФУ\\КИ18-16б}
-\date{Красноярск\\20 июня 2022 г.}
+\institute{ИКИТ СФУ\par КИ18-16б}
+\date{Красноярск\par 20 июня 2022 г.}
 
 \usepackage[fleqn]{mathtools}
 \usepackage{unicode-math}
