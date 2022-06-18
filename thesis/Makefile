@@ -1,4 +1,4 @@
-all: thesis.pdf presentation.pdf
+all: presentation.pdf
 
 ../_build/default/thesis/tex/thesis.pdf: FORCE
 	dune build ./tex/thesis.pdf

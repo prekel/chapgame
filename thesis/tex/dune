@@ -71,7 +71,8 @@
   ../images/body_collision.png
   ../images/body_aposteriori.png
   ../images/chapgame_1.png
-  ../images/chapgame_2.png)
+  ../images/chapgame_2.png
+  ../images/libsdiagram.pdf)
  (action
   (progn
    (run %{bin:xelatex} "presentation.tex")
