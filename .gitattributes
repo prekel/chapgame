@@ -5,4 +5,4 @@ vendor/** linguist-vendored
 Makefile linguist-documentation
 *.ipynb linguist-documentation
 
-thesis/** linguist-documentation
+# thesis/** linguist-documentation
